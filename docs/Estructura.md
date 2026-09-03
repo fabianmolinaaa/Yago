@@ -12,7 +12,9 @@ La estructura dentro de `lib/` está pensada para desacoplar la interfaz de usua
 lib/
 ├── main.dart
 ├── models/
+│   ├── pet.dart
 │   ├── pet_report.dart
+│   ├── feed_post.dart
 │   ├── user_profile.dart
 │   └── filter_criteria.dart
 ├── screens/
@@ -63,10 +65,13 @@ lib/
 ### 2. `lib/models/` (Modelos de Dominio)
 * **Propósito:** Definir las entidades y estructuras de datos del negocio.
 * **Contenido esperado:**
-  * `PetReport`: Representa el reporte de un animal (id, fotos, especie, estado [perdido, encontrado, resuelto], coordenadas, fecha, datos de contacto).
-  * `UserProfile`: Datos del usuario registrado (nombre, teléfono, correo, foto).
-  * Enums de estados, tipos de animal (perro, gato, otro) y rangos de tamaño.
-  * Métodos `toMap()` y `fromMap()` para serialización con Firestore.
+  * `Pet` (`pet.dart`): Mascota registrada por un usuario (nombre, especie, raza, señas particulares y fotos).
+  * `PetReport` (`pet_report.dart`): Reporte de mascota perdida o encontrada (coordenadas, fecha, estado, fotos y datos de contacto).
+  * `FeedPost` (`feed_post.dart`): Publicación en el feed de la comunidad (autor, texto, fotos, novedades o historias de reencuentro).
+  * `UserProfile` (`user_profile.dart`): Datos del perfil del usuario registrado.
+  * `FilterCriteria` (`filter_criteria.dart`): Parámetros y filtros para las búsquedas y visualización en el mapa.
+  * Enums de estados, tipos de animal y rangos de tamaño.
+  * Métodos `toMap()` y `fromMap()` para serialización con Cloud Firestore.
 
 ---
 

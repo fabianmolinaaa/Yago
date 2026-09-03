@@ -1,60 +1,57 @@
-# Roles del Sistema - Yago
+# Roles del Sistema — Yago
 
-Este documento describe los roles de usuario contemplados en la plataforma **Yago** y los permisos asociados a cada uno para la gestión de animales perdidos y encontrados.
-
----
-
-## 1. Usuario General / Dueño de Mascota
-
-Representa a cualquier ciudadano que utiliza la aplicación para reportar la pérdida de su mascota o dar aviso de un animal que encontró en la calle.
-
-### Permisos y Funcionalidades:
-- [ ] Registrarse e iniciar sesión en la aplicación.
-- [ ] Gestionar su perfil y datos de contacto de preferencia.
-- [ ] Publicar reportes de mascotas perdidas (con fotos, ubicación GPS y señas particulares).
-- [ ] Publicar reportes de animales encontrados o avistados en la vía pública.
-- [ ] Editar o dar de baja sus propios reportes.
-- [ ] Marcar un caso como "Resuelto / Reencontrado".
-- [ ] Explorar el mapa y listado de animales reportados con filtros de búsqueda.
-- [ ] Contactar al publicador de un reporte a través de los canales habilitados.
-- [ ] Reportar publicaciones sospechosas, inapropiadas o duplicadas.
+Este documento describe los roles de usuario contemplados en la plataforma **Yago**, basados en el alcance oficial del proyecto.
 
 ---
 
-## 2. Rescatista / Voluntario / Refugio
+## 1. Usuario
 
-Usuario comprometido o integrante de asociaciones protectoras, refugios o veterinarias aliadas que colaboran activamente en el seguimiento y tránsito de animales perdidos.
+Todos los usuarios cuentan con el mismo tipo de cuenta y tienen acceso a todas las funcionalidades principales de la aplicación, independientemente de su situación (dueños de mascotas, personas que avistaron o encontraron un animal, o miembros de la comunidad).
 
-### Permisos y Funcionalidades (Sugeridas):
-- [ ] Todas las funciones del Usuario General.
-- [ ] Acceso a insignia o estado de perfil verificado (si aplica).
-- [ ] Actualizar el estado de seguimiento o tránsito temporal de un animal reportado.
-- [ ] Recibir alertas focalizadas de animales en situación de riesgo en su radio de acción.
-- [ ] *[Completar: permisos específicos para refugios/rescatistas]*
-
----
-
-## 3. Administrador / Moderador
-
-Encargado de la supervisión general, integridad de la información y buen uso de la plataforma comunitaria.
-
-### Permisos y Funcionalidades:
-- [ ] Acceso a panel de administración o moderación.
-- [ ] Gestionar reportes denunciados por la comunidad (contenido spam, fotos inapropiadas, etc.).
-- [ ] Editar, ocultar o eliminar cualquier reporte que incumpla las normas de convivencia.
-- [ ] Suspender o bloquear temporal/definitivamente usuarios que hagan mal uso de la plataforma.
-- [ ] Visualizar estadísticas generales de la aplicación (reportes activos, casos resueltos, zonas con mayor actividad).
-- [ ] *[Completar: permisos adicionales de configuración del sistema]*
+### Responsabilidades y Funcionalidades:
+* **Gestión de mascotas:**
+  * Registrar sus mascotas con características físicas y fotografías.
+  * Consultar y modificar la información registrada de sus mascotas.
+* **Mascotas perdidas:**
+  * Publicar reportes de mascotas perdidas (con fotos, descripción, fecha y ubicación de desaparición).
+  * Actualizar la información de la publicación.
+  * Marcar una mascota como encontrada / caso resuelto.
+* **Mascotas encontradas:**
+  * Publicar reportes de mascotas encontradas (con fotos, características, fecha y ubicación del hallazgo).
+  * Consultar publicaciones de mascotas encontradas.
+* **Feed y comunidad:**
+  * Crear publicaciones para el feed (novedades de búsquedas, mascotas recuperadas, fotos cotidianas o contenido de la comunidad).
+  * Consultar e interactuar con publicaciones del feed.
+* **Búsqueda e interacción:**
+  * Consultar y filtrar publicaciones por cercanía y características físicas.
+  * Aportar información relevante en una publicación existente.
+  * Contactar de forma directa dentro de la aplicación con el usuario responsable de una publicación.
 
 ---
 
-## Matriz Resumen de Permisos
+## 2. Administrador
 
-| Acción | Usuario General | Rescatista / Refugio | Administrador |
-| :--- | :---: | :---: | :---: |
-| Crear reporte de animal | Sí | Sí | Sí |
-| Editar/Eliminar reportes propios | Sí | Sí | Sí |
-| Contactar a otros usuarios | Sí | Sí | Sí |
-| Marcar caso como resuelto | Propios | Propios / Vinculados | Cualquier reporte |
-| Moderar / Eliminar reportes ajenos | No | No | Sí |
-| Suspender cuentas de usuario | No | No | Sí |
+Rol con privilegios de gestión y moderación, responsable de mantener el orden, la veracidad de la información y la seguridad en la plataforma.
+
+### Responsabilidades y Funcionalidades:
+* **Moderación de contenido:**
+  * Gestionar, moderar, ocultar o dar de baja publicaciones inapropiadas, falsas o duplicadas tanto del feed como de mascotas perdidas/encontradas.
+* **Gestión de reportes comunitarios:**
+  * Atender y resolver denuncias o reportes emitidos por los usuarios sobre publicaciones o comportamientos indebidos.
+* **Gestión de usuarios:**
+  * Administrar cuentas de usuarios cuando sea necesario (advertencias, suspensiones temporales o bajas de cuentas infractoras).
+
+---
+
+## Matriz Resumen de Roles y Permisos
+
+| Funcionalidad / Permiso | Usuario | Administrador |
+| :--- | :---: | :---: |
+| Registrar mascotas propias y gestionarlas | Sí | Sí |
+| Publicar mascotas perdidas y encontradas | Sí | Sí |
+| Marcar mascota como encontrada | Propias | Sí |
+| Crear publicaciones e interactuar en el feed | Sí | Sí |
+| Contactar con otros usuarios por una publicación | Sí | Sí |
+| Moderar y dar de baja publicaciones ajenas | No | Sí |
+| Gestionar denuncias y reportes de la comunidad | No | Sí |
+| Gestionar y sancionar cuentas de usuario | No | Sí |
