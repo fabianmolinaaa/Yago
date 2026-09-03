@@ -1,74 +1,95 @@
-# Gestión Visual de Stands para Eventos
+# Yago - Sistema de Reporte y Búsqueda de Animales Perdidos
 
-Aplicación móvil para la organización y gestión integral de eventos con stands. El sistema está conformado por:
+Aplicación móvil orientada a la comunidad para el reporte, localización y reencuentro de mascotas y animales perdidos.
 
-- **App móvil para el organizador** (interfaz principal de trabajo en el terreno)
-- **Servidor y base de datos** (gestión y sincronización de información)
-- **Asistente inteligente con IA** (apoyo en consultas y propuestas de distribución)
+---
 
-> **El organizador controla y ajusta la distribución del evento directamente desde un plano interactivo mientras recorre el salón. El asistente de IA responde dudas al instante y sugiere optimizaciones de espacio, dejando siempre la decisión final en manos del organizador.**
+## 1. Descripción General
 
-## Fuera de alcance
+> *[Completar: Breve resumen de la visión de la aplicación, el problema que busca resolver y el impacto esperado en la comunidad]*
 
-- Venta de entradas y procesamiento de pagos.
-- Comercialización o alquiler de stands.
-- Gestión de proveedores, personal o logística del recinto.
-- Difusión, publicidad o integración con redes sociales.
-- Herramientas de diseño arquitectónico o planos profesionales.
-- Automatización o toma de decisiones autónoma por parte de la IA.
+---
 
-## Épicas Principales
+## 2. Objetivo del Proyecto
 
-1. **Gestión de eventos**: Creación y administración de los datos generales del evento.
-2. **Gestión de stands**: Creación, asignación, liberación y movimiento de espacios.
-3. **Plano interactivo**: Visualización en tiempo real de la distribución del recinto.
-4. **Gestión de expositores**: Registro y ubicación rápida de participantes.
-5. **Asistente inteligente**: Consultas en lenguaje natural y sugerencias de reorganización.
-6. **Almacenamiento y sincronización de datos**: Resguardo y consistencia de la información.
+* **Objetivo General:**
+  * *[Completar: Propósito principal de la plataforma]*
 
-## Historias de Usuario
+* **Objetivos Específicos:**
+  * *[Completar: Objetivos puntuales, ej. agilizar el reporte inmediato con foto y geolocalización, facilitar la búsqueda en mapa, etc.]*
 
-### Gestión de eventos
+---
 
-| ID | Historia de usuario | Prioridad |
-| --- | --- | --- |
-| EVT01 | Como organizador, quiero crear un nuevo evento con sus datos básicos, para empezar a planificar su estructura y distribución. | Alta |
-| EVT02 | Como organizador, quiero ver el resumen del evento, para revisar su estado actual y configuración en cualquier momento. | Media |
+## 3. Alcance del Sistema (Dentro de Alcance)
 
-### Gestión de stands
+* [ ] **Gestión de Reportes de Animales:** Publicación de mascotas perdidas y encontradas (datos, fotos, rasgos distintivos, fecha/hora y ubicación).
+* [ ] **Mapa Interactivo y Geolocalización:** Visualización de alertas de animales perdidos o vistos recientemente en zonas cercanas.
+* [ ] **Búsqueda y Filtros:** Filtrado por especie, raza, tamaño, color, zona geográfica y estado (perdido / encontrado / en tránsito).
+* [ ] **Notificaciones y Alertas Comunitarias:** Avisos a usuarios cercanos cuando se reporta un animal perdido en la zona.
+* [ ] **Canal de Contacto / Mensajería:** Comunicación entre quien encontró la mascota y el dueño o rescatista.
+* [ ] **Gestión de Usuarios y Perfiles:** Registro, historial de reportes publicados y datos de contacto seguros.
 
-| ID | Historia de usuario | Prioridad |
-| --- | --- | --- |
-| STA01 | Como organizador, quiero agregar un nuevo stand al plano, para definir un espacio disponible para un expositor. | Alta |
-| STA02 | Como organizador, quiero tocar un stand en el plano para ver sus detalles, conociendo de inmediato su ubicación, estado y quién lo ocupa. | Alta |
-| STA03 | Como organizador, quiero asignar un expositor a un stand libre, para registrar oficialmente la ocupación de ese espacio. | Alta |
-| STA04 | Como organizador, quiero liberar un stand ocupado, para dejar el espacio disponible para otra persona o marca. | Media |
-| STA05 | Como organizador, quiero arrastrar y mover un stand en el plano, para adaptar la distribución según las necesidades del momento. | Media |
+---
 
-### Gestión de expositores
+## 4. Fuera de Alcance
 
-| ID | Historia de usuario | Prioridad |
-| --- | --- | --- |
-| EXP01 | Como organizador, quiero registrar los datos de un expositor, para poder vincularlo a un stand dentro del evento. | Alta |
-| EXP02 | Como organizador, quiero buscar la ubicación de un expositor, para saber exactamente en qué stand se encuentra. | Media |
+> *[Completar y ajustar según los límites definidos para esta etapa del proyecto]*
 
-### Plano interactivo
+- [ ] Venta o comercialización de animales y accesorios.
+- [ ] Servicios veterinarios de urgencia o historias clínicas digitales complejas.
+- [ ] Pasarela de pagos o procesamiento de donaciones (inicialmente).
+- [ ] Reconocimiento biométrico facial automatizado avanzado de animales (salvo que se incorpore IA en etapas posteriores).
+- [ ] Cobertura logística de rescate o transporte de animales.
 
-| ID | Historia de usuario | Prioridad |
-| --- | --- | --- |
-| PLA01 | Como organizador, quiero ver la distribución completa de los stands en un mapa visual, para entender la organización general del recinto de un vistazo. | Alta |
-| PLA02 | Como organizador, quiero identificar fácilmente qué stands están ocupados y cuáles libres (mediante colores o indicadores visuales), para tomar decisiones rápidamente. | Alta |
-| PLA03 | Como organizador, quiero hacer cambios en la distribución desde mi teléfono mientras camino por el lugar, para actualizar el mapa en tiempo real. | Alta |
+---
 
-### Asistente inteligente
+## 5. Épicas Principales
 
-| ID | Historia de usuario | Prioridad |
-| --- | --- | --- |
-| IA01 | Como organizador, quiero hacerle preguntas al asistente en lenguaje natural, para obtener respuestas rápidas sin buscar manualmente en menús. | Media |
-| IA02 | Como organizador, quiero preguntarle al asistente dónde está un expositor, para ubicarlo rápidamente en el mapa. | Media |
-| IA03 | Como organizador, quiero pedirle al asistente propuestas para reorganizar los stands, para optimizar el espacio de forma inteligente ante un imprevisto. | Media |
-| IA04 | Como organizador, quiero revisar y confirmar cualquier sugerencia de la IA antes de que se aplique, para mantener el control total del evento. | Alta |
+1. **Gestión de Usuarios y Autenticación:** Registro, acceso y administración del perfil del usuario.
+2. **Reporte de Animales Perdidos y Encontrados:** Formularios ágiles para cargar datos clave, fotografías y punto en el mapa.
+3. **Mapa y Exploración Geográfica:** Visualización en mapa con marcadores según estado y proximidad.
+4. **Búsqueda, Filtros y Detalle:** Búsqueda rápida por características físicas y visualización de la ficha del animal.
+5. **Comunicación y Reencuentro:** Mecanismos para contactar al reportante y marcar el caso como "Resuelto".
+6. **Moderación y Administración:** Validación de publicaciones y control de reportes indebidos o duplicados.
 
-## ¿Por qué una app móvil?
+---
 
-El organizador necesita trabajar "en el terreno". La app móvil le permite consultar el plano, hacer ajustes al instante y orientar a los expositores mientras camina por el salón, sin depender de una computadora ni de planos de papel que quedan desactualizados rápidamente.
+## 6. Historias de Usuario
+
+### Épica 1: Autenticación y Perfil
+
+| ID | Historia de Usuario | Criterios de Aceptación / Notas | Prioridad |
+| :--- | :--- | :--- | :--- |
+| US-AUTH-01 | Como usuario, quiero registrarme e iniciar sesión para gestionar mis reportes y contactar a otros usuarios. | | Alta |
+| US-AUTH-02 | Como usuario, quiero configurar mis datos de contacto para que puedan comunicarse conmigo si encuentran a mi mascota. | | Alta |
+
+### Épica 2: Reporte de Animales
+
+| ID | Historia de Usuario | Criterios de Aceptación / Notas | Prioridad |
+| :--- | :--- | :--- | :--- |
+| US-REP-01 | Como usuario, quiero publicar el reporte de mi mascota perdida con fotos, descripción y ubicación de extravío para alertar a la comunidad. | | Alta |
+| US-REP-02 | Como usuario, quiero reportar un animal que encontré o vi en la calle para que su dueño pueda identificarlo. | | Alta |
+| US-REP-03 | Como autor de un reporte, quiero actualizar el estado a "Reencontrado / Resuelto" cuando la mascota vuelva a casa. | | Media |
+
+### Épica 3: Mapa y Localización
+
+| ID | Historia de Usuario | Criterios de Aceptación / Notas | Prioridad |
+| :--- | :--- | :--- | :--- |
+| US-MAP-01 | Como usuario, quiero ver un mapa con marcadores de animales perdidos y encontrados en mi zona para estar atento a mi alrededor. | | Alta |
+| US-MAP-02 | Como usuario, quiero seleccionar un marcador en el mapa para ver una vista previa rápida del reporte. | | Media |
+
+### Épica 4: Búsqueda y Filtros
+
+| ID | Historia de Usuario | Criterios de Aceptación / Notas | Prioridad |
+| :--- | :--- | :--- | :--- |
+| US-SRC-01 | Como usuario, quiero filtrar reportes por tipo de animal, tamaño, color y distancia para acotar la búsqueda de mi mascota. | | Alta |
+| US-SRC-02 | Como usuario, quiero ver el detalle completo de un reporte para verificar características particulares y fotos adicionales. | | Alta |
+
+---
+
+## 7. Justificación de la Plataforma Móvil
+
+La elección de una aplicación móvil resulta clave para la temática de animales perdidos por:
+* **Inmediatez en la vía pública:** Permite tomar una foto con la cámara y subir el reporte al instante en el lugar exacto del hallazgo o extravío.
+* **Geolocalización precisa por GPS:** Captura automática de coordenadas sin necesidad de ingresar direcciones manuales.
+* **Notificaciones push instantáneas:** Alertas oportunas a vecinos o personas cercanas ante un reporte urgente en su área de influencia.
