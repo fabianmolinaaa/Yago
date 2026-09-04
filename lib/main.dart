@@ -4,19 +4,24 @@ import 'screens/auth/login_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() {
-  runApp(const StandMapApp());
+  runApp(const YagoApp());
 }
 
-class StandMapApp extends StatelessWidget {
-  const StandMapApp({super.key});
+class YagoApp extends StatelessWidget {
+  final Widget? home;
+
+  const YagoApp({super.key, this.home});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'StandMap',
+      title: 'Yago',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      home: home ?? const LoginScreen(),
     );
   }
 }
+
+// Retrocompatibilidad
+typedef StandMapApp = YagoApp;

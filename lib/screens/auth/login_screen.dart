@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../utils/design_system.dart';
+import '../../widgets/common/widgets.dart';
 import '../home/home_screen.dart';
-import '../../utils/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'organizador@standmap.com');
+  final _emailController = TextEditingController(text: 'usuario@yago.app');
   final _passwordController = TextEditingController(text: '123456');
   bool _obscurePassword = true;
 
@@ -30,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -39,132 +40,119 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo y encabezado
+                // Logo Yago del Design System
                 Center(
                   child: Container(
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: AppRadius.xlBorder,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 16,
+                          color: AppColors.primary.withValues(alpha: 0.28),
+                          blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: const Icon(
-                      Icons.map_rounded,
-                      size: 38,
+                      Icons.pets_rounded,
+                      size: 36,
                       color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 const Text(
-                  'StandMap',
+                  'Yago',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTypography.fontFamily,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.8,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Gestión Visual de Stands para Eventos',
+                Text(
+                  'Reencuentro de mascotas y comunidad',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: AppTypography.subheadline.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 36),
 
                 // Campo Email
-                const Text(
-                  'Correo electrónico',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
+                YagoTextField(
+                  label: 'Correo electrónico',
+                  hint: 'ejemplo@correo.com',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    hintText: 'ejemplo@correo.com',
-                    prefixIcon: Icon(Icons.email_outlined,
-                        size: 20, color: AppColors.textMuted),
+                  prefixIcon: const Icon(
+                    Icons.email_outlined,
+                    size: 20,
+                    color: AppColors.subtle,
                   ),
                 ),
                 const SizedBox(height: 20),
 
                 // Campo Contraseña
-                const Text(
-                  'Contraseña',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
+                YagoTextField(
+                  label: 'Contraseña',
+                  hint: 'Ingresa tu contraseña',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: 'Ingresa tu contraseña',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded,
-                        size: 20, color: AppColors.textMuted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: AppColors.textMuted,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                  prefixIcon: const Icon(
+                    Icons.lock_outline_rounded,
+                    size: 20,
+                    color: AppColors.subtle,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppColors.subtle,
+                      size: 20,
                     ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(height: 28),
 
-                // Botón Iniciar Sesión
-                ElevatedButton(
+                // Botón Iniciar Sesión con YagoButton
+                YagoButton(
+                  text: 'Iniciar Sesión',
+                  size: YagoButtonSize.large,
+                  isFullWidth: true,
                   onPressed: _handleLogin,
-                  child: const Text('Iniciar Sesión'),
                 ),
                 const SizedBox(height: 16),
 
-                // Nota orientativa de cátedra
+                // Nota informativa
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.surface,
+                    borderRadius: AppRadius.mdBorder,
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
-                      SizedBox(width: 8),
+                      const Icon(Icons.info_outline, size: 16, color: AppColors.muted),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Credenciales de prueba cargadas para el organizador.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                          'Credenciales de prueba listas para ingresar a la plataforma.',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.muted,
                           ),
                         ),
                       ),

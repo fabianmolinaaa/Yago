@@ -1,32 +1,73 @@
 import 'package:flutter/material.dart';
 
+/// Tokens de colores oficiales del Design System de Yago.
+/// Fuente de verdad: Design System v1.0 (docs/DesignSystem.md)
 class AppColors {
-  // Primarios y fondos
-  static const Color primary = Color(0xFF1E3A8A); // Azul profundo elegante
-  static const Color primaryLight = Color(0xFF3B82F6);
-  static const Color primaryDark = Color(0xFF172554);
-  static const Color accent = Color(0xFF0D9488); // Verde azulado moderno
+  AppColors._();
 
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color surface = Colors.white;
-  static const Color cardBackground = Colors.white;
+  // ─── Paleta de Marca Yago ──────────────────────────────────────────────────
+  /// Naranja principal Yago (#FF6B35). Acciones primarias, CTA, acentos y FAB central.
+  static const Color primary = Color(0xFFFF6B35);
+  static const Color primaryLight = Color(0xFFFF8555);
+  static const Color primaryDark = Color(0xFFE5531E);
+  static const Color primaryTint = Color(0xFFFFF2EC);
 
-  // Textos y bordes
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textMuted = Color(0xFF94A3B8);
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color divider = Color(0xFFF1F5F9);
+  /// Fondo de pantalla (#FFFFFF)
+  static const Color background = Color(0xFFFFFFFF);
 
-  // Estados de stands en el mapa
-  static const Color standAvailable = Color(0xFF10B981); // Verde esmeralda (libre)
-  static const Color standAvailableBg = Color(0xFFECFDF5);
+  /// Superficie elevada o fondos secundarios (#F5F5F7)
+  static const Color surface = Color(0xFFF5F5F7);
+  static const Color cardBackground = Color(0xFFFFFFFF);
+
+  /// Texto principal / Foreground (#1D1D1F)
+  static const Color foreground = Color(0xFF1D1D1F);
+  static const Color textPrimary = Color(0xFF1D1D1F);
+
+  /// Texto secundario / Muted (#6E6E73)
+  static const Color muted = Color(0xFF6E6E73);
+  static const Color textSecondary = Color(0xFF6E6E73);
+
+  /// Placeholders, bordes inactivos o terciarios (#AEAEB2)
+  static const Color subtle = Color(0xFFAEAEB2);
+  static const Color textMuted = Color(0xFFAEAEB2);
+
+  /// Separadores y bordes hairline (#E5E5EA)
+  static const Color border = Color(0xFFE5E5EA);
+  static const Color divider = Color(0xFFE5E5EA);
+
+  /// Acento general (mismo que primary)
+  static const Color accent = Color(0xFFFF6B35);
+
+  // ─── Estados Semánticos (Publicaciones de Mascotas) ───────────────────────
+  /// Mascota Perdida (#FF3B30)
+  static const Color lost = Color(0xFFFF3B30);
+  static const Color lostBg = Color(0xFFFFF2F1);
+
+  /// Mascota Encontrada (#34C759)
+  static const Color found = Color(0xFF34C759);
+  static const Color foundBg = Color(0xFFF1FFF5);
+
+  /// Mascota Reunida (#5AC8FA)
+  static const Color reunited = Color(0xFF5AC8FA);
+  static const Color reunitedBg = Color(0xFFF0FAFE);
+
+  /// Publicación de Comunidad (#AF52DE)
+  static const Color community = Color(0xFFAF52DE);
+  static const Color communityBg = Color(0xFFF8F0FE);
+
+  /// Nueva publicación / Alerta (#FF9500)
+  static const Color statusNew = Color(0xFFFF9500);
+  static const Color statusNewBg = Color(0xFFFFF8F0);
+
+  // ─── Colores de soporte / retrocompatibilidad ──────────────────────────────
+  static const Color standAvailable = found;
+  static const Color standAvailableBg = foundBg;
   static const Color standAvailableBorder = Color(0xFF6EE7B7);
 
-  static const Color standOccupied = Color(0xFF3B82F6); // Azul vibrante (ocupado)
-  static const Color standOccupiedBg = Color(0xFFEFF6FF);
-  static const Color standOccupiedBorder = Color(0xFF93C5FD);
+  static const Color standOccupied = primary;
+  static const Color standOccupiedBg = primaryTint;
+  static const Color standOccupiedBorder = Color(0xFFFFB396);
 
-  static const Color mapBackground = Color(0xFFF1F5F9);
-  static const Color gridLine = Color(0xFFCBD5E1);
+  static const Color mapBackground = Color(0xFFF5F5F7);
+  static const Color gridLine = Color(0xFFE5E5EA);
 }
