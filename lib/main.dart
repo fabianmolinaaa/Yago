@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 
-import 'screens/auth/login_screen.dart';
+import 'screens/auth/auth_gate.dart';
 import 'utils/app_theme.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const YagoApp());
 }
 
@@ -18,10 +26,7 @@ class YagoApp extends StatelessWidget {
       title: 'Yago',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: home ?? const LoginScreen(),
+      home: home ?? const AuthGate(),
     );
   }
 }
-
-// Retrocompatibilidad
-typedef StandMapApp = YagoApp;

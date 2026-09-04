@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'my_events_tab.dart';
-import 'create_event_tab.dart';
+import '../../widgets/common/widgets.dart';
+import 'create_report_screen.dart';
+import 'feed_tab.dart';
+import 'pet_map_tab.dart';
 import 'profile_tab.dart';
-import '../../utils/app_colors.dart';
+import 'search_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,64 +16,51 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<String> _titles = [
-    'Mis Eventos',
-    'Crear Evento',
-    'Perfil',
-  ];
+  void _openCreateReport() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreateReportScreen(
+          onReportCreated: () {
+            Navigator.of(context).pop();
+            setState(() {
+              _currentIndex = 0; // Volver al feed
+            });
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [
-      MyEventsTab(
-        onGoToCreateEvent: () => setState(() => _currentIndex = 1),
+    // Definición de las 4 vistas principales (el botón central 2 es la acción Publicar)
+    final views = [
+      FeedTab(
+        onGoToSearch: () => setState(() => _currentIndex = 1),
+        onGoToCreateReport: _openCreateReport,
       ),
-      CreateEventTab(
-        onEventCreated: () => setState(() => _currentIndex = 0),
+      const SearchTab(),
+      const SizedBox.shrink(), // Placeholder para el índice 2 (manejado por onPublishTap)
+      const PetMapTab(),
+      ProfileTab(
+        onGoToCreateReport: _openCreateReport,
       ),
-      const ProfileTab(),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        actions: [
-          if (_currentIndex == 0)
-            IconButton(
-              icon: const Icon(Icons.add_rounded, color: AppColors.primary),
-              tooltip: 'Crear evento',
-              onPressed: () => setState(() => _currentIndex = 1),
-            ),
-        ],
-      ),
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
-        children: tabs,
+        children: views,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: YagoBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.event_outlined),
-            selectedIcon: Icon(Icons.event),
-            label: 'Mis eventos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_box_outlined),
-            selectedIcon: Icon(Icons.add_box),
-            label: 'Crear evento',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
+        onPublishTap: _openCreateReport,
       ),
     );
   }

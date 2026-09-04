@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "409973948427",
+    "project_id": "yago-21b28",
+    "storage_bucket": "yago-21b28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409973948427:android:643690f097d61dab1c870e",
+        "android_client_info": {
+          "package_name": "com.example.yago"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "409973948427-3fhpjelpfutu4o2gjodbd9bpkbdblaoj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJwYyZ16cnqHSx9byT0_supjKWKi2h6t8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "409973948427-3fhpjelpfutu4o2gjodbd9bpkbdblaoj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "409973948427-7aied6012jorfvphe0g4ud71l32egln0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.yago"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

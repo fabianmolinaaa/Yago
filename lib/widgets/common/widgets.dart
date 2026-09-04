@@ -1,6 +1,7 @@
 /// Barrel file de componentes UI oficiales de Yago.
 library;
 
+export 'animated_paw_icon.dart';
 export 'pet_card.dart';
 export 'yago_badge.dart';
 export 'yago_button.dart';

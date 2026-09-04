@@ -1,7 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../utils/design_system.dart';
 
-/// Barra de navegación inferior oficial del Design System de Yago.
+/// Barra de navegación inferior con estética frosted glass (vidrio esmerilado),
+/// esquinas redondeadas, transparencia y desenfoque (blur) del fondo.
 class YagoBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -14,98 +15,131 @@ class YagoBottomNavBar extends StatelessWidget {
     this.onPublishTap,
   });
 
+  // Colores monocromáticos minimalistas (sin colores llamativos)
+  static const Color _activeColor = Color(0xFF0F1419); // Negro puro elegante
+  static const Color _inactiveColor = Color(0xFF536471); // Gris neutro sutil
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Inicio'),
-              _buildNavItem(1, Icons.search_rounded, Icons.search_rounded, 'Buscar'),
-              _buildPublishButton(),
-              _buildNavItem(3, Icons.map_outlined, Icons.map_rounded, 'Mapa'),
-              _buildNavItem(4, Icons.person_outline_rounded, Icons.person_rounded, 'Perfil'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData outlineIcon, IconData filledIcon, String label) {
-    final isSelected = currentIndex == index;
-    final color = isSelected ? AppColors.primary : AppColors.subtle;
-
-    return InkWell(
-      onTap: () => onTap(index),
-      borderRadius: AppRadius.mdBorder,
+    return SafeArea(
+      top: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(isSelected ? filledIcon : outlineIcon, size: 22, color: color),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.fontFamily,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: color,
-                letterSpacing: 0.1,
+        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 10.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                // Pequeña transparencia para dejar pasar la luz y colores del fondo
+                color: Colors.white.withValues(alpha: 0.82),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // 0: Inicio / Feed
+                  _buildNavItem(
+                    index: 0,
+                    outlineIcon: Icons.home_outlined,
+                    filledIcon: Icons.home_rounded,
+                    tooltip: 'Inicio',
+                  ),
+
+                  // 1: Búsqueda / Explorar
+                  _buildNavItem(
+                    index: 1,
+                    outlineIcon: Icons.search_rounded,
+                    filledIcon: Icons.search_rounded,
+                    tooltip: 'Buscar',
+                  ),
+
+                  // 2: Crear / Publicar (botón de acción limpio y minimalista)
+                  _buildPublishItem(tooltip: 'Publicar mascota'),
+
+                  // 3: Mapa / Ubicaciones
+                  _buildNavItem(
+                    index: 3,
+                    outlineIcon: Icons.map_outlined,
+                    filledIcon: Icons.map_rounded,
+                    tooltip: 'Mapa',
+                  ),
+
+                  // 4: Perfil / Cuenta
+                  _buildNavItem(
+                    index: 4,
+                    outlineIcon: Icons.person_outline_rounded,
+                    filledIcon: Icons.person_rounded,
+                    tooltip: 'Perfil',
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPublishButton() {
-    return InkWell(
-      onTap: onPublishTap ?? () => onTap(2),
-      borderRadius: BorderRadius.circular(14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+  Widget _buildNavItem({
+    required int index,
+    required IconData outlineIcon,
+    required IconData filledIcon,
+    required String tooltip,
+  }) {
+    final isSelected = currentIndex == index;
+    final color = isSelected ? _activeColor : _inactiveColor;
+    final icon = isSelected ? filledIcon : outlineIcon;
+
+    return Expanded(
+      child: Tooltip(
+        message: tooltip,
+        child: InkResponse(
+          onTap: () => onTap(index),
+          radius: 26,
+          highlightShape: BoxShape.circle,
+          child: Center(child: Icon(icon, size: 26, color: color)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPublishItem({required String tooltip}) {
+    return Expanded(
+      child: Tooltip(
+        message: tooltip,
+        child: InkResponse(
+          onTap: onPublishTap ?? () => onTap(2),
+          radius: 26,
+          highlightShape: BoxShape.circle,
+          child: Center(
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                border: Border.all(color: _inactiveColor, width: 1.6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 20,
+                color: _activeColor,
+              ),
             ),
-            child: const Icon(Icons.add, size: 24, color: Colors.white),
           ),
-          const SizedBox(height: 2),
-          const Text(
-            'Publicar',
-            style: TextStyle(
-              fontFamily: AppTypography.fontFamily,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

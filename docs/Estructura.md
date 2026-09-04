@@ -17,7 +17,8 @@ Yago/
 │   └── designSystem/                   # Referencia exportada de Figma Make (React + Vite + Tailwind v4)
 │
 ├── lib/
-│   ├── main.dart                       # Punto de entrada de la app (YagoApp y configuración del tema)
+│   ├── main.dart                       # Punto de entrada de la app (YagoApp con AuthGate y configuración del tema)
+│   ├── firebase_options.dart           # Configuración de Firebase para Android generada por FlutterFire
 │   │
 │   ├── utils/                          # Tokens de diseño, constantes y configuración visual
 │   │   ├── app_colors.dart             # Paleta de colores oficial de Yago y estados semánticos
@@ -37,24 +38,30 @@ Yago/
 │   │       └── widgets.dart            # Barrel file (exporta todos los widgets comunes)
 │   │
 │   ├── models/                         # Modelos de datos del dominio
-│   │   ├── pet.dart                    # Modelo de mascota registrada por el usuario
-│   │   ├── pet_report.dart             # Reporte de mascota perdida o encontrada
-│   │   ├── feed_post.dart              # Publicación social o comunitaria
-│   │   └── user_profile.dart           # Perfil de usuario
+│   │   ├── pet.dart                    # Modelo de reporte y perfil de mascota (perdida, encontrada, reunida)
+│   │   └── feed_post.dart              # Modelo de publicación social y comunitaria del feed
 │   │
 │   ├── screens/                        # Pantallas y vistas de la aplicación
 │   │   ├── auth/
-│   │   │   └── login_screen.dart       # Pantalla de inicio de sesión con identidad Yago
-│   │   └── home/
-│   │       ├── home_screen.dart        # Contenedor principal con barra de navegación
-│   │       ├── create_event_tab.dart   # Flujo de creación de reportes/eventos
-│   │       ├── my_events_tab.dart      # Listado de reportes del usuario
-│   │       └── profile_tab.dart        # Perfil y ajustes del usuario
+│   │   │   ├── auth_gate.dart          # Puerta de enlace reactiva para estado de autenticación (Firebase Auth)
+│   │   │   ├── login_screen.dart       # Inicio de sesión con validación, recuperación de clave e identidad Yago
+│   │   │   └── register_screen.dart    # Registro de nuevos usuarios con validaciones y Design System
+│   │   ├── home/
+│   │   │   ├── home_screen.dart        # Contenedor principal con YagoBottomNavBar de 5 accesos
+│   │   │   ├── feed_tab.dart           # Feed de publicaciones con filtros rápidos (Perdidas, Encontradas, etc.)
+│   │   │   ├── search_tab.dart         # Explorador y búsqueda reactiva con filtros de especie y estado
+│   │   │   ├── create_report_screen.dart # Publicación de mascotas perdidas y encontradas con fotos y atributos
+│   │   │   ├── pet_map_tab.dart        # Mapa interactivo de geolocalización de mascotas con pines
+│   │   │   └── profile_tab.dart        # Perfil del usuario, estadísticas, reportes propios y logout
+│   │   └── pet_detail/
+│   │       └── pet_detail_screen.dart  # Ficha detallada de la mascota con atributos, mapa y contacto directo
 │   │
-│   └── services/                       # Integraciones con backend y APIs (Firebase, GPS, etc.)
+│   └── services/                       # Integraciones con backend y APIs
+│       ├── auth_service.dart           # Servicio de autenticación con Firebase Auth y traducción de errores
+│       └── mock_data_service.dart      # Servicio de datos simulados de mascotas y comunidad para desarrollo
 │
 └── test/
-    └── widget_test.dart                # Pruebas automatizadas de la app y del Design System
+    └── widget_test.dart                # Pruebas automatizadas de la app, componentes del Design System y PetCard
 ```
 
 ---
@@ -72,7 +79,7 @@ Esta carpeta contiene la **fundación visual** de Yago. Todo el estilo se centra
 | **`app_radius.dart`** | Radios constantes: `sm` (8px), `md` (12px), `lg` (16px), `xl` (20px) y `full` (9999px). | Estandariza las esquinas redondeadas en tarjetas, botones, inputs y avatares. |
 | **`app_spacing.dart`** | Escala modular (4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px) y widgets `SizedBox` (`gap4`, `gap8`, `gap12`, etc.). | Mantiene márgenes y separaciones visuales consistentes en toda la app. |
 | **`app_theme.dart`** | Configuración de `ThemeData` en Material 3. | Aplica los colores, tipografía, estilo de AppBar, Inputs, Cards y Botones a nivel global. |
-| **`design_system.dart`** | Archivo *barrel export*. | Permite importar todos los tokens anteriores con una sola línea: `import 'package:standmap/utils/design_system.dart';`. |
+| **`design_system.dart`** | Archivo *barrel export*. | Permite importar todos los tokens anteriores con una sola línea: `import 'package:yago/utils/design_system.dart';`. |
 
 ---
 
@@ -87,7 +94,7 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 | **`yago_text_field.dart`** | `YagoTextField` | Campos de formulario con etiqueta superior, placeholder, focus con halo naranja, estado de error tintado en `#FFF2F1` y soporte multilínea. |
 | **`pet_card.dart`** | `PetCard` | Tarjeta completa de publicación de mascota: foto de portada, badge de estado flotante, botón de guardado (bookmark), título, datos de raza/edad, ubicación, tiempo y tags. |
 | **`yago_bottom_nav_bar.dart`** | `YagoBottomNavBar` | Barra de navegación inferior con las 5 pestañas oficiales y botón central "Publicar" en naranja cálido con bordes redondeados. |
-| **`widgets.dart`** | Archivo *barrel export*. | Permite importar todos los widgets comunes con: `import 'package:standmap/widgets/common/widgets.dart';`. |
+| **`widgets.dart`** | Archivo *barrel export*. | Permite importar todos los widgets comunes con: `import 'package:yago/widgets/common/widgets.dart';`. |
 
 ---
 
@@ -95,15 +102,40 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 
 | Archivo | ¿Qué contiene? |
 | :--- | :--- |
-| **`login_screen.dart`** | Pantalla de inicio de sesión actualizada con la identidad visual de Yago: logotipo con contenedor naranja de mascota, campos `YagoTextField`, botón `YagoButton` y tipografía del Design System. |
+| **`auth_gate.dart`** | Puerta de enlace reactiva con `StreamBuilder<User?>` escuchando `authStateChanges`. Redirige automáticamente a `HomeScreen` si hay sesión activa, a `LoginScreen` si no la hay, o muestra un loader con la identidad de Yago. |
+| **`login_screen.dart`** | Pantalla de inicio de sesión integrada con Firebase Auth: validación de correo y contraseña, indicador de carga en `YagoButton`, alertas de error en español, diálogo de recuperación de clave y enlace a registro. |
+| **`register_screen.dart`** | Pantalla de registro de nuevos usuarios: campos de nombre completo, correo, contraseña y confirmación, validaciones de seguridad (mínimo 6 caracteres) e integración con `AuthService.registerWithEmailAndPassword`. |
 
 ---
 
-### 2.4 `docs/` — Documentación del Proyecto
+### 2.4 `lib/screens/home/` & `lib/screens/pet_detail/` — Pantallas de la Aplicación
+
+| Archivo | ¿Qué contiene? |
+| :--- | :--- |
+| **`home_screen.dart`** | Contenedor principal de la aplicación que orquesta la barra de navegación `YagoBottomNavBar` con sus 5 accesos (Inicio, Buscar, Publicar, Mapa y Perfil). |
+| **`feed_tab.dart`** | Pestaña de inicio con feed de reportes de mascotas, selector de filtros rápidos por estado (*Perdidas*, *Encontradas*, *Reunidas*, *Comunidad*), pull-to-refresh y alertas comunitarias. |
+| **`search_tab.dart`** | Buscador dinámico por texto, raza, nombre y ubicación, complementado con filtros por especie (*Perro*, *Gato*, *Otro*) y estado semántico. |
+| **`create_report_screen.dart`** | Formulario completo para publicar reportes de mascotas perdidas o encontradas: selector de tipo, fotos, especie, sexo, edad, ubicación, señas particulares (`tags`) y teléfono de contacto. |
+| **`pet_map_tab.dart`** | Mapa de geolocalización con pines interactivos coloreados según el estado (`AppColors.lost`, `AppColors.found`, `AppColors.reunited`) y tarjeta emergente de vista previa. |
+| **`profile_tab.dart`** | Pestaña de perfil del usuario autenticado: métricas personales, gestión de reportes propios publicados y botón seguro de cierre de sesión. |
+| **`pet_detail_screen.dart`** | Ficha detallada de la mascota con foto expandida, atributos físicos, ubicación del último avistamiento, descripción del caso y botón directo de contacto telefónico / mensajería. |
+
+---
+
+### 2.5 `lib/services/` — Servicios y Lógica de Negocio
+
+| Archivo | ¿Qué contiene? |
+| :--- | :--- |
+| **`auth_service.dart`** | Servicio singleton centralizado para Firebase Authentication: métodos para login, registro con `displayName`, recuperación de contraseña, cierre de sesión, flujo `authStateChanges` y mapeo completo de `FirebaseAuthException` a mensajes amigables. |
+| **`mock_data_service.dart`** | Servicio singleton de datos simulados en memoria para mascotas (perdidas, encontradas, resueltas), marcadores guardados y publicaciones del feed comunitario. |
+
+---
+
+### 2.6 `docs/` — Documentación del Proyecto
 
 | Archivo / Carpeta | Propósito |
 | :--- | :--- |
-| **`DesignSystem.md`** | **(Nuevo)** Documento canónico con la especificación completa del Design System (tokens, colores, tipografía, componentes y directrices). |
+| **`DesignSystem.md`** | Documento canónico con la especificación completa del Design System (tokens, colores, tipografía, componentes y directrices). |
 | **`designSystem/`** | Carpeta de referencia que contiene la exportación de Figma Make en React + Vite + Tailwind CSS v4 de la cual se extrajo el diseño. |
 | **`Alcance.md`** | Objetivos, usuarios, funcionalidades dentro y fuera del alcance del proyecto Yago. |
 | **`Estructura.md`** | Mapa arquitectónico y guía de carpetas y archivos del repositorio. |
@@ -112,11 +144,11 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 
 ---
 
-### 2.5 `test/` — Pruebas Automatizadas
+### 2.7 `test/` — Pruebas Automatizadas
 
 | Archivo | Propósito |
 | :--- | :--- |
-| **`widget_test.dart`** | Pruebas de humo de `YagoApp` y validación de renderizado y eventos de los componentes del Design System (`YagoButton`, `YagoStatusBadge`). |
+| **`widget_test.dart`** | Pruebas unitarias y de widgets: validación de renderizado del login (`YagoApp`), formulario de registro (`RegisterScreen`), `PetCard` y componentes del Design System (`YagoButton`, `YagoStatusBadge`). |
 
 ---
 
@@ -126,10 +158,10 @@ Para construir cualquier pantalla o flujo nuevo siguiendo el Design System, bast
 
 ```dart
 // 1. Tokens de diseño (colores, fuentes, espaciados, radios)
-import 'package:standmap/utils/design_system.dart';
+import 'package:yago/utils/design_system.dart';
 
 // 2. Componentes UI reutilizables
-import 'package:standmap/widgets/common/widgets.dart';
+import 'package:yago/widgets/common/widgets.dart';
 ```
 
 ### Ejemplo rápido de uso:

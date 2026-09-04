@@ -34,6 +34,14 @@ class AppColors {
   /// Separadores y bordes hairline (#E5E5EA)
   static const Color border = Color(0xFFE5E5EA);
   static const Color divider = Color(0xFFE5E5EA);
+  static const Color feedDivider = Color(0xFFEFF3F4);
+
+  /// Colores para feed estilo social (Twitter / LinkedIn)
+  static const Color twitterHandle = Color(0xFF536471);
+  static const Color twitterAction = Color(0xFF536471);
+  static const Color retweetGreen = Color(0xFF00BA7C);
+  static const Color likeRed = Color(0xFFF91880);
+  static const Color viewBlue = Color(0xFF1D9BF0);
 
   /// Acento general (mismo que primary)
   static const Color accent = Color(0xFFFF6B35);
@@ -59,15 +67,7 @@ class AppColors {
   static const Color statusNew = Color(0xFFFF9500);
   static const Color statusNewBg = Color(0xFFFFF8F0);
 
-  // ─── Colores de soporte / retrocompatibilidad ──────────────────────────────
-  static const Color standAvailable = found;
-  static const Color standAvailableBg = foundBg;
-  static const Color standAvailableBorder = Color(0xFF6EE7B7);
-
-  static const Color standOccupied = primary;
-  static const Color standOccupiedBg = primaryTint;
-  static const Color standOccupiedBorder = Color(0xFFFFB396);
-
+  // ─── Colores de mapa ──────────────────────────────────────────────────────
   static const Color mapBackground = Color(0xFFF5F5F7);
   static const Color gridLine = Color(0xFFE5E5EA);
 }

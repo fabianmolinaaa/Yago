@@ -1,6 +1,6 @@
 /// Barrel file del Design System de Yago.
 /// Permite importar todos los tokens y utilidades con una sola línea:
-/// `import 'package:standmap/utils/design_system.dart';`
+/// `import 'package:yago/utils/design_system.dart';`
 library;
 
 export 'app_colors.dart';

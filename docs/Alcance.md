@@ -39,51 +39,38 @@ Será responsable de tareas de gestión y moderación de la plataforma.
 ## 4. Funcionalidades dentro del alcance
 
 ### 4.1 Gestión de usuarios
-* Registro de usuarios.
-* Inicio de sesión.
-* Gestión de información del perfil.
+* **Registro de usuarios:** Creación de cuenta con nombre completo, correo electrónico y contraseña (mínimo 6 caracteres) con validación de formularios y guardado de `displayName`. *(Implementado con Firebase Authentication)*
+* **Inicio de sesión:** Autenticación segura mediante correo electrónico y contraseña, con mensajes de error amigables y manejo de estados de carga. *(Implementado con Firebase Authentication)*
+* **Control reactivo de sesión (AuthGate):** Detección automática de sesión abierta o cerrada para dirigir al usuario sin parpadeos ni navegación forzada. *(Implementado)*
+* **Recuperación de contraseña:** Envío de enlaces de restablecimiento de contraseña vía email. *(Implementado)*
+* **Cierre de sesión:** Salida segura de la aplicación que revoca la sesión activa. *(Implementado)*
+* **Gestión de información del perfil:** Visualización de nombre, correo y estado del usuario autenticado en la interfaz. *(En desarrollo / Sincronizado)*
 
 ### 4.2 Gestión de mascotas
-* Registro de mascotas.
-* Carga de fotografías.
-* Registro de características de la mascota.
-* Consulta y modificación de la información registrada.
+* **Registro de mascotas:** Creación de reportes y perfiles de mascotas con especie, sexo, edad y raza. *(Interfaz y modelo implementados)*
+* **Carga de fotografías:** Selector y vista previa de imágenes de mascotas. *(Implementado en CreateReportScreen)*
+* **Registro de características:** Inclusión de señas particulares (`tags` dinámicos: chips, collar, marcas). *(Implementado)*
+* **Consulta de mascotas:** Visualización en feed, búsqueda y ficha completa (`PetDetailScreen`). *(Implementado)*
 
 ### 4.3 Mascotas perdidas
-* Publicación de mascotas perdidas.
-* Registro de ubicación y fecha de desaparición.
-* Incorporación de características y fotografías.
-* Actualización de la información de una publicación.
-* Marcado de una mascota como encontrada.
+* **Publicación de mascotas perdidas:** Formulario de búsqueda urgente con ubicación y fecha. *(Implementado)*
+* **Registro de ubicación y fecha:** Campo descriptivo y coordenadas geográficas. *(Implementado)*
+* **Marcado de mascota como encontrada / caso resuelto:** Botón en detalle para dueños con confirmación visual. *(Implementado)*
 
 ### 4.4 Mascotas encontradas
-* Publicación de mascotas encontradas.
-* Registro de ubicación y fecha en la que fue encontrada.
-* Incorporación de características y fotografías.
-* Consulta de publicaciones de mascotas encontradas.
+* **Publicación de mascotas encontradas:** Formulario diferenciado para reportar animales hallados en la vía pública con estado `found` en verde. *(Implementado)*
+* **Consulta de publicaciones:** Filtros rápidos en feed y explorador. *(Implementado)*
 
 ### 4.5 Búsqueda y ubicación
-* Consulta de publicaciones de mascotas perdidas y encontradas.
-* Filtrado de publicaciones.
-* Visualización de publicaciones cercanas.
-* Utilización de la ubicación del dispositivo para facilitar la búsqueda.
+* **Consulta y filtrado:** Buscador en tiempo real por nombre, raza o barrio con filtros por especie (*Perro*, *Gato*, *Otro*) y estado semántico. *(Implementado en SearchTab)*
+* **Visualización en mapa:** Mapa con pines geolocalizados por color de estado (`PetMapTab`). *(Implementado)*
 
 ### 4.6 Contacto entre usuarios
-* Posibilidad de contactar dentro de la aplicación con el usuario responsable de una publicación.
-* Comunicación relacionada con la búsqueda o identificación de una mascota.
+* **Contacto directo:** Hoja modal en la ficha de mascota con opciones para llamar por teléfono o iniciar mensaje directo con el dueño o rescatista. *(Implementado en PetDetailScreen)*
+* **Aporte de datos:** Diálogo para reportar avistamientos recientes a la familia. *(Implementado)*
 
 ### 4.7 Feed de la comunidad
-Yago contará con un feed principal donde los usuarios podrán realizar y consultar publicaciones relacionadas con mascotas.
-
-Las publicaciones podrán incluir:
-* Mascotas perdidas.
-* Mascotas encontradas.
-* Novedades relacionadas con una búsqueda.
-* Mascotas recuperadas.
-* Fotografías o publicaciones cotidianas relacionadas con mascotas.
-* Otro contenido relacionado con la comunidad de Yago.
-
-Los usuarios podrán interactuar con las publicaciones mediante funcionalidades que serán definidas durante el desarrollo del proyecto.
+* Feed principal con pestañas de filtro (*Todas*, *Perdidas*, *Encontradas*, *Reunidas*, *Comunidad*), visualización de publicaciones con `PetCard` y consejos comunitarios. *(Implementado en FeedTab)*
 
 ### 4.8 Inteligencia Artificial
 La aplicación incorporará una funcionalidad basada en **inteligencia artificial**, cuya implementación concreta será definida durante el desarrollo del proyecto.

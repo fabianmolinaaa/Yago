@@ -1,0 +1,665 @@
+import 'package:flutter/material.dart';
+
+import '../../models/pet.dart';
+import '../../services/mock_data_service.dart';
+import '../../utils/design_system.dart';
+import '../../widgets/common/widgets.dart';
+import '../pet_detail/pet_detail_screen.dart';
+
+class FeedTab extends StatefulWidget {
+  final VoidCallback? onGoToSearch;
+  final VoidCallback? onGoToCreateReport;
+
+  const FeedTab({super.key, this.onGoToSearch, this.onGoToCreateReport});
+
+  @override
+  State<FeedTab> createState() => _FeedTabState();
+}
+
+class _FeedTabState extends State<FeedTab> {
+  // Filtro activo: 0 = Todos, 1 = Perdidas, 2 = Encontradas, 3 = Reunidas, 4 = Comunidad
+  int _selectedFilterIndex = 0;
+  final List<String> _filters = [
+    'Todos',
+    'Perdidas',
+    'Encontradas',
+    'Reunidas',
+    'Comunidad',
+  ];
+
+  List<Pet> _getPets() {
+    switch (_selectedFilterIndex) {
+      case 1:
+        return MockDataService().getPetsByStatus(YagoPetStatus.lost);
+      case 2:
+        return MockDataService().getPetsByStatus(YagoPetStatus.found);
+      case 3:
+        return MockDataService().getPetsByStatus(YagoPetStatus.reunited);
+      default:
+        return MockDataService().getAllPets();
+    }
+  }
+
+  void _openTopFilterModal() {
+    int tempFilterIndex = _selectedFilterIndex;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Filtros',
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      transitionDuration: const Duration(milliseconds: 280),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -1),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: anim1,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            ),
+          ),
+          child: child,
+        );
+      },
+      pageBuilder: (ctx, anim1, anim2) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            return Align(
+              alignment: Alignment.topCenter,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 22),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Cabecera del modal con botón de cierre
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.tune_rounded,
+                                    size: 20,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Filtros del feed',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  size: 22,
+                                  color: AppColors.textSecondary,
+                                ),
+                                onPressed: () => Navigator.pop(modalContext),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          const Text(
+                            'Categoría y Estado',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Opciones de filtro en chips interactivos
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: List.generate(_filters.length, (index) {
+                              final isSelected = tempFilterIndex == index;
+                              return InkWell(
+                                onTap: () {
+                                  setModalState(() {
+                                    tempFilterIndex = index;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.textPrimary
+                                        : const Color(0xFFEFF3F4),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _filters[index],
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 13,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Botones de acción: Aplicar y Limpiar
+                          Row(
+                            children: [
+                              if (tempFilterIndex != 0)
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: YagoButton(
+                                      variant: YagoButtonVariant.secondary,
+                                      text: 'Limpiar',
+                                      onPressed: () {
+                                        setState(() {
+                                          _selectedFilterIndex = 0;
+                                        });
+                                        Navigator.pop(modalContext);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              Expanded(
+                                flex: 2,
+                                child: YagoButton(
+                                  text: 'Aplicar filtros',
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedFilterIndex = tempFilterIndex;
+                                    });
+                                    Navigator.pop(modalContext);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCommunity = _selectedFilterIndex == 4;
+    final pets = _getPets();
+    final communityPosts = MockDataService().getCommunityPosts();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          setState(() {});
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Encabezado que desaparece al hacer scroll hacia abajo
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              pinned: false,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              titleSpacing: 16,
+              centerTitle: false,
+              shape: const Border(
+                bottom: BorderSide(color: AppColors.feedDivider, width: 1),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: AppRadius.smBorder,
+                    ),
+                    child: const Icon(
+                      Icons.pets_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Yago',
+                    style: TextStyle(
+                      fontFamily: AppTypography.fontFamily,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                // Botón de filtros con indicador de filtro activo
+                IconButton(
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(
+                        Icons.tune_rounded,
+                        size: 22,
+                        color: AppColors.textPrimary,
+                      ),
+                      if (_selectedFilterIndex != 0)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  tooltip: 'Filtrar publicaciones',
+                  onPressed: _openTopFilterModal,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+
+            // Contenido según filtro
+            if (isCommunity)
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) =>
+                      _buildCommunityPostCard(communityPosts[index]),
+                  childCount: communityPosts.length,
+                ),
+              )
+            else if (pets.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Container(
+                  padding: const EdgeInsets.all(40),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.pets_outlined,
+                        size: 56,
+                        color: AppColors.subtle,
+                      ),
+                      SizedBox(height: 14),
+                      Text(
+                        'No hay reportes en esta categoría',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Prueba seleccionando otro filtro o publica un nuevo reporte.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final pet = pets[index];
+                    final isBookmarked =
+                        MockDataService().isBookmarked(pet.id);
+                    return PetCard(
+                      name: pet.name,
+                      details: pet.detailsSummary,
+                      locationAndTime: pet.locationAndTime,
+                      imageUrl: pet.imageUrl,
+                      status: pet.status,
+                      tags: pet.tags,
+                      storyText: pet.storyText,
+                      description: pet.description,
+                      authorName: pet.contactName.isNotEmpty
+                          ? pet.contactName
+                          : 'Comunidad Yago',
+                      authorHandle:
+                          '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
+                      commentsCount: 8 + (pet.name.length * 2),
+                      sharesCount: 15 + (pet.name.length * 3),
+                      likesCount: 95 + (pet.name.length * 14),
+                      viewsCount: '${15 + pet.name.length * 2} mil',
+                      imagesCount: 2 + (pet.name.length % 3),
+                      isBookmarked: isBookmarked,
+                      onBookmarkTap: () {
+                        setState(() {
+                          MockDataService().toggleBookmark(pet.id);
+                        });
+                      },
+                      onContactTap: () => _showContactModal(context, pet),
+                      onTap: () {
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (_) => PetDetailScreen(pet: pet),
+                              ),
+                            )
+                            .then((_) => setState(() {}));
+                      },
+                    );
+                  },
+                  childCount: pets.length,
+                ),
+              ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 85),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showContactModal(BuildContext context, Pet pet) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 20.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: AppColors.primary.withValues(
+                        alpha: 0.12,
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 26,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pet.contactName.isNotEmpty
+                                ? pet.contactName
+                                : 'Dueño / Reportante',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Reportante de ${pet.name}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: YagoButton(
+                    text:
+                        'Enviar mensaje directo a ${pet.contactName.isNotEmpty ? pet.contactName.split(' ').first : 'Dueño'}',
+                    icon: const Icon(
+                      Icons.mail_outline_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Mensaje directo iniciado con ${pet.contactName}',
+                          ),
+                          backgroundColor: AppColors.textPrimary,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: YagoButton(
+                    variant: YagoButtonVariant.outline,
+                    text: 'Llamar al teléfono (${pet.contactPhone})',
+                    icon: const Icon(Icons.phone_outlined, size: 18),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Llamando a ${pet.contactPhone}...'),
+                          backgroundColor: AppColors.textPrimary,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCommunityPostCard(dynamic post) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.community.withValues(alpha: 0.12),
+            backgroundImage: post.authorAvatar != null
+                ? NetworkImage(post.authorAvatar!)
+                : null,
+            child: post.authorAvatar == null
+                ? const Icon(
+                    Icons.person_rounded,
+                    size: 22,
+                    color: AppColors.community,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        post.authorName,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '@${post.authorName.toLowerCase().replaceAll(' ', '')}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: AppColors.twitterHandle,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Text(
+                      ' · ',
+                      style: TextStyle(color: AppColors.twitterHandle),
+                    ),
+                    Text(
+                      post.timeAgo,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: AppColors.twitterHandle,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  post.content,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13.5,
+                    height: 1.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildMiniAction(
+                      Icons.chat_bubble_outline_rounded,
+                      '${post.commentsCount}',
+                    ),
+                    _buildMiniAction(
+                      Icons.favorite_border_rounded,
+                      '${post.likesCount}',
+                    ),
+                    const Icon(
+                      Icons.ios_share_rounded,
+                      size: 18,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniAction(IconData icon, String count) {
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: AppColors.twitterAction),
+        const SizedBox(width: 5),
+        Text(
+          count,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: AppColors.twitterAction,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}

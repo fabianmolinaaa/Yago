@@ -27,6 +27,12 @@ Este documento define el **Design System oficial de Yago**, extraído y formaliz
 | `background` | `#FFFFFF` | Blanco Puro | Fondo de pantallas principales y tarjetas elevadas |
 | `surface` | `#F5F5F7` | Gris Superficie | Fondos secundarios, contenedores de inputs, chips neutros |
 | `border` | `#E5E5EA` | Gris Borde | Separadores hairline, bordes de tarjeta e inputs inactivos |
+| `feedDivider` | `#EFF3F4` | Divisor Social | Separador horizontal hairline de publicaciones estilo Twitter |
+| `twitterHandle` | `#536471` | Handle & Timestamp | Nombre de usuario (@handle), tiempos y metadatos sociales |
+| `twitterAction` | `#536471` | Icono Social Inactivo | Iconos de comentarios, repost, vistas y compartir |
+| `retweetGreen` | `#00BA7C` | Verde Repost | Acción activa de retweet/difusión |
+| `likeRed` | `#F91880` | Rosa/Rojo Like | Estado activo del botón de Me Gusta / Apoyo |
+| `viewBlue` | `#1D9BF0` | Azul Hashtag / Vistas | Hashtags clicables y métricas de visualización |
 
 ### 2.2 Estados Semánticos de Publicación
 
@@ -111,27 +117,40 @@ La tipografía base es **Inter** (o las fuentes de sistema como SF Pro Display /
 - **Label superior**: `fontSize: 13px`, peso `500`, color `#1D1D1F`.
 - **Texto de ayuda/error**: `fontSize: 12px`, color `#6E6E73` (normal) o `#FF3B30` (error).
 
-### 5.4 Tarjetas de Publicación (`PetCard`)
-
+### 5.4 Tarjetas de Publicación (`PetCard` — Diseño Social Yago)
+- **Concepto**: Formato de feed de borde a borde (edge-to-edge) con tipografía Inter, tamaños reducidos y flujo visual vertical:
 - **Estructura**:
-  - Imagen superior de aspecto `16:9` o `4:3` con bordes superiores redondeados (o tarjeta completa en `16px`).
-  - Badge de estado posicionado en la esquina superior izquierda (flotante con opacidad o tinte).
-  - Botón de guardado (Bookmark) flotante superior derecho.
-  - Título (Nombre de la mascota: `17px`, semi-bold `#1D1D1F`).
-  - Subtítulo (Raza · Género · Edad: `13px`, `#6E6E73`).
-  - Línea de ubicación y tiempo (`12px`, `#AEAEB2`, icono de pin).
-  - Tags de características y botón de acción "Ver más →".
+   1. **Arriba del post (Header)**:
+      - **Izquierda**: Avatar circular de usuario (`radius: 17`) + Nombre del reportante (`13.5px, w700`, sin `@user`) + Badge semántico (`PERDIDA`, `ENCONTRADA`, `REUNIDA`).
+      - **Derecha**: Horario de la publicación (`12px`).
+   2. **Detalle y Texto**: Nombre y resumen de la mascota, descripción concisa y **chip de ubicación** (diseño monocromático de alto contraste, con `BorderRadius.circular(12)`, fondo totalmente negro `Colors.black`, e icono de pin `Icons.location_on_outlined` y tipografía totalmente blancos `Colors.white`).
+   3. **[Imagen] (Ancho completo de pantalla)**: Ocupa el 100% del ancho (`width: double.infinity, fit: BoxFit.fitWidth`), con la altura adaptada a la proporción original de la foto.
+       - **Botón de mascota superpuesto (Esquina superior derecha)**: Botón flotante monocromático (disco negro translúcido `rgba(0,0,0,0.55)`, borde blanco suave y sombra) con icono animado `AnimatedPawIcon`. Posee la almohadilla principal estática y una animación secuencial donde los 4 dedos van apareciendo uno a uno (`easeOutBack`), orientados apuntando hacia la esquina superior derecha (45°), cerrando el ciclo con una breve pausa antes de reiniciar. Al pulsar, despliega la ficha/modal de características de la mascota.
+      - **Contador superpuesto**: Indicador abajo en el centro con fondo oscuro semitransparente (ej. `1/3`).
+  4. **Abajo de la imagen (Botones de acción)**:
+     - 💬 **Comentarios**: Contador de comentarios.
+     - ❤️ **Me Gusta**: Toggle interactivo con contador.
+     - ✉️ **Mensaje Directo**: Icono DM (`Icons.mail_outline_rounded`) para contactar al dueño.
+     - 📤 **Compartir**: Icono (`ios_share`).
 
 ### 5.5 Barra de Navegación Inferior (`YagoBottomNavBar`)
 
-- Fondo blanco translúcido (`rgba(255,255,255,0.92)`) con borde superior fino `#E5E5EA`.
-- 5 elementos simétricos:
-  1. **Inicio** (Home / Feed)
-  2. **Buscar** (Search / Filtros)
-  3. **Publicar** (Botón central destacado: cuadrado redondeado de `44x44px`, radio `14px`, fondo `#FF6B35`, icono blanco `+`)
-  4. **Mapa** (Map / Exploración geográfica)
-  5. **Perfil** (User profile)
-- Estados activos en naranja `#FF6B35` e inactivos en `#AEAEB2`.
+- **Estética**: Floating dock con efecto *frosted glass* (vidrio esmerilado), translúcido y desenfocado.
+- **Geometría y Radio**: Esquinas redondeadas con radio de curvatura de `24px` (`BorderRadius.circular(24)`) y margen flotante inferior.
+- **Transparencia y Desenfoque (Blur)**:
+  - Fondo con ligera transparencia: `Colors.white.withValues(alpha: 0.82)`.
+  - Filtro de desenfoque gaussian: `BackdropFilter(filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18))`.
+  - El contenido del feed y mapa fluye por detrás (`extendBody: true`), visualizándose opaco, censurado y difuminado elegantemente.
+  - Borde perimetral translúcido (`rgba(255, 255, 255, 0.5)`) y sombra difusa suave (`blurRadius: 16`).
+- **Sin texto**: Exclusivamente iconografía monocromática nítida y minimalista:
+  - Activo: Negro grafito profundo (`#0F1419`) en variante rellena/sólida.
+  - Inactivo: Gris neutro tenue (`#536471`) en variante lineal/outline.
+- **5 Accesos simétricos**:
+  1. **Inicio**: `Icons.home_outlined` / `Icons.home_rounded`
+  2. **Buscar**: `Icons.search_rounded`
+  3. **Publicar**: Botón minimalista de trazo fino redondeado con `Icons.add_rounded`
+  4. **Mapa**: `Icons.map_outlined` / `Icons.map_rounded`
+  5. **Perfil**: `Icons.person_outline_rounded` / `Icons.person_rounded`
 
 ---
 

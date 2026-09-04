@@ -15,12 +15,18 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 
 ## 2. Backend, Servicios en la Nube y Base de Datos
 
-* **Firebase**
-  * *Uso:* Plataforma Backend-as-a-Service (BaaS) para simplificar la infraestructura y permitir sincronización en tiempo real.
+* **Firebase (Proyecto `yago-21b28`)**
+  * *Uso:* Plataforma Backend-as-a-Service (BaaS) para simplificar la infraestructura, autenticación y persistencia en tiempo real.
+  * *Configuración:* Sincronizado para Android con Application ID / Package Name `com.example.yago` a través de `google-services.json` y `firebase_options.dart`.
+* **Firebase Authentication (`firebase_auth: ^6.6.1`) — *Implementado***
+  * *Uso:* Gestión segura de usuarios. Cuenta con:
+    * Registro de nuevas cuentas con correo, contraseña y nombre de usuario (`displayName`).
+    * Inicio de sesión reactivo con `AuthGate` y persistencia automática de sesión.
+    * Recuperación de contraseñas mediante correo electrónico (`sendPasswordResetEmail`).
+    * Cierre de sesión seguro (`signOut`).
+    * Traducción y mapeo localizado de excepciones de Firebase a mensajes claros en español.
 * **Cloud Firestore**
   * *Uso:* Base de datos NoSQL para almacenar perfiles de usuarios, reportes de mascotas (atributos, coordenadas geográficas, fechas y estados) con suscripciones en tiempo real.
-* **Firebase Authentication**
-  * *Uso:* Gestión de autenticación segura (correo/contraseña, proveedores sociales como Google).
 * **Firebase Cloud Storage**
   * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados.
 * **Firebase Cloud Messaging (FCM)**
@@ -55,13 +61,13 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 
 ## Matriz Resumen de Tecnologías
 
-| Componente | Tecnología | Propósito |
-| :--- | :--- | :--- |
-| **Frontend Móvil** | Flutter & Dart | Interfaz de usuario, navegación y lógica cliente |
-| **Base de Datos** | Cloud Firestore | Almacenamiento no relacional y datos en tiempo real |
-| **Autenticación** | Firebase Authentication | Inicio de sesión, registro y control de sesiones |
-| **Almacenamiento Multimedia** | Cloud Storage | Subida y optimización de fotos de mascotas |
-| **Geolocalización** | GPS & SDK de Mapas | Detección de posición y visualización en mapa |
-| **Notificaciones** | Firebase Cloud Messaging | Alertas comunitarias de avistamientos |
-| **Control de Versiones** | Git + GitHub | Gestión del código fuente |
-| **Gestión y Seguimiento** | Trello / Jira | Planificación y seguimiento del equipo |
+| Componente | Tecnología | Estado / Implementación | Propósito |
+| :--- | :--- | :---: | :--- |
+| **Frontend Móvil** | Flutter & Dart | Activo | Interfaz de usuario, Design System oficial, navegación y lógica cliente |
+| **Autenticación** | Firebase Authentication (`firebase_auth`) | **Implementado** | Inicio de sesión, registro, recuperación de contraseña y AuthGate reactivo |
+| **Configuración Android** | Gradle (`com.example.yago`) + Google Services | **Implementado** | Vinculación nativa de la app móvil con Firebase |
+| **Base de Datos** | Cloud Firestore | Próximo paso | Almacenamiento no relacional y datos de reportes en tiempo real |
+| **Almacenamiento Multimedia** | Cloud Storage | Planificado | Subida y optimización de fotos de mascotas |
+| **Geolocalización** | GPS & SDK de Mapas | Planificado | Detección de posición y visualización en mapa |
+| **Notificaciones** | Firebase Cloud Messaging | Tentativo | Alertas comunitarias de avistamientos |
+| **Control de Versiones** | Git + GitHub | Activo | Gestión del código fuente |
