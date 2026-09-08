@@ -3,16 +3,66 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
+import 'package:yago/screens/onboarding/onboarding_screen.dart';
 import 'package:yago/widgets/common/widgets.dart';
 
 void main() {
-  testWidgets('Yago smoke test - shows login screen', (WidgetTester tester) async {
+  testWidgets('OnboardingScreen renders header, tips carousel, and CTA buttons', (WidgetTester tester) async {
+    await tester.pumpWidget(const YagoApp(home: OnboardingScreen()));
+
+    // Verificar presencia del logo, lema e introducción
+    expect(find.byType(YagoLogo), findsOneWidget);
+    expect(find.text('Yago'), findsOneWidget);
+    expect(find.text('Encontrar · Avisar · Reencontrar'), findsOneWidget);
+
+    // Verificar primer tip del carrusel
+    expect(find.text('Reportá en segundos'), findsOneWidget);
+
+    // Verificar botones de acción
+    expect(find.text('Iniciar sesión'), findsOneWidget);
+    expect(find.text('Crear una cuenta'), findsOneWidget);
+  });
+
+  testWidgets('OnboardingScreen carousel swipe displays subsequent tips', (WidgetTester tester) async {
+    await tester.pumpWidget(const YagoApp(home: OnboardingScreen()));
+
+    expect(find.text('Reportá en segundos'), findsOneWidget);
+
+    // Deslizar el carrusel hacia la izquierda
+    await tester.drag(find.byType(PageView), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+
+    // Debe mostrarse el segundo tip
+    expect(find.text('Explorá tu zona'), findsOneWidget);
+  });
+
+  testWidgets('OnboardingScreen navigation to LoginScreen and back button works', (WidgetTester tester) async {
+    await tester.pumpWidget(const YagoApp(home: OnboardingScreen()));
+
+    // Tocar botón de iniciar sesión
+    await tester.tap(find.text('Iniciar sesión'));
+    await tester.pumpAndSettle();
+
+    // Debe mostrar la pantalla de LoginScreen
+    expect(find.text('Correo electrónico'), findsOneWidget);
+    expect(find.text('Contraseña'), findsOneWidget);
+
+    // Tocar el botón de volver en LoginScreen
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+
+    // Debe regresar a OnboardingScreen
+    expect(find.text('Yago'), findsOneWidget);
+    expect(find.text('Reportá en segundos'), findsOneWidget);
+  });
+
+  testWidgets('Yago smoke test - shows login screen directly', (WidgetTester tester) async {
     // Construir la app y disparar un frame
     await tester.pumpWidget(const YagoApp(home: LoginScreen()));
 
-    // Verificar que el título de Yago y el botón de inicio de sesión estén presentes
-    expect(find.text('Yago'), findsOneWidget);
-    expect(find.text('Iniciar Sesión'), findsOneWidget);
+    // Verificar que el logo de Yago y el botón de inicio de sesión estén presentes
+    expect(find.byType(YagoLogo), findsOneWidget);
+    expect(find.text('Iniciar sesión'), findsWidgets);
   });
 
   testWidgets('Design System - YagoButton renders correctly', (WidgetTester tester) async {

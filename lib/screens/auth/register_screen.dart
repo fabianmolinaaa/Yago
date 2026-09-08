@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../services/auth_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -48,12 +50,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (email.isEmpty || !_isValidEmail(email)) {
-      setState(() => _errorMessage = 'Por favor, ingresa un correo electrónico válido.');
+      setState(
+        () =>
+            _errorMessage = 'Por favor, ingresa un correo electrónico válido.',
+      );
       return;
     }
 
     if (password.length < 6) {
-      setState(() => _errorMessage = 'La contraseña debe tener al menos 6 caracteres.');
+      setState(
+        () => _errorMessage = 'La contraseña debe tener al menos 6 caracteres.',
+      );
       return;
     }
 
@@ -97,40 +104,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           color: AppColors.textPrimary,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+              );
+            }
+          },
         ),
       ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 28.0,
+              vertical: 12.0,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Icono de registro
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: AppRadius.xlBorder,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.28),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.person_add_alt_1_rounded,
-                      size: 32,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                // Logo oficial de Yago
+                const Center(child: YagoLogoIcon(size: 48)),
                 const SizedBox(height: 16),
                 const Text(
                   'Crear cuenta',
@@ -156,15 +153,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Mensaje de error si existe
                 if (_errorMessage != null) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lost.withValues(alpha: 0.1),
                       borderRadius: AppRadius.mdBorder,
-                      border: Border.all(color: AppColors.lost.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.lost.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded, size: 20, color: AppColors.lost),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 20,
+                          color: AppColors.lost,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -184,7 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Nombre completo
                 YagoTextField(
                   label: 'Nombre completo',
-                  hint: 'Juan Pérez',
+                  hint: 'Juancito Valderrama',
                   controller: _nameController,
                   prefixIcon: const Icon(
                     Icons.person_outline_rounded,
@@ -254,7 +260,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       size: 20,
                     ),
                     onPressed: () {
-                      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      );
                     },
                   ),
                 ),

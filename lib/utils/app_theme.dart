@@ -17,11 +17,11 @@ class AppTheme {
         brightness: Brightness.light,
         primary: AppColors.primary,
         onPrimary: Colors.white,
-        secondary: AppColors.surface,
+        secondary: AppColors.surfaceSecondary,
         onSecondary: AppColors.textPrimary,
         error: AppColors.lost,
         onError: Colors.white,
-        surface: AppColors.background,
+        surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
       ),
       scaffoldBackgroundColor: AppColors.background,
@@ -61,7 +61,7 @@ class AppTheme {
       // Campos de texto según Design System
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: AppTypography.subheadline.copyWith(color: AppColors.subtle),
         labelStyle: AppTypography.footnoteMedium,
@@ -109,8 +109,8 @@ class AppTheme {
       // Botones outline
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: AppColors.textPrimary,
+          side: const BorderSide(color: AppColors.border, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: AppRadius.mdBorder,
@@ -133,7 +133,7 @@ class AppTheme {
             return const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             );
           }
           return const TextStyle(
@@ -144,7 +144,7 @@ class AppTheme {
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.primary);
+            return const IconThemeData(color: AppColors.primaryDark);
           }
           return const IconThemeData(color: AppColors.subtle);
         }),

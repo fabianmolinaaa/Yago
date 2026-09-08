@@ -1,48 +1,50 @@
-# Sistema de Diseño — Yago (Design System v1.0)
+# Sistema de Diseño — Yago (Design System v2.0)
 
-Este documento define el **Design System oficial de Yago**, extraído y formalizado a partir del diseño de la aplicación móvil. Proporciona las directrices visuales, tokens de diseño y componentes fundamentales para garantizar coherencia, simplicidad y una experiencia de usuario premium (iOS-first, moderna y limpia).
+Este documento define el **Design System oficial de Yago**, extraído y formalizado a partir del nuevo lenguaje visual de la aplicación móvil (estilo nórdico, minimalista y limpio). Proporciona las directrices visuales, tokens de diseño y componentes fundamentales para garantizar coherencia, serenidad y una experiencia de usuario premium.
 
 ---
 
 ## 1. Principios de Diseño
 
-1. **Claridad y Enfoque Humano**: La búsqueda de mascotas requiere urgencia, serenidad y claridad visual. La interfaz prioriza información relevante (foto, estado, ubicación y tiempo transcurrido).
-2. **Estética iOS-first & Minimalista**: Fondos predominantemente blancos y grises tenues (`#FFFFFF`, `#F5F5F7`), tipografía limpia inspirada en Apple/Inter, bordes hairline sutiles (`#E5E5EA`) y sombras imperceptibles.
-3. **Color como Señal de Atención**: El naranja cálido (`#FF6B35`) se reserva para la identidad y acciones primarias (CTA). Los colores semánticos (rojo para "Perdida", verde para "Encontrada", celeste para "Reunida", morado para "Comunidad") indican el estado instantáneamente.
-4. **Escala de Espaciado Modular (Base 4px)**: Todo elemento sigue múltiplos de 4px para preservar armonía visual y ritmos consistentes.
-5. **Esquinas Suaves**: Radios controlados de `8px` (chips), `12px` (botones e inputs), `16px` (tarjetas y sheets), `20px` (hero) y píldora `9999px`.
+1. **Claridad y Enfoque Humano**: La búsqueda de mascotas requiere empatía, serenidad y foco absoluto en la información esencial (fotografía, estado, ubicación y tiempo transcurrido).
+2. **Estética Nórdica & Minimalista (Slate & Earthy Pastels)**: Fondos tipo porcelana (`#F7F8FA`) sobre los que destacan tarjetas blancas limpias (`#FFFFFF`), bordes hairline suaves (`#E3E6EC`) y una paleta sobria de pizarras/grafitos que sustituye el ruido visual anterior.
+3. **Color Primario Sobrio (Slate Blue-Grey)**: El tono pizarra (`#5E6672` / `#2B323D`) define la marca, botones principales CTA y elementos activos, aportando elegancia y madurez a la interfaz.
+4. **Estados Semánticos Terrosos y Pasteles**: Para evitar la estridencia de los colores neón, los estados emplean combinaciones armónicas de tonos pastel con acentos terrosos desaturados (Terracota/Coral para "Perdida", Verde Eucalipto/Sage para "Encontrada", Celeste Pizarra para "Reunida", e Índigo Lavanda para "Comunidad").
+5. **Escala de Espaciado Modular (Base 4px)**: Todo elemento sigue múltiplos de 4px para preservar armonía visual y ritmos consistentes.
+6. **Esquinas Suaves**: Radios controlados de `8px` (chips), `12px` (botones e inputs), `16px` (tarjetas y sheets), `20px` (hero) y píldora `9999px`.
 
 ---
 
 ## 2. Paleta de Colores y Tokens
 
-### 2.1 Colores Base de Marca
+### 2.1 Colores Base de Marca (Slate & Neutros)
 
 | Token | Hex | Nombre / Rol | Uso Principal |
 | :--- | :--- | :--- | :--- |
-| `primary` | `#FF6B35` | Yago Orange | Acciones principales, botones primarios, estados activos, FAB central |
-| `foreground` | `#1D1D1F` | Negro Tipográfico | Títulos, textos principales, iconos activos |
-| `muted` | `#6E6E73` | Gris Medio | Texto secundario, descripciones, subtítulos, etiquetas |
-| `subtle` | `#AEAEB2` | Gris Claro | Placeholders, bordes inactivos, iconos secundarios |
-| `background` | `#FFFFFF` | Blanco Puro | Fondo de pantallas principales y tarjetas elevadas |
-| `surface` | `#F5F5F7` | Gris Superficie | Fondos secundarios, contenedores de inputs, chips neutros |
-| `border` | `#E5E5EA` | Gris Borde | Separadores hairline, bordes de tarjeta e inputs inactivos |
-| `feedDivider` | `#EFF3F4` | Divisor Social | Separador horizontal hairline de publicaciones estilo Twitter |
-| `twitterHandle` | `#536471` | Handle & Timestamp | Nombre de usuario (@handle), tiempos y metadatos sociales |
-| `twitterAction` | `#536471` | Icono Social Inactivo | Iconos de comentarios, repost, vistas y compartir |
-| `retweetGreen` | `#00BA7C` | Verde Repost | Acción activa de retweet/difusión |
-| `likeRed` | `#F91880` | Rosa/Rojo Like | Estado activo del botón de Me Gusta / Apoyo |
-| `viewBlue` | `#1D9BF0` | Azul Hashtag / Vistas | Hashtags clicables y métricas de visualización |
+| `primary` | `#5E6672` | Slate Blue-Grey | Acciones principales, botones CTA, chips activos, botón central de huella |
+| `primaryLight` | `#78818F` | Medium Slate | Estados hover/pressed, botones secundarios destacados |
+| `primaryDark` | `#2B323D` | Deep Slate / Graphite | Logotipo "Yago", títulos principales, icono activo en barra de navegación |
+| `primaryTint` | `#EFF2F6` | Slate Mist | Fondos de botones de acción secundarios (lupa, filtros) |
+| `background` | `#F7F8FA` | Porcelain Canvas | Fondo general de todas las pantallas (login, feed, perfil) |
+| `surface` | `#FFFFFF` | Pure White | Tarjetas elevadas, campos de texto (inputs), base del dock flotante |
+| `surfaceSecondary` | `#F1F3F6` | Soft Ice Surface | Fondos de chips inactivos, pill de estadísticas |
+| `border` | `#E3E6EC` | Hairline Slate | Separadores sutiles, bordes de inputs y tarjetas |
+| `borderSubtle` | `#ECEFF3` | Subtle Divider | Líneas divisorias internas en perfiles y listas |
+| `textPrimary` | `#1D232C` | Charcoal Slate | Títulos principales, nombres de mascotas, textos de alta jerarquía |
+| `textSecondary` | `#737C8A` | Slate Grey | Subtítulos, descripciones secundarias, metadatos, contadores |
+| `textMuted` / `subtle` | `#9AA1AC` | Cool Silver | Placeholders de inputs, bordes inactivos, iconos secundarios |
+| `distanceBadgeBg` | `#FFFFFF` | Frosted White | Fondo del pill de distancia en fotos (opacidad ~88% o sólido) |
+| `distanceBadgeText` | `#454E5B` | Graphite Pill | Texto e icono pin de distancia sobre fotografía |
 
-### 2.2 Estados Semánticos de Publicación
+### 2.2 Estados Semánticos de Publicación (Pasteles Terrosos)
 
-| Estado | Color Texto / Acento | Fondo Suave (Tint) | Aplicación |
-| :--- | :--- | :--- | :--- |
-| **Perdida** | `#FF3B30` | `#FFF2F1` | Mascota reportada como perdida (Urgencia) |
-| **Encontrada** | `#34C759` | `#F1FFF5` | Mascota reportada como hallada en la vía pública |
-| **Reunida** | `#5AC8FA` | `#F0FAFE` | Caso con final feliz; mascota devuelta a su hogar |
-| **Comunidad** | `#AF52DE` | `#F8F0FE` | Publicaciones sociales, consejos, noticias comunitarias |
-| **Nueva / Urgente**| `#FF9500` / `#FF3B30` | `#FFF8F0` / `#FFF2F1` | Alertas de publicaciones recientes de alta prioridad |
+| Estado | Badge Sólido (Sobre Foto) | Fondo Suave (Filtros/Chips) | Texto Chip / Acento | Aplicación |
+| :--- | :--- | :--- | :--- | :--- |
+| **Perdida** | `#D46761` *(Dusty Coral)* | `#FCECEB` | `#C45953` | Mascota reportada como perdida (Urgencia) |
+| **Encontrada** | `#4FA175` *(Sage Green)* | `#EAF5EE` | `#428C63` | Mascota reportada como hallada |
+| **Reunida** | `#4D88C5` *(Slate Sky Blue)*| `#EBF3FB` | `#3D76B1` | Mascota que regresó con su familia |
+| **Comunidad** | `#6E7B8E` *(Muted Indigo)* | `#F2ECF7` | `#70628E` | Avisos comunitarios, tips y social |
+| **Nueva / Urgente**| `#D46761` | `#FCECEB` | `#C45953` | Alertas de publicaciones recientes |
 
 ---
 
@@ -85,37 +87,36 @@ La tipografía base es **Inter** (o las fuentes de sistema como SF Pro Display /
 ### 5.1 Botones (`YagoButton`)
 
 1. **Primary**:
-   - Fondo: `#FF6B35` | Texto: `#FFFFFF` | Peso: `500/600` | Radio: `12px`.
-   - Uso: "Publicar mascota", "Contactar", acciones principales.
+   - Fondo: `#5E6672` | Texto: `#FFFFFF` | Peso: `500/600` | Radio: `12px`.
+   - Uso: "Iniciar sesión", "Publicar mascota", CTA principal.
 2. **Secondary**:
-   - Fondo: `#F5F5F7` | Texto: `#1D1D1F` | Borde: Ninguno o sutil | Radio: `12px`.
-   - Uso: "Mis mascotas", acciones alternas neutras.
+   - Fondo: `#F1F3F6` | Texto: `#1D232C` | Borde: Ninguno | Radio: `12px`.
+   - Uso: Acciones alternas neutras, herramientas secundarias.
 3. **Outline / Ghost**:
-   - Fondo: Transparente | Borde: `1.5px solid #FF6B35` o `#E5E5EA` | Texto: `#FF6B35` o `#1D1D1F`.
-   - Uso: "Ver más", "Cancelar".
+   - Fondo: Transparente o `#FFFFFF` | Borde: `1.5px solid #E3E6EC` | Texto: `#4B5361`.
+   - Uso: "Crear una cuenta", "Ver más", "Cancelar".
 4. **Destructive**:
-   - Fondo: `#FF3B30` | Texto: `#FFFFFF` | Radio: `12px`.
+   - Fondo: `#D46761` | Texto: `#FFFFFF` | Radio: `12px`.
    - Uso: "Eliminar publicación", "Dar de baja".
 5. **Icon Button**:
-   - Tamaño: `44x44px` | Radio: `12px` o `9999px` | Fondo: `#F5F5F7` o `#FF6B35`.
+   - Tamaño: `44x44px` | Radio: `12px` o `9999px` | Fondo: `#F1F3F6` con icono `#3E4652`.
 
 ### 5.2 Badges & Chips (`YagoBadge` & `YagoTag`)
 
-1. **Status Badge**:
-   - Texto en mayúsculas pequeñas o formato capitalizado, `fontSize: 11-12px`, peso `600/700`, padding `4px 10px`, radio `9999px`.
-   - Colores emparejados (ej: Texto `#FF3B30` sobre fondo `#FFF2F1`).
-2. **Feature Tag (Chips de características)**:
-   - Texto: `#6E6E73` o `#1D1D1F`, fondo: `#F5F5F7`, borde: `1px solid #E5E5EA`.
-   - Ejemplos: `Collar rojo`, `Con chip`, `Hembra`, `3 años`.
+1. **Status Badge (En foto)**:
+   - Formato píldora `9999px`, fondo sólido semántico (`#D46761`, `#4FA175`, `#4D88C5`, `#6E7B8E`), texto e icono en `#FFFFFF`.
+2. **Filter Chip (Filtros de feed)**:
+   - Activo: Fondo `#5E6672`, texto e icono en `#FFFFFF`.
+   - Inactivo: Fondo con tinte pastel (`#FCECEB`, `#EAF5EE`, etc.) con punto/icono y texto en el tono de contraste semántico.
 
 ### 5.3 Formularios & Inputs (`YagoTextField`)
 
 - **Contenedor**: Fondo `#FFFFFF`, radio `12px`, padding interno vertical `13-14px`, horizontal `16px`.
-- **Borde inactivo**: `1px solid #E5E5EA`.
-- **Borde enfocado (Focus)**: `1.5px solid #FF6B35` con efecto ring difuminado `rgba(255, 107, 53, 0.15)`.
-- **Borde de error**: `1.5px solid #FF3B30` y fondo con tinte suave `#FFF2F1`.
-- **Label superior**: `fontSize: 13px`, peso `500`, color `#1D1D1F`.
-- **Texto de ayuda/error**: `fontSize: 12px`, color `#6E6E73` (normal) o `#FF3B30` (error).
+- **Borde inactivo**: `1px solid #E3E6EC`.
+- **Borde enfocado (Focus)**: `1.5px solid #5E6672` con efecto ring sutil `rgba(94, 102, 114, 0.15)`.
+- **Borde de error**: `1.5px solid #D46761` y fondo `#FCECEB`.
+- **Label superior**: `fontSize: 13px`, peso `500`, color `#1D232C`.
+- **Texto de ayuda/error**: `fontSize: 12px`, color `#737C8A` (normal) o `#D46761` (error).
 
 ### 5.4 Tarjetas de Publicación (`PetCard` — Diseño Social Yago)
 - **Concepto**: Formato de feed de borde a borde (edge-to-edge) con tipografía Inter, tamaños reducidos y flujo visual vertical:

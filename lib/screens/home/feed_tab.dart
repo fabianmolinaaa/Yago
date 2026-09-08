@@ -260,30 +260,18 @@ class _FeedTabState extends State<FeedTab> {
               shape: const Border(
                 bottom: BorderSide(color: AppColors.feedDivider, width: 1),
               ),
-              title: Row(
+              title: const Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: AppRadius.smBorder,
-                    ),
-                    child: const Icon(
-                      Icons.pets_rounded,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
+                  YagoLogoIcon(size: 30),
+                  SizedBox(width: 8),
+                  Text(
                     'Yago',
                     style: TextStyle(
                       fontFamily: AppTypography.fontFamily,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.4,
                     ),
                   ),
                 ],
