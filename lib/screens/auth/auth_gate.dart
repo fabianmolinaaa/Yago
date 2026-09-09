@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../home/home_screen.dart';
 import '../onboarding/onboarding_screen.dart';
@@ -16,19 +15,12 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         // Mientras se verifica el estado de autenticación
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
+          return const Scaffold(
+            backgroundColor: Color(0xFF11161F),
             body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const YagoLogo(height: 80),
-                  const SizedBox(height: 24),
-                  const CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 3,
-                  ),
-                ],
+              child: YagoLogoIcon(
+                size: 80,
+                color: Colors.white,
               ),
             ),
           );
