@@ -266,17 +266,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const YagoLogo(height: 96),
-                          const SizedBox(height: 4),
+                          const YagoLogo(height: 88),
+                          const SizedBox(height: 8),
                           const Text(
-                            'Encontrar. Avisar. Reencontrar.',
+                            'Explora · Conecta · Reencuentra',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: AppTypography.fontFamily,
                               fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.textSecondary,
-                              letterSpacing: -0.1,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.muted,
+                              letterSpacing: 1.4,
                             ),
                           ),
                         ],
@@ -456,20 +456,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 22),
 
-                    // 6. Botón CTA Primario: Iniciar sesión
+                    // 6. Botón CTA Primario: Iniciar sesión (estilo Onboarding)
                     SizedBox(
-                      height: 50,
+                      height: 52,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(28),
                           ),
                           textStyle: const TextStyle(
                             fontFamily: AppTypography.fontFamily,
-                            fontSize: 15,
+                            fontSize: 15.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.1,
                           ),
@@ -486,7 +486,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               )
-                            : const Text('Iniciar sesión'),
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Iniciar sesión'),
+                                  SizedBox(width: 8),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
 
@@ -558,7 +569,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // 9. Botón Secundario / Outline: Crear una cuenta
+                    // 9. Botón Secundario / Outline: Crear una cuenta (estilo Onboarding)
                     SizedBox(
                       height: 50,
                       child: OutlinedButton(
@@ -570,11 +581,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 1.2,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(28),
                           ),
                           textStyle: const TextStyle(
                             fontFamily: AppTypography.fontFamily,
-                            fontSize: 14,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -726,7 +737,7 @@ class _LoginScreenState extends State<LoginScreen> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.primaryLight,
+            color: AppColors.primary,
             width: 1.5,
           ),
         ),

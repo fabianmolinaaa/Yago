@@ -1,19 +1,59 @@
 import 'package:flutter/material.dart';
+import '../../models/pet.dart';
 import '../../utils/design_system.dart';
 
-enum YagoPetStatus {
-  lost('PERDIDA', AppColors.lost, AppColors.lostBg),
-  found('ENCONTRADA', AppColors.found, AppColors.foundBg),
-  reunited('REUNIDA', AppColors.reunited, AppColors.reunitedBg),
-  community('COMUNIDAD', AppColors.community, AppColors.communityBg),
-  urgent('URGENTE', AppColors.lost, AppColors.lostBg),
-  isNew('NUEVA', AppColors.statusNew, AppColors.statusNewBg);
+export '../../models/pet.dart' show YagoPetStatus;
 
-  final String label;
-  final Color color;
-  final Color backgroundColor;
+/// Extensión de presentación para mapear estados de dominio a estilos visuales del Design System.
+extension YagoPetStatusUI on YagoPetStatus {
+  String get label {
+    switch (this) {
+      case YagoPetStatus.lost:
+        return 'PERDIDA';
+      case YagoPetStatus.found:
+        return 'ENCONTRADA';
+      case YagoPetStatus.reunited:
+        return 'REUNIDA';
+      case YagoPetStatus.community:
+        return 'COMUNIDAD';
+      case YagoPetStatus.urgent:
+        return 'URGENTE';
+      case YagoPetStatus.isNew:
+        return 'NUEVA';
+    }
+  }
 
-  const YagoPetStatus(this.label, this.color, this.backgroundColor);
+  Color get color {
+    switch (this) {
+      case YagoPetStatus.lost:
+      case YagoPetStatus.urgent:
+        return AppColors.lost;
+      case YagoPetStatus.found:
+        return AppColors.found;
+      case YagoPetStatus.reunited:
+        return AppColors.reunited;
+      case YagoPetStatus.community:
+        return AppColors.community;
+      case YagoPetStatus.isNew:
+        return AppColors.statusNew;
+    }
+  }
+
+  Color get backgroundColor {
+    switch (this) {
+      case YagoPetStatus.lost:
+      case YagoPetStatus.urgent:
+        return AppColors.lostBg;
+      case YagoPetStatus.found:
+        return AppColors.foundBg;
+      case YagoPetStatus.reunited:
+        return AppColors.reunitedBg;
+      case YagoPetStatus.community:
+        return AppColors.communityBg;
+      case YagoPetStatus.isNew:
+        return AppColors.statusNewBg;
+    }
+  }
 }
 
 /// Badge oficial para estados de publicación de mascotas.

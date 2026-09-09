@@ -37,11 +37,13 @@ Yago/
 │   │       ├── yago_bottom_nav_bar.dart# Barra inferior con botón central "Publicar" en naranja
 │   │       └── widgets.dart            # Barrel file (exporta todos los widgets comunes)
 │   │
-│   ├── models/                         # Modelos de datos del dominio
-│   │   ├── pet.dart                    # Modelo de reporte y perfil de mascota (perdida, encontrada, reunida)
+│   ├── models/                         # Modelos de datos del dominio (Clean Architecture)
+│   │   ├── pet.dart                    # Modelo de reporte, perfil de mascota y enum de estados (YagoPetStatus)
 │   │   └── feed_post.dart              # Modelo de publicación social y comunitaria del feed
 │   │
 │   ├── screens/                        # Pantallas y vistas de la aplicación
+│   │   ├── onboarding/
+│   │   │   └── onboarding_screen.dart  # Pantalla de bienvenida con carrusel de tips y accesos directos
 │   │   ├── auth/
 │   │   │   ├── auth_gate.dart          # Puerta de enlace reactiva para estado de autenticación (Firebase Auth)
 │   │   │   ├── login_screen.dart       # Inicio de sesión con validación, recuperación de clave e identidad Yago

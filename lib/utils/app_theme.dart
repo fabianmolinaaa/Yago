@@ -58,36 +58,36 @@ class AppTheme {
         ),
       ),
 
-      // Campos de texto según Design System
+      // Campos de texto según Design System (estilo Onboarding)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         hintStyle: AppTypography.subheadline.copyWith(color: AppColors.subtle),
         labelStyle: AppTypography.footnoteMedium,
         border: OutlineInputBorder(
-          borderRadius: AppRadius.mdBorder,
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadius.mdBorder,
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.mdBorder,
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.mdBorder,
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.lost, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppRadius.mdBorder,
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.lost, width: 2),
         ),
       ),
 
-      // Botones primarios elevados / CTA
+      // Botones primarios elevados / CTA (estilo pill Onboarding)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -95,30 +95,31 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.mdBorder,
+            borderRadius: BorderRadius.circular(28),
           ),
           textStyle: const TextStyle(
             fontFamily: AppTypography.fontFamily,
-            fontSize: 15,
+            fontSize: 15.5,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.1,
           ),
         ),
       ),
 
-      // Botones outline
+      // Botones outline (estilo pill Onboarding)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.border, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: AppColors.border, width: 1.2),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.mdBorder,
+            borderRadius: BorderRadius.circular(28),
           ),
           textStyle: const TextStyle(
             fontFamily: AppTypography.fontFamily,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

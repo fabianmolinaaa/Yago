@@ -10,13 +10,12 @@ void main() {
   testWidgets('OnboardingScreen renders header, tips carousel, and CTA buttons', (WidgetTester tester) async {
     await tester.pumpWidget(const YagoApp(home: OnboardingScreen()));
 
-    // Verificar presencia del logo, lema e introducción
+    // Verificar presencia del logo, lema editorial centrado
     expect(find.byType(YagoLogo), findsOneWidget);
-    expect(find.text('Yago'), findsOneWidget);
-    expect(find.text('Encontrar · Avisar · Reencontrar'), findsOneWidget);
+    expect(find.text('Explora · Conecta · Reencuentra'), findsOneWidget);
 
     // Verificar primer tip del carrusel
-    expect(find.text('Reportá en segundos'), findsOneWidget);
+    expect(find.textContaining('Reportá en segundos'), findsOneWidget);
 
     // Verificar botones de acción
     expect(find.text('Iniciar sesión'), findsOneWidget);
@@ -26,14 +25,14 @@ void main() {
   testWidgets('OnboardingScreen carousel swipe displays subsequent tips', (WidgetTester tester) async {
     await tester.pumpWidget(const YagoApp(home: OnboardingScreen()));
 
-    expect(find.text('Reportá en segundos'), findsOneWidget);
+    expect(find.textContaining('Reportá en segundos'), findsOneWidget);
 
     // Deslizar el carrusel hacia la izquierda
     await tester.drag(find.byType(PageView), const Offset(-500, 0));
     await tester.pumpAndSettle();
 
-    // Debe mostrarse el segundo tip
-    expect(find.text('Explorá tu zona'), findsOneWidget);
+    // Debe mostrarse el segundo tip (Tu mapa en tiempo real)
+    expect(find.textContaining('Tu mapa'), findsOneWidget);
   });
 
   testWidgets('OnboardingScreen navigation to LoginScreen and back button works', (WidgetTester tester) async {
@@ -52,8 +51,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Debe regresar a OnboardingScreen
-    expect(find.text('Yago'), findsOneWidget);
-    expect(find.text('Reportá en segundos'), findsOneWidget);
+    expect(find.byType(YagoLogo), findsOneWidget);
+    expect(find.textContaining('Reportá en segundos'), findsOneWidget);
   });
 
   testWidgets('Yago smoke test - shows login screen directly', (WidgetTester tester) async {

@@ -82,18 +82,20 @@ class YagoButton extends StatelessWidget {
 
     Widget buttonWidget;
 
+    final buttonBorderRadius = BorderRadius.circular(28);
+
     switch (variant) {
       case YagoButtonVariant.primary:
         buttonWidget = Container(
           height: height,
           decoration: BoxDecoration(
             color: isEnabled ? AppColors.primary : AppColors.subtle,
-            borderRadius: AppRadius.mdBorder,
+            borderRadius: buttonBorderRadius,
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: buttonBorderRadius,
               onTap: isEnabled ? onPressed : null,
               child: Padding(padding: padding, child: Center(child: childContent)),
             ),
@@ -105,13 +107,13 @@ class YagoButton extends StatelessWidget {
         buttonWidget = Container(
           height: height,
           decoration: BoxDecoration(
-            color: isEnabled ? AppColors.surface : AppColors.surface.withValues(alpha: 0.5),
-            borderRadius: AppRadius.mdBorder,
+            color: isEnabled ? AppColors.surfaceSecondary : AppColors.surfaceSecondary.withValues(alpha: 0.5),
+            borderRadius: buttonBorderRadius,
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: buttonBorderRadius,
               onTap: isEnabled ? onPressed : null,
               child: Padding(padding: padding, child: Center(child: childContent)),
             ),
@@ -128,12 +130,12 @@ class YagoButton extends StatelessWidget {
               color: isEnabled ? AppColors.primary : AppColors.border,
               width: 1.5,
             ),
-            borderRadius: AppRadius.mdBorder,
+            borderRadius: buttonBorderRadius,
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: buttonBorderRadius,
               onTap: isEnabled ? onPressed : null,
               child: Padding(padding: padding, child: Center(child: childContent)),
             ),
@@ -146,12 +148,12 @@ class YagoButton extends StatelessWidget {
           height: height,
           decoration: BoxDecoration(
             color: isEnabled ? AppColors.lost : AppColors.subtle,
-            borderRadius: AppRadius.mdBorder,
+            borderRadius: buttonBorderRadius,
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: buttonBorderRadius,
               onTap: isEnabled ? onPressed : null,
               child: Padding(padding: padding, child: Center(child: childContent)),
             ),

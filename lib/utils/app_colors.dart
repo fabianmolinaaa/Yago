@@ -5,30 +5,30 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ─── Paleta de Marca Yago (Nordic Minimalist Slate) ────────────────────────
-  /// Color primario Slate Blue-Grey (#5E6672). Acciones principales, botones CTA y chips activos.
-  static const Color primary = Color(0xFF5E6672);
-  /// Slate medio (#78818F) para estados hover, pressed o botones secundarios destacados.
-  static const Color primaryLight = Color(0xFF78818F);
-  /// Grafito profundo / Slate Dark (#2B323D) para identidad, logos y encabezados.
-  static const Color primaryDark = Color(0xFF2B323D);
-  /// Tinte Slate (#EFF2F6) para fondos de iconos de acción y chips neutros suaves.
-  static const Color primaryTint = Color(0xFFEFF2F6);
+  // ─── Paleta de Marca Yago (Nordic Minimalist Slate v2.5) ───────────────────
+  /// Color primario Grafito Slate Profundo (#232E3A). Acciones principales, botones CTA pill y chips destacados.
+  static const Color primary = Color(0xFF232E3A);
+  /// Slate medio (#3B4856) para estados hover, pressed o elementos secundarios destacados.
+  static const Color primaryLight = Color(0xFF3B4856);
+  /// Grafito noche (#18202A) para máxima jerarquía, logos y cabeceras.
+  static const Color primaryDark = Color(0xFF18202A);
+  /// Tinte Slate (#F1F4F8) para fondos de iconos de acción y contenedores suaves.
+  static const Color primaryTint = Color(0xFFF1F4F8);
 
-  /// Fondo de pantalla general (#F7F8FA) — Lienzo limpio tipo porcelana/soft-grey.
-  static const Color background = Color(0xFFF7F8FA);
+  /// Fondo de pantalla general (#FFFFFF) — Lienzo blanco puro y luminoso como en Onboarding.
+  static const Color background = Color(0xFFFFFFFF);
 
   /// Superficie elevada o fondos de tarjetas / inputs / dock (#FFFFFF).
   static const Color surface = Color(0xFFFFFFFF);
-  /// Superficie secundaria (#F1F3F6) para contenedores de iconos y chips inactivos.
-  static const Color surfaceSecondary = Color(0xFFF1F3F6);
+  /// Superficie secundaria (#F7F8FA) para contenedores de iconos y chips inactivos.
+  static const Color surfaceSecondary = Color(0xFFF7F8FA);
   static const Color cardBackground = Color(0xFFFFFFFF);
 
   /// Texto principal / Foreground (#1D232C) — Grafito pizarra profundo, suave para la vista.
   static const Color foreground = Color(0xFF1D232C);
   static const Color textPrimary = Color(0xFF1D232C);
 
-  /// Texto secundario / Muted (#737C8A) — Subtítulos, metadatos y descripciones.
+  /// Texto secundario / Muted (#737C8A) — Subtítulos, metadatos y descripciones editoriales.
   static const Color muted = Color(0xFF737C8A);
   static const Color textSecondary = Color(0xFF737C8A);
 
@@ -36,11 +36,11 @@ class AppColors {
   static const Color subtle = Color(0xFF9AA1AC);
   static const Color textMuted = Color(0xFF9AA1AC);
 
-  /// Separadores y bordes hairline (#E3E6EC).
-  static const Color border = Color(0xFFE3E6EC);
-  static const Color borderSubtle = Color(0xFFECEFF3);
-  static const Color divider = Color(0xFFE3E6EC);
-  static const Color feedDivider = Color(0xFFECEFF3);
+  /// Separadores y bordes hairline (#E8ECF2).
+  static const Color border = Color(0xFFE8ECF2);
+  static const Color borderSubtle = Color(0xFFF0F3F7);
+  static const Color divider = Color(0xFFE8ECF2);
+  static const Color feedDivider = Color(0xFFF0F3F7);
 
   /// Colores para feed e interacciones sociales
   static const Color twitterHandle = Color(0xFF737C8A);

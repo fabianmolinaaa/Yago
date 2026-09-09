@@ -1,6 +1,5 @@
 import '../models/feed_post.dart';
 import '../models/pet.dart';
-import '../widgets/common/yago_badge.dart';
 
 class MockDataService {
   static final MockDataService _instance = MockDataService._internal();

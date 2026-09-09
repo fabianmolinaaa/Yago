@@ -1,4 +1,11 @@
-import '../widgets/common/yago_badge.dart';
+enum YagoPetStatus {
+  lost,
+  found,
+  reunited,
+  community,
+  urgent,
+  isNew,
+}
 
 class Pet {
   final String id;

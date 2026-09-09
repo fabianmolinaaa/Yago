@@ -127,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Logo oficial de Yago
-                const Center(child: YagoLogoIcon(size: 48)),
+                const Center(child: YagoLogo(height: 72)),
                 const SizedBox(height: 16),
                 const Text(
                   'Crear cuenta',

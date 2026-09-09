@@ -67,27 +67,27 @@ class YagoTextField extends StatelessWidget {
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: hasError ? AppColors.lostBg : AppColors.background,
+            fillColor: hasError ? AppColors.lostBg : Colors.white,
             contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: maxLines > 1 ? 14 : 13,
+              vertical: maxLines > 1 ? 14 : 14,
             ),
             border: OutlineInputBorder(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
                 color: hasError ? AppColors.lost : AppColors.border,
-                width: 1,
+                width: 1.1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
                 color: hasError ? AppColors.lost : AppColors.border,
-                width: 1,
+                width: 1.1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadius.mdBorder,
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
                 color: hasError ? AppColors.lost : AppColors.primary,
                 width: 1.5,
