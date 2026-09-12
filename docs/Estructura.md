@@ -10,8 +10,10 @@ Este documento describe la arquitectura de carpetas, la organización modular de
 Yago/
 ├── docs/
 │   ├── Alcance.md                      # Alcance funcional y requerimientos del proyecto
+│   ├── BaseDeDatos.md                  # Diseño de base de datos (Colecciones, ERD, Índices y Seguridad Firestore)
 │   ├── DesignSystem.md                 # Especificación oficial del Design System (tokens, colores, componentes)
 │   ├── Estructura.md                   # Arquitectura y mapa de carpetas (este documento)
+│   ├── HistoriasDeUsuario.md           # Historias de usuario del Usuario y Administrador con buscador IA
 │   ├── Roles.md                        # Definición de roles (Usuario y Administrador)
 │   ├── Tecnologias.md                  # Stack tecnológico (Flutter, Firebase, etc.)
 │   └── designSystem/                   # Referencia exportada de Figma Make (React + Vite + Tailwind v4)
@@ -50,11 +52,9 @@ Yago/
 │   │   │   └── register_screen.dart    # Registro de nuevos usuarios con validaciones y Design System
 │   │   ├── home/
 │   │   │   ├── home_screen.dart        # Contenedor principal con YagoBottomNavBar de 5 accesos
-│   │   │   ├── feed_tab.dart           # Feed de publicaciones con filtros rápidos (Perdidas, Encontradas, etc.)
-│   │   │   ├── search_tab.dart         # Explorador y búsqueda reactiva con filtros de especie y estado
-│   │   │   ├── create_report_screen.dart # Publicación de mascotas perdidas y encontradas con fotos y atributos
-│   │   │   ├── pet_map_tab.dart        # Mapa interactivo de geolocalización de mascotas con pines
-│   │   │   └── profile_tab.dart        # Perfil del usuario, estadísticas, reportes propios y logout
+│   │   │   ├── feed_tab.dart           # Feed de publicaciones comunitarias y sociales (Pantalla 1)
+│   │   │   ├── profile_tab.dart        # Perfil del usuario, estadísticas, reportes propios y logout (Pantalla 5)
+│   │   │   └── create_report_screen.dart # Publicación de mascotas perdidas y encontradas con fotos y atributos
 │   │   └── pet_detail/
 │   │       └── pet_detail_screen.dart  # Ficha detallada de la mascota con atributos, mapa y contacto directo
 │   │
@@ -114,13 +114,13 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 
 | Archivo | ¿Qué contiene? |
 | :--- | :--- |
-| **`home_screen.dart`** | Contenedor principal de la aplicación que orquesta la barra de navegación `YagoBottomNavBar` con sus 5 accesos (Inicio, Buscar, Publicar, Mapa y Perfil). |
-| **`feed_tab.dart`** | Pestaña de inicio con feed de reportes de mascotas, selector de filtros rápidos por estado (*Perdidas*, *Encontradas*, *Reunidas*, *Comunidad*), pull-to-refresh y alertas comunitarias. |
-| **`search_tab.dart`** | Buscador dinámico por texto, raza, nombre y ubicación, complementado con filtros por especie (*Perro*, *Gato*, *Otro*) y estado semántico. |
-| **`create_report_screen.dart`** | Formulario completo para publicar reportes de mascotas perdidas o encontradas: selector de tipo, fotos, especie, sexo, edad, ubicación, señas particulares (`tags`) y teléfono de contacto. |
-| **`pet_map_tab.dart`** | Mapa de geolocalización con pines interactivos coloreados según el estado (`AppColors.lost`, `AppColors.found`, `AppColors.reunited`) y tarjeta emergente de vista previa. |
-| **`profile_tab.dart`** | Pestaña de perfil del usuario autenticado: métricas personales, gestión de reportes propios publicados y botón seguro de cierre de sesión. |
-| **`pet_detail_screen.dart`** | Ficha detallada de la mascota con foto expandida, atributos físicos, ubicación del último avistamiento, descripción del caso y botón directo de contacto telefónico / mensajería. |
+| **`home_screen.dart`** | Contenedor principal de la aplicación que orquesta la barra de navegación `YagoBottomNavBar` con sus 5 accesos (Publicaciones, Reportes, Cámara IA, Chat y Perfil). |
+| **`feed_tab.dart`** | Pantalla 1: Feed de publicaciones comunitarias y sociales (novedades, fotos de mascotas, historias y consejos con likes y comentarios). |
+| **`reports_feed_tab.dart`** *(En construcción)* | Pantalla 2: Feed de reportes de mascotas perdidas y encontradas con visualización contextual de la zona en el mapa. |
+| **`ai_camera_screen.dart`** *(En construcción)* | Pantalla 3: Cámara para análisis con IA (toma de foto en la calle y búsqueda automática de coincidencias en la BD de perdidos). |
+| **`chat_list_screen.dart`** *(En construcción)* | Pantalla 4: Chat directo entre personas (mensajería 1 a 1 para coordinar pistas y reencuentros). |
+| **`profile_tab.dart`** | Pantalla 5: Pestaña de perfil del usuario autenticado: métricas personales, gestión de reportes propios publicados y botón seguro de cierre de sesión. |
+| **`pet_detail_screen.dart`** | Ficha detallada de la mascota con foto expandida, atributos físicos, ubicación contextual de la zona del hecho, descripción y botón de contacto. |
 
 ---
 
@@ -140,7 +140,9 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 | **`DesignSystem.md`** | Documento canónico con la especificación completa del Design System (tokens, colores, tipografía, componentes y directrices). |
 | **`designSystem/`** | Carpeta de referencia que contiene la exportación de Figma Make en React + Vite + Tailwind CSS v4 de la cual se extrajo el diseño. |
 | **`Alcance.md`** | Objetivos, usuarios, funcionalidades dentro y fuera del alcance del proyecto Yago. |
+| **`BaseDeDatos.md`** | Modelo de datos NoSQL, colecciones de Cloud Firestore, diagrama ERD, reglas de seguridad e índices compuestos. |
 | **`Estructura.md`** | Mapa arquitectónico y guía de carpetas y archivos del repositorio. |
+| **`HistoriasDeUsuario.md`** | Historias de usuario estructuradas por roles y áreas funcionales (incluyendo buscador visual con IA). |
 | **`Roles.md`** | Matriz de permisos y responsabilidades de usuarios y administradores. |
 | **`Tecnologias.md`** | Justificación del stack tecnológico seleccionado para el desarrollo. |
 

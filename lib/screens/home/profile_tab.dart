@@ -192,27 +192,41 @@ class _ProfileTabState extends State<ProfileTab> {
               ...myReports.map((pet) {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
+                  child: Material(
                     color: Colors.white,
-                    borderRadius: AppRadius.mdBorder,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.mdBorder,
+                      side: BorderSide(color: AppColors.border),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                     leading: ClipRRect(
                       borderRadius: AppRadius.smBorder,
-                      child: Image.network(
-                        pet.imageUrl,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 48,
-                          height: 48,
-                          color: AppColors.surface,
-                          child: const Icon(Icons.pets, size: 24, color: AppColors.subtle),
-                        ),
-                      ),
+                      child: pet.imageUrl.startsWith('assets/')
+                          ? Image.asset(
+                              pet.imageUrl,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 48,
+                                height: 48,
+                                color: AppColors.surface,
+                                child: const Icon(Icons.pets, size: 24, color: AppColors.subtle),
+                              ),
+                            )
+                          : Image.network(
+                              pet.imageUrl,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 48,
+                                height: 48,
+                                color: AppColors.surface,
+                                child: const Icon(Icons.pets, size: 24, color: AppColors.subtle),
+                              ),
+                            ),
                     ),
                     title: Text(
                       pet.name,
@@ -230,6 +244,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                       ).then((_) => setState(() {}));
                     },
+                    ),
                   ),
                 );
               }),

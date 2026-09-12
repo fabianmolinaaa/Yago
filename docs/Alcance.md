@@ -36,67 +36,56 @@ Será responsable de tareas de gestión y moderación de la plataforma.
 
 ---
 
-## 4. Funcionalidades dentro del alcance
+## 4. Funcionalidades dentro del alcance (Pilares Principales)
 
-### 4.1 Gestión de usuarios
-* **Registro de usuarios:** Creación de cuenta con nombre completo, correo electrónico y contraseña (mínimo 6 caracteres) con validación de formularios y guardado de `displayName`. *(Implementado con Firebase Authentication)*
-* **Inicio de sesión:** Autenticación segura mediante correo electrónico y contraseña, con mensajes de error amigables y manejo de estados de carga. *(Implementado con Firebase Authentication)*
-* **Control reactivo de sesión (AuthGate):** Detección automática de sesión abierta o cerrada para dirigir al usuario sin parpadeos ni navegación forzada. *(Implementado)*
-* **Recuperación de contraseña:** Envío de enlaces de restablecimiento de contraseña vía email. *(Implementado)*
-* **Cierre de sesión:** Salida segura de la aplicación que revoca la sesión activa. *(Implementado)*
-* **Gestión de información del perfil:** Visualización de nombre, correo y estado del usuario autenticado en la interfaz. *(En desarrollo / Sincronizado)*
+El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **4 pilares y pantallas fundamentales**:
 
-### 4.2 Gestión de mascotas
-* **Registro de mascotas:** Creación de reportes y perfiles de mascotas con especie, sexo, edad y raza. *(Interfaz y modelo implementados)*
-* **Carga de fotografías:** Selector y vista previa de imágenes de mascotas. *(Implementado en CreateReportScreen)*
-* **Registro de características:** Inclusión de señas particulares (`tags` dinámicos: chips, collar, marcas). *(Implementado)*
-* **Consulta de mascotas:** Visualización en feed, búsqueda y ficha completa (`PetDetailScreen`). *(Implementado)*
+### 4.1 Feed de publicaciones (Primera pantalla)
+* **Muro comunitario de publicaciones:** Espacio social y participativo donde la comunidad comparte situaciones, novedades, fotografías cotidianas de mascotas, relatos con final feliz, avisos de adopción y consejos de tenencia responsable.
+* **Interacción:** Opciones para indicar "me gusta", comentar publicaciones y compartir experiencias con otros dueños y amantes de los animales.
 
-### 4.3 Mascotas perdidas
-* **Publicación de mascotas perdidas:** Formulario de búsqueda urgente con ubicación y fecha. *(Implementado)*
-* **Registro de ubicación y fecha:** Campo descriptivo y coordenadas geográficas. *(Implementado)*
-* **Marcado de mascota como encontrada / caso resuelto:** Botón en detalle para dueños con confirmación visual. *(Implementado)*
+### 4.2 Feed de reportes (Segunda pantalla)
+* **Visualización optimizada de pérdidas y hallazgos:** Pantalla especialmente dispuesta y priorizada para la difusión y consulta de reportes de mascotas perdidas (con alertas urgentes) y animales encontrados.
+* **Fichas claras de reporte:** Fotografía del animal, estado semántico (*Perdida*, *Encontrada*, *Reunida*), señas particulares (raza, edad, sexo, chips, collar), fecha y datos de contacto del reportante.
+* **Visualización contextual de zona en mapa:** Cada publicación incluye una **opción directa para ver en qué zona del mapa se pudo haber perdido o visto por última vez**, desplegando un mapa contextual con el barrio, punto de referencia y radio aproximado del hecho (eliminando la necesidad de navegar por un mapa exploratorio global independiente).
+* **Gestión y alta de reportes:** Formularios dedicados para dar de alta reportes de pérdidas y hallazgos, editar información y marcar casos como resueltos/reunidos.
 
-### 4.4 Mascotas encontradas
-* **Publicación de mascotas encontradas:** Formulario diferenciado para reportar animales hallados en la vía pública con estado `found` en verde. *(Implementado)*
-* **Consulta de publicaciones:** Filtros rápidos en feed y explorador. *(Implementado)*
+### 4.3 Cámara para análisis con Inteligencia Artificial (Tercera pantalla)
+* **Identificación inteligente en la vía pública:** Herramienta diseñada para el momento en que una persona se encuentra un animal en la calle y desconoce si está perdido, si se escapó o si simplemente anda paseando fuera de su casa.
+* **Captura fotográfica directa:** El usuario abre la cámara analizadora desde la app y captura una fotografía del animal encontrado (o carga una foto reciente).
+* **Análisis visual con IA:** Mediante visión computacional y modelos multimodales, la IA analiza los rasgos físicos del animal (especie, raza, colores, patrones de pelaje y características distintivas).
+* **Cotejo contra la base de datos de mascotas perdidas:** El sistema busca de forma automática en el catálogo de animales reportados activamente como extraviados en Yago para verificar si hay coincidencias.
+* **Derivación de resultados:**
+  * **Con coincidencia:** Se presenta el reporte coincidente con porcentaje de similitud visual y botón directo para iniciar un **Chat directo** con el dueño para avisarle de inmediato.
+  * **Sin coincidencia:** La app notifica que no figura como reportado actualmente y ofrece la posibilidad de generar en pocos segundos un nuevo reporte de hallazgo reutilizando la imagen analizada.
 
-### 4.5 Búsqueda y ubicación
-* **Consulta y filtrado:** Buscador en tiempo real por nombre, raza o barrio con filtros por especie (*Perro*, *Gato*, *Otro*) y estado semántico. *(Implementado en SearchTab)*
-* **Visualización en mapa:** Mapa con pines geolocalizados por color de estado (`PetMapTab`). *(Implementado)*
+### 4.4 Chat directo entre personas (Cuarta pantalla)
+* **Mensajería directa 1 a 1:** Canal de comunicación interna y en tiempo real entre usuarios dentro de la aplicación.
+* **Coordinación y avistamientos:** Permite a quien vio o retuvo a un animal contactar de forma inmediata, privada y segura a la persona a cargo del reporte para aportar pistas, fotos o coordinar el reencuentro.
+* **Bandeja de conversaciones:** Listado de chats activos vinculados al contexto del reporte de la mascota para evitar confusiones.
 
-### 4.6 Contacto entre usuarios
-* **Contacto directo:** Hoja modal en la ficha de mascota con opciones para llamar por teléfono o iniciar mensaje directo con el dueño o rescatista. *(Implementado en PetDetailScreen)*
-* **Aporte de datos:** Diálogo para reportar avistamientos recientes a la familia. *(Implementado)*
+### 4.5 Gestión de usuarios y perfiles
+* **Autenticación completa:** Registro e inicio de sesión con email y contraseña mediante Firebase Authentication, recuperación de clave y persistencia de sesión.
+* **Perfil de usuario:** Consulta de datos personales, historial de reportes creados y estado de la cuenta.
 
-### 4.7 Feed de la comunidad
-* Feed principal con pestañas de filtro (*Todas*, *Perdidas*, *Encontradas*, *Reunidas*, *Comunidad*), visualización de publicaciones con `PetCard` y consejos comunitarios. *(Implementado en FeedTab)*
-
-### 4.8 Inteligencia Artificial
-La aplicación incorporará una funcionalidad basada en **inteligencia artificial**, cuya implementación concreta será definida durante el desarrollo del proyecto.
-
-Esta funcionalidad deberá estar relacionada con el objetivo principal de Yago y aportar valor al proceso de búsqueda, identificación o gestión de mascotas.
-
-### 4.9 Administración
-* Gestión y moderación de publicaciones.
-* Gestión de reportes realizados por los usuarios.
-* Gestión de usuarios cuando sea necesario.
+### 4.6 Administración y moderación
+* Panel y herramientas para moderar o dar de baja publicaciones inapropiadas, falsas o spam, y atender denuncias comunitarias.
 
 ---
 
 ## 5. Fuera del alcance
 
 Inicialmente, Yago no contemplará:
-* Seguimiento GPS en tiempo real de una mascota.
+* **Mapa interactivo exploratorio global independiente:** Se descarta la pantalla independiente de mapa general de la ciudad donde se navega explorando casos dispersos. La visualización geográfica queda integrada exclusivamente como una opción contextual de zona dentro de cada publicación de reporte.
+* Seguimiento GPS en tiempo real de una mascota mediante collares satelitales.
 * Sistema de pagos o recompensas económicas.
-* Tienda de productos para mascotas.
+* Tienda de productos para mascotas o marketplace.
 * Reserva de servicios veterinarios.
-* Funcionamiento como red social general.
-* Sistema de seguidores.
-* Compartir publicaciones dentro de la aplicación.
-* Funciones avanzadas de mensajería similares a aplicaciones de mensajería instantánea.
+* Funcionamiento como red social generalista (no orientada a mascotas).
+* Sistema de seguidores o perfiles de celebridades.
+* Roles de "rescatistas", flujos forzados de "iniciar rescate" o vinculación obligatoria a un reporte (quien ve una publicación o encuentra a un animal ayuda voluntariamente y contacta a la persona a cargo por chat directo sin asumir compromisos legales ni operativos de rescate).
 
-Estas funcionalidades podrán ser consideradas como futuras ampliaciones, pero no forman parte del alcance inicial del proyecto.
+Estas funcionalidades podrán ser consideradas en etapas futuras de expansión.
 
 ---
 

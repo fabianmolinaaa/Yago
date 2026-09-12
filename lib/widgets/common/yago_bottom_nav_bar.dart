@@ -50,31 +50,31 @@ class YagoBottomNavBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // 0: Inicio / Feed
+                  // 0: Feed de publicaciones comunitarias
                   _buildNavItem(
                     index: 0,
                     outlineIcon: Icons.home_outlined,
                     filledIcon: Icons.home_rounded,
-                    tooltip: 'Inicio',
+                    tooltip: 'Publicaciones',
                   ),
 
-                  // 1: Búsqueda / Explorar
+                  // 1: Feed de reportes de pérdidas y hallazgos
                   _buildNavItem(
                     index: 1,
-                    outlineIcon: Icons.search_rounded,
-                    filledIcon: Icons.search_rounded,
-                    tooltip: 'Buscar',
+                    outlineIcon: Icons.campaign_outlined,
+                    filledIcon: Icons.campaign_rounded,
+                    tooltip: 'Reportes',
                   ),
 
-                  // 2: Crear / Publicar (botón de acción limpio y minimalista)
-                  _buildPublishItem(tooltip: 'Publicar mascota'),
+                  // 2: Cámara para análisis con IA (botón central con obturador/escáner)
+                  _buildCameraItem(tooltip: 'Cámara con IA'),
 
-                  // 3: Mapa / Ubicaciones
+                  // 3: Chat directo entre personas
                   _buildNavItem(
                     index: 3,
-                    outlineIcon: Icons.map_outlined,
-                    filledIcon: Icons.map_rounded,
-                    tooltip: 'Mapa',
+                    outlineIcon: Icons.chat_bubble_outline_rounded,
+                    filledIcon: Icons.chat_bubble_rounded,
+                    tooltip: 'Chat',
                   ),
 
                   // 4: Perfil / Cuenta
@@ -116,26 +116,32 @@ class YagoBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPublishItem({required String tooltip}) {
+  Widget _buildCameraItem({required String tooltip}) {
+    final isSelected = currentIndex == 2;
+
     return Expanded(
       child: Tooltip(
         message: tooltip,
         child: InkResponse(
-          onTap: onPublishTap ?? () => onTap(2),
+          onTap: () => onTap(2),
           radius: 26,
           highlightShape: BoxShape.circle,
           child: Center(
             child: Container(
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                border: Border.all(color: _inactiveColor, width: 1.6),
+                color: isSelected ? _activeColor : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? _activeColor : _inactiveColor,
+                  width: 1.6,
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
-                Icons.add_rounded,
+              child: Icon(
+                Icons.center_focus_strong_rounded,
                 size: 20,
-                color: _activeColor,
+                color: isSelected ? Colors.white : _activeColor,
               ),
             ),
           ),

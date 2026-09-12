@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
+import 'package:yago/screens/home/home_screen.dart';
+import 'package:yago/screens/home/profile_tab.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
 import 'package:yago/widgets/common/widgets.dart';
 
@@ -131,5 +133,59 @@ void main() {
     expect(find.text('PERDIDA'), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
     expect(find.byType(AnimatedPawIcon), findsOneWidget);
+  });
+
+  testWidgets('ComingSoonView renders title, badge and description', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ComingSoonView(
+          title: 'Cámara con IA',
+          description: 'Próximamente análisis inteligente de mascotas.',
+          icon: Icons.center_focus_strong_rounded,
+          badgeText: 'PRÓXIMAMENTE',
+        ),
+      ),
+    );
+
+    expect(find.text('Cámara con IA'), findsWidgets);
+    expect(find.text('PRÓXIMAMENTE'), findsOneWidget);
+    expect(find.text('Próximamente análisis inteligente de mascotas.'), findsOneWidget);
+    expect(find.byIcon(Icons.center_focus_strong_rounded), findsOneWidget);
+  });
+
+  testWidgets('HomeScreen navigates between feed, reports, camera, chat, and profile', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomeScreen(),
+      ),
+    );
+
+    // Pestaña 0 activa inicialmente: Feed de publicaciones
+    expect(find.text('Luna'), findsWidgets);
+
+    // Navegar a Pestaña 1: Feed de Reportes (En construcción / Próximamente)
+    await tester.tap(find.byTooltip('Reportes'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Feed de Reportes'), findsWidgets);
+    expect(find.text('PRÓXIMAMENTE'), findsOneWidget);
+
+    // Navegar a Pestaña 2: Cámara con IA (En construcción / Próximamente)
+    await tester.tap(find.byTooltip('Cámara con IA'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Cámara con IA'), findsWidgets);
+
+    // Navegar a Pestaña 3: Chat Directo (En construcción / Próximamente)
+    await tester.tap(find.byTooltip('Chat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Chat Directo'), findsWidgets);
+
+    // Navegar a Pestaña 4: Perfil
+    await tester.tap(find.byTooltip('Perfil'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Mi Perfil'), findsOneWidget);
   });
 }

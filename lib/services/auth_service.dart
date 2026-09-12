@@ -5,13 +5,25 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
   /// Flujo reactivo del estado de autenticación
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges {
+    try {
+      return _auth.authStateChanges();
+    } catch (_) {
+      return const Stream.empty();
+    }
+  }
 
-  /// Usuario autenticado actualmente
-  User? get currentUser => _auth.currentUser;
+  /// Usuario autenticado actualmente (seguro ante tests o entornos sin Firebase inicializado)
+  User? get currentUser {
+    try {
+      return _auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Inicia sesión con correo y contraseña
   Future<UserCredential> signInWithEmailAndPassword({

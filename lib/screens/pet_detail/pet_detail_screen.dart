@@ -229,16 +229,27 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    _pet.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.surface,
-                      child: const Center(
-                        child: Icon(Icons.pets, size: 64, color: AppColors.subtle),
-                      ),
-                    ),
-                  ),
+                  _pet.imageUrl.startsWith('assets/')
+                      ? Image.asset(
+                          _pet.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: AppColors.surface,
+                            child: const Center(
+                              child: Icon(Icons.pets, size: 64, color: AppColors.subtle),
+                            ),
+                          ),
+                        )
+                      : Image.network(
+                          _pet.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: AppColors.surface,
+                            child: const Center(
+                              child: Icon(Icons.pets, size: 64, color: AppColors.subtle),
+                            ),
+                          ),
+                        ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(

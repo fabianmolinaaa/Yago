@@ -147,11 +147,11 @@ La tipografía base es **Inter** (o las fuentes de sistema como SF Pro Display /
   - Activo: Negro grafito profundo (`#0F1419`) en variante rellena/sólida.
   - Inactivo: Gris neutro tenue (`#536471`) en variante lineal/outline.
 - **5 Accesos simétricos**:
-  1. **Inicio**: `Icons.home_outlined` / `Icons.home_rounded`
-  2. **Buscar**: `Icons.search_rounded`
-  3. **Publicar**: Botón minimalista de trazo fino redondeado con `Icons.add_rounded`
-  4. **Mapa**: `Icons.map_outlined` / `Icons.map_rounded`
-  5. **Perfil**: `Icons.person_outline_rounded` / `Icons.person_rounded`
+  1. **Publicaciones**: `Icons.home_outlined` / `Icons.home_rounded` (Feed comunitario)
+  2. **Reportes**: `Icons.campaign_outlined` / `Icons.campaign_rounded` (Pérdidas y hallazgos)
+  3. **Cámara IA**: Botón central con `Icons.center_focus_strong_rounded` (Analizador de mascotas en la calle)
+  4. **Chat**: `Icons.chat_bubble_outline_rounded` / `Icons.chat_bubble_rounded` (Mensajes directos)
+  5. **Perfil**: `Icons.person_outline_rounded` / `Icons.person_rounded` (Cuenta y gestión)
 
 ---
 

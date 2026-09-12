@@ -7,11 +7,10 @@
 ## 📌 Descripción del Proyecto
 
 **Yago** es una aplicación móvil desarrollada en **Flutter** destinada a:
-- Publicar y consultar información sobre mascotas perdidas y encontradas.
-- Visualizar casos geográficamente cercanos en un mapa interactivo.
-- Facilitar el contacto directo dentro de la app entre personas involucradas.
-- Ofrecer un **feed de la comunidad** donde compartir situaciones, novedades, fotos y contenido de interés sobre mascotas.
-- Integrar capacidades de **Inteligencia Artificial** que aporten valor en la identificación o búsqueda de mascotas.
+- **Feed de publicaciones:** Muro comunitario social para novedades, historias de reencuentro y fotos de mascotas.
+- **Feed de reportes:** Sección dedicada a pérdidas y hallazgos con visualización contextual de la zona en el mapa.
+- **Cámara para análisis con IA:** Escaneo y reconocimiento visual de animales en la vía pública cotejados contra la base de datos de mascotas perdidas.
+- **Chat directo entre personas:** Mensajería instantánea 1 a 1 para coordinar pistas y reencuentros.
 
 ---
 

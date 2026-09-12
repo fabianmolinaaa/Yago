@@ -33,15 +33,14 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   bool _isSubmitting = false;
 
   // Foto de muestra seleccionada por defecto
-  String _selectedImageUrl =
-      'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80';
+  String _selectedImageUrl = 'assets/images/IMG_3508.JPG';
 
   final List<String> _sampleImages = [
-    'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1505628346881-b72b27e84530?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=800&q=80',
+    'assets/images/IMG_3508.JPG',
+    'assets/images/IMG_4178.JPG',
+    'assets/images/IMG_2935.JPG',
+    'assets/images/IMG_5370.JPG',
+    'assets/images/IMG_5560.JPG',
   ];
 
   @override
@@ -233,7 +232,9 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 borderRadius: AppRadius.lgBorder,
                 border: Border.all(color: AppColors.border),
                 image: DecorationImage(
-                  image: NetworkImage(_selectedImageUrl),
+                  image: _selectedImageUrl.startsWith('assets/')
+                      ? AssetImage(_selectedImageUrl) as ImageProvider
+                      : NetworkImage(_selectedImageUrl),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -283,7 +284,9 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           width: isSelected ? 2.5 : 1,
                         ),
                         image: DecorationImage(
-                          image: NetworkImage(img),
+                          image: img.startsWith('assets/')
+                              ? AssetImage(img) as ImageProvider
+                              : NetworkImage(img),
                           fit: BoxFit.cover,
                         ),
                       ),

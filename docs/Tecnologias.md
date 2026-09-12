@@ -26,27 +26,27 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
     * Cierre de sesión seguro (`signOut`).
     * Traducción y mapeo localizado de excepciones de Firebase a mensajes claros en español.
 * **Cloud Firestore**
-  * *Uso:* Base de datos NoSQL para almacenar perfiles de usuarios, reportes de mascotas (atributos, coordenadas geográficas, fechas y estados) con suscripciones en tiempo real.
+  * *Uso:* Base de datos NoSQL para perfiles de usuarios, publicaciones del feed social, reportes de mascotas (atributos, coordenadas geográficas, fechas y estados) y **conversaciones del chat directo en tiempo real** con suscripciones reactivas.
 * **Firebase Cloud Storage**
-  * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados.
+  * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados y fotos compartidas en el chat.
 * **Firebase Cloud Messaging (FCM)**
-  * *Uso (Tentativo):* Envío de notificaciones push para alertar a los usuarios cercanos ante reportes de extravío.
+  * *Uso (Tentativo):* Envío de notificaciones push ante mensajes nuevos de chat o alertas de extravío.
 
 ---
 
-## 3. Mapas y Servicios de Geolocalización
+## 3. Geolocalización y Mapas Contextuales
 
-* **Google Maps SDK / Mapbox / Flutter Map**
-  * *Uso:* Renderizado del mapa interactivo con marcadores geolocalizados de animales perdidos y encontrados.
+* **Visor Contextual de Zona (Google Maps / Mapbox / Flutter Map)**
+  * *Uso:* Visualización de la zona o barrio específico de extravío o avistamiento dentro de cada publicación de reporte (descartando la pantalla de mapa exploratorio global e integrando la geolocalización contextual a la ficha de la mascota).
 * **Geolocator / Geocoding (Plugins Flutter)**
-  * *Uso:* Obtención de la ubicación actual del dispositivo y conversión de coordenadas a direcciones legibles.
+  * *Uso:* Obtención de la ubicación actual del dispositivo para sugerir el barrio/zona al crear reportes y conversión de coordenadas a direcciones legibles.
 
 ---
 
-## 4. Inteligencia Artificial (Opcional / Por Definir)
+## 4. Inteligencia Artificial y Visión Computacional
 
-* **Sin definir / En evaluación**
-  * *Uso potencial:* Clasificación automática de imágenes, comparación de rasgos de animales o asistencia en la carga del reporte.
+* **API Multimodal / Visión (Gemini Multimodal API / Google Cloud Vision)**
+  * *Uso:* Reconocimiento visual y extracción de rasgos físicos (especie, raza aparente, colores y señas particulares) a partir de fotos tomadas con la cámara analizadora en la calle. Comparación automatizada contra la base de datos de mascotas perdidas para alertar coincidencias instantáneas y derivar al chat con el dueño.
 
 ---
 
@@ -66,8 +66,8 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 | **Frontend Móvil** | Flutter & Dart | Activo | Interfaz de usuario, Design System oficial, navegación y lógica cliente |
 | **Autenticación** | Firebase Authentication (`firebase_auth`) | **Implementado** | Inicio de sesión, registro, recuperación de contraseña y AuthGate reactivo |
 | **Configuración Android** | Gradle (`com.example.yago`) + Google Services | **Implementado** | Vinculación nativa de la app móvil con Firebase |
-| **Base de Datos** | Cloud Firestore | Próximo paso | Almacenamiento no relacional y datos de reportes en tiempo real |
-| **Almacenamiento Multimedia** | Cloud Storage | Planificado | Subida y optimización de fotos de mascotas |
-| **Geolocalización** | GPS & SDK de Mapas | Planificado | Detección de posición y visualización en mapa |
-| **Notificaciones** | Firebase Cloud Messaging | Tentativo | Alertas comunitarias de avistamientos |
+| **Base de Datos & Chat**| Cloud Firestore | Próximo paso | Reportes, feed comunitario y chat directo 1 a 1 en tiempo real |
+| **Almacenamiento Multimedia** | Cloud Storage | Planificado | Subida y optimización de fotos de mascotas y adjuntos de chat |
+| **Mapas Contextuales** | SDK de Mapas / Map View | Planificado | Visualización de zona de extravío/avistamiento por reporte |
+| **Cámara & Análisis IA**| Gemini Multimodal / Cloud Vision API | Planificado | Análisis fenotípico de fotos en la calle y cotejo contra BD de perdidos |
 | **Control de Versiones** | Git + GitHub | Activo | Gestión del código fuente |

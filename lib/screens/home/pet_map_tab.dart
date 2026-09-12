@@ -199,18 +199,31 @@ class _PetMapTabState extends State<PetMapTab> {
                   children: [
                     ClipRRect(
                       borderRadius: AppRadius.mdBorder,
-                      child: Image.network(
-                        _selectedPet!.imageUrl,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 72,
-                          height: 72,
-                          color: AppColors.surface,
-                          child: const Icon(Icons.pets, color: AppColors.subtle),
-                        ),
-                      ),
+                      child: _selectedPet!.imageUrl.startsWith('assets/')
+                          ? Image.asset(
+                              _selectedPet!.imageUrl,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 72,
+                                height: 72,
+                                color: AppColors.surface,
+                                child: const Icon(Icons.pets, color: AppColors.subtle),
+                              ),
+                            )
+                          : Image.network(
+                              _selectedPet!.imageUrl,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 72,
+                                height: 72,
+                                color: AppColors.surface,
+                                child: const Icon(Icons.pets, color: AppColors.subtle),
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
