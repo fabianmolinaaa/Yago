@@ -13,8 +13,8 @@ Este documento define la arquitectura, modelo de datos, esquemas de colecciones,
 
 ### 1.2 Principio de Desnormalización Estratégica
 En Cloud Firestore, para minimizar lecturas concurrentes y optimizar el rendimiento de la aplicación móvil (como las tarjetas `PetCard` en el feed y explorador), se aplican desnormalizaciones controladas:
-* Nombres, avatares y teléfonos de contacto se copian en los documentos de reporte y comentarios para visualización inmediata sin requerir queries adicionales (joins).
-* Contadores atómicos (`likesCount`, `commentsCount`, `reportsCount`) gestionados mediante incrementos transaccionales (`FieldValue.increment`).
+* Nombres, avatares y teléfonos de contacto se copian en los documentos de reporte para visualización inmediata sin requerir queries adicionales (joins).
+* Contadores atómicos (`likesCount`, `reportsCount`) gestionados mediante incrementos transaccionales (`FieldValue.increment`).
 
 ### 1.3 Estrategia Geoespacial Contextual
 Para la visualización de la zona de extravío o último avistamiento en cada publicación de reporte (descartando el mapa interactivo global independiente en favor de visores contextuales por caso):
@@ -30,7 +30,6 @@ erDiagram
     USERS ||--o{ PETS : "publica / reporta"
     USERS ||--o{ SIGHTINGS : "aporta avistamiento"
     USERS ||--o{ FEED_POSTS : "crea"
-    USERS ||--o{ POST_COMMENTS : "comenta"
     USERS ||--o{ POST_LIKES : "reacciona"
     USERS ||--o{ SAVED_PETS : "guarda favoritos"
     USERS ||--o{ MODERATION_REPORTS : "denuncia"
@@ -40,7 +39,6 @@ erDiagram
     PETS ||--o{ MODERATION_REPORTS : "puede ser denunciada"
     PETS ||--o{ CHATS : "contexto de conversación"
 
-    FEED_POSTS ||--o{ POST_COMMENTS : "recibe"
     FEED_POSTS ||--o{ POST_LIKES : "recibe"
     FEED_POSTS ||--o{ MODERATION_REPORTS : "puede ser denunciada"
 
@@ -106,7 +104,6 @@ erDiagram
         string postType "general | tip | success_story | alert"
         string relatedPetId FK "Referencia opcional a PETS"
         int likesCount "Contador de likes"
-        int commentsCount "Contador de comentarios"
         boolean isModerated "Oculto por moderador"
         timestamp createdAt "Fecha del post"
         timestamp updatedAt "Última modificación"
@@ -117,25 +114,15 @@ erDiagram
         timestamp createdAt "Fecha del like"
     }
 
-    POST_COMMENTS {
-        string commentId PK "ID del comentario"
-        string authorId FK "Referencia a USERS"
-        string authorName "Nombre autor desnormalizado"
-        string authorAvatar "Avatar desnormalizado"
-        string content "Texto del comentario"
-        boolean isModerated "Oculto por moderación"
-        timestamp createdAt "Fecha del comentario"
-    }
-
     SAVED_PETS {
         string petId PK "ID de la mascota guardada"
         timestamp savedAt "Fecha en que se guardó"
     }
 
     MODERATION_REPORTS {
-        string reportId PK "ID del reporte"
-        string reporterId FK "Usuario denunciante"
-        string targetType "pet | feed_post | comment | user"
+        string reportId PK "ID de denuncia"
+        string reporterId FK "Referencia a USERS"
+        string targetType "pet | feed_post | chat_message | user"
         string targetId "ID del elemento denunciado"
         string reason "spam | fake | offensive | duplicate | other"
         string description "Detalle opcional"
@@ -313,7 +300,6 @@ erDiagram
 | `postType` | `String` | Sí | Tipo: `'general'`, `'tip'`, `'success_story'`, `'adoption'`, `'alert'`. |
 | `relatedPetId` | `String?` | No | Referencia opcional a un documento en `/pets` si relata un reencuentro. |
 | `likesCount` | `Int` | Sí | Contador atómico de 'me gusta'. |
-| `commentsCount` | `Int` | Sí | Contador atómico de respuestas. |
 | `isModerated` | `Boolean` | Sí | Oculto si fue penalizado por administración. |
 | `createdAt` | `Timestamp` | Sí | Fecha de creación. |
 | `updatedAt` | `Timestamp` | Sí | Fecha de última edición. |
@@ -332,36 +318,19 @@ erDiagram
 
 ---
 
-### 3.7 Subcolección `feed_posts/{postId}/comments`
-* **Ruta:** `/feed_posts/{postId}/comments/{commentId}`
-* **Clave primaria (`documentId`):** Autogenerado.
-* **Propósito:** Hilo de comentarios e interacción comunitaria.
-
-| Campo | Tipo de Dato | Requerido | Descripción |
-| :--- | :---: | :---: | :--- |
-| `id` | `String` | Sí | ID del comentario. |
-| `authorId` | `String` | Sí | `uid` del autor del comentario. |
-| `authorName` | `String` | Sí | Nombre desnormalizado del autor. |
-| `authorAvatar` | `String?` | No | Avatar del autor. |
-| `content` | `String` | Sí | Texto del comentario. |
-| `isModerated` | `Boolean` | Sí | Estado de moderación. |
-| `createdAt` | `Timestamp` | Sí | Fecha de emisión. |
-
----
-
-### 3.8 Colección `moderation_reports` (Denuncias y Moderación)
+### 3.7 Colección `moderation_reports` (Denuncias y Moderación)
 * **Ruta:** `/moderation_reports/{reportId}`
 * **Clave primaria (`documentId`):** Autogenerado.
-* **Propósito:** Permite a los usuarios denunciar contenido ofensivo o falso, y proporciona a los administradores una bandeja centralizada de moderación según lo estipulado en `Roles.md`.
+* **Propósito:** Permite a los usuarios denunciar contenido ofensivo, spam o perfiles fraudulentos, y proporciona a los administradores una bandeja centralizada de moderación según lo estipulado en `Roles.md`.
 
 | Campo | Tipo de Dato | Requerido | Descripción |
 | :--- | :---: | :---: | :--- |
 | `id` | `String` | Sí | ID del reporte de moderación. |
 | `reporterId` | `String` | Sí | `uid` del usuario denunciante. |
-| `targetType` | `String` | Sí | Elemento: `'pet'`, `'feed_post'`, `'comment'`, `'user'`. |
+| `targetType` | `String` | Sí | Elemento: `'pet'`, `'feed_post'`, `'chat_message'`, `'user'`. |
 | `targetId` | `String` | Sí | Document ID del elemento reportado. |
 | `reason` | `String` | Sí | Motivo: `'spam'`, `'fake'`, `'offensive'`, `'duplicate'`, `'other'`. |
-| `description` | `String?` | No | Comentario explicativo del denunciante. |
+| `description` | `String?` | No | Explicación detallada del denunciante. |
 | `status` | `String` | Sí | Estado del caso: `'pending'`, `'reviewed'`, `'dismissed'`, `'action_taken'`. |
 | `reviewedBy` | `String?` | No | `uid` del administrador que procesó la denuncia. |
 | `createdAt` | `Timestamp` | Sí | Fecha de la denuncia. |
@@ -369,7 +338,7 @@ erDiagram
 
 ---
 
-### 3.9 Colección `chats` (Conversaciones Directas 1 a 1)
+### 3.8 Colección `chats` (Conversaciones Directas 1 a 1)
 * **Ruta:** `/chats/{chatId}`
 * **Clave primaria (`documentId`):** Autogenerado o compuesto (`uid1_uid2`).
 * **Propósito:** Agrupa las conversaciones privadas entre dos usuarios para coordinar el reencuentro de una mascota o brindar información de avistamiento.
@@ -390,7 +359,7 @@ erDiagram
 
 ---
 
-### 3.10 Subcolección `chats/{chatId}/messages` (Mensajes de Chat)
+### 3.9 Subcolección `chats/{chatId}/messages` (Mensajes de Chat)
 * **Ruta:** `/chats/{chatId}/messages/{messageId}`
 * **Clave primaria (`documentId`):** Autogenerado.
 * **Propósito:** Almacena los mensajes individuales intercambiados en una conversación.
@@ -488,13 +457,6 @@ service cloud.firestore {
       match /likes/{userId} {
         allow read: if isAuthenticated();
         allow write: if isOwner(userId);
-      }
-
-      // Subcolección: comments
-      match /comments/{commentId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
       }
     }
 

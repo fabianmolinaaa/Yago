@@ -115,7 +115,7 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 | Archivo | ¿Qué contiene? |
 | :--- | :--- |
 | **`home_screen.dart`** | Contenedor principal de la aplicación que orquesta la barra de navegación `YagoBottomNavBar` con sus 5 accesos (Publicaciones, Reportes, Cámara IA, Chat y Perfil). |
-| **`feed_tab.dart`** | Pantalla 1: Feed de publicaciones comunitarias y sociales (novedades, fotos de mascotas, historias y consejos con likes y comentarios). |
+| **`feed_tab.dart`** | Pantalla 1: Feed de publicaciones comunitarias y sociales (novedades, fotos de mascotas, historias y consejos con reacciones y mensaje directo al autor). |
 | **`reports_feed_tab.dart`** *(En construcción)* | Pantalla 2: Feed de reportes de mascotas perdidas y encontradas con visualización contextual de la zona en el mapa. |
 | **`ai_camera_screen.dart`** *(En construcción)* | Pantalla 3: Cámara para análisis con IA (toma de foto en la calle y búsqueda automática de coincidencias en la BD de perdidos). |
 | **`chat_list_screen.dart`** *(En construcción)* | Pantalla 4: Chat directo entre personas (mensajería 1 a 1 para coordinar pistas y reencuentros). |

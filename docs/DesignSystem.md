@@ -128,11 +128,10 @@ La tipografía base es **Inter** (o las fuentes de sistema como SF Pro Display /
    3. **[Imagen] (Ancho completo de pantalla)**: Ocupa el 100% del ancho (`width: double.infinity, fit: BoxFit.fitWidth`), con la altura adaptada a la proporción original de la foto.
        - **Botón de mascota superpuesto (Esquina superior derecha)**: Botón flotante monocromático (disco negro translúcido `rgba(0,0,0,0.55)`, borde blanco suave y sombra) con icono animado `AnimatedPawIcon`. Posee la almohadilla principal estática y una animación secuencial donde los 4 dedos van apareciendo uno a uno (`easeOutBack`), orientados apuntando hacia la esquina superior derecha (45°), cerrando el ciclo con una breve pausa antes de reiniciar. Al pulsar, despliega la ficha/modal de características de la mascota.
       - **Contador superpuesto**: Indicador abajo en el centro con fondo oscuro semitransparente (ej. `1/3`).
-  4. **Abajo de la imagen (Botones de acción)**:
-     - 💬 **Comentarios**: Contador de comentarios.
-     - ❤️ **Me Gusta**: Toggle interactivo con contador.
-     - ✉️ **Mensaje Directo**: Icono DM (`Icons.mail_outline_rounded`) para contactar al dueño.
-     - 📤 **Compartir**: Icono (`ios_share`).
+   4. **Abajo de la imagen (Botones de acción)**:
+      - ❤️ **Me Gusta**: Toggle interactivo con contador.
+      - ✉️ **Mensaje Directo**: Icono DM (`Icons.mail_outline_rounded`) para contactar al dueño o autor de forma privada.
+      - 📤 **Compartir**: Icono (`ios_share`).
 
 ### 5.5 Barra de Navegación Inferior (`YagoBottomNavBar`)
 

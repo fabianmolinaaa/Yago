@@ -37,7 +37,7 @@ El desarrollo de **Yago** se organiza en **5 Sprints**:
 | HU-S1-01 | Como usuario, quiero registrarme e iniciar sesión con email y contraseña para acceder de forma segura y personalizada a la app.                       |   Alta    |
 | HU-S1-02 | Como usuario, quiero consultar un feed social comunitario con relatos de reencuentro, fotos cotidianas y consejos útiles de cuidado animal.          |   Alta    |
 | HU-S1-03 | Como usuario, quiero crear publicaciones en el feed comunitario compartiendo fotos, anécdotas o novedades de mis mascotas.                           |   Alta    |
-| HU-S1-04 | Como usuario, quiero reaccionar con "me gusta" y comentar en las publicaciones comunitarias para interactuar con otros usuarios.                      |   Media   |
+| HU-S1-04 | Como usuario, quiero reaccionar con "me gusta" a las publicaciones comunitarias y contactar por mensaje directo al autor para interactuar de forma segura. |   Media   |
 | HU-S1-05 | Como usuario, quiero consultar y editar mi información de perfil (avatar, nombre, teléfono) y ver mis aportes desde la pestaña de perfil.            |   Media   |
 
 ---
@@ -92,7 +92,7 @@ El desarrollo de **Yago** se organiza en **5 Sprints**:
 
 | ID       | Historia de usuario                                                                                                                                   | Prioridad |
 | :------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: |
-| HU-S5-01 | Como usuario, quiero denunciar publicaciones falsas, comentarios indebidos o spam en reportes o feed para que el equipo de moderación intervenga.     |   Alta    |
+| HU-S5-01 | Como usuario, quiero denunciar publicaciones falsas, mensajes indebidos o spam en reportes o feed para que el equipo de moderación intervenga.     |   Alta    |
 | HU-S5-02 | Como administrador, quiero acceder a una bandeja de denuncias para revisar el contenido reportado y tomar decisiones informadas.                      |   Alta    |
 | HU-S5-03 | Como administrador, quiero ocultar o dar de baja publicaciones y reportes que incumplan las normas comunitarias.                                      |   Alta    |
 | HU-S5-04 | Como administrador, quiero advertir o suspender temporalmente a usuarios infractores para salvaguardar la confianza en la plataforma.                 |   Alta    |

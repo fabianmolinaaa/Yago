@@ -26,10 +26,10 @@ Un usuario podrá:
 * Publicar una mascota perdida.
 * Publicar una mascota encontrada.
 * Consultar publicaciones.
-* Aportar información sobre una publicación.
+* Aportar información o pistas sobre una publicación exclusivamente mediante mensaje privado (chat directo).
 * Contactar con otros usuarios.
 * Crear publicaciones para el feed.
-* Interactuar con las publicaciones.
+* Reaccionar a las publicaciones ("me gusta").
 
 ### Administrador
 Será responsable de tareas de gestión y moderación de la plataforma.
@@ -42,7 +42,7 @@ El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **
 
 ### 4.1 Feed de publicaciones (Primera pantalla)
 * **Muro comunitario de publicaciones:** Espacio social y participativo donde la comunidad comparte situaciones, novedades, fotografías cotidianas de mascotas, relatos con final feliz, avisos de adopción y consejos de tenencia responsable.
-* **Interacción:** Opciones para indicar "me gusta", comentar publicaciones y compartir experiencias con otros dueños y amantes de los animales.
+* **Interacción:** Opciones para indicar "me gusta" (reacciones), compartir publicaciones y contactar directamente al autor mediante mensaje privado, sin hilos de comentarios públicos.
 
 ### 4.2 Feed de reportes (Segunda pantalla)
 * **Visualización optimizada de pérdidas y hallazgos:** Pantalla especialmente dispuesta y priorizada para la difusión y consulta de reportes de mascotas perdidas (con alertas urgentes) y animales encontrados.
@@ -82,8 +82,9 @@ Inicialmente, Yago no contemplará:
 * Tienda de productos para mascotas o marketplace.
 * Reserva de servicios veterinarios.
 * Funcionamiento como red social generalista (no orientada a mascotas).
-* Sistema de seguidores o perfiles de celebridades.
+* Sistema de seguidores.
 * Roles de "rescatistas", flujos forzados de "iniciar rescate" o vinculación obligatoria a un reporte (quien ve una publicación o encuentra a un animal ayuda voluntariamente y contacta a la persona a cargo por chat directo sin asumir compromisos legales ni operativos de rescate).
+* **Comentarios públicos en publicaciones y reportes:** Se descartan los hilos de comentarios abiertos para prevenir spam, ciberacoso, desinformación o intentos de estafa sobre mascotas perdidas; todo contacto o aporte de pistas se canaliza de manera segura y confidencial a través del chat directo 1 a 1.
 
 Estas funcionalidades podrán ser consideradas en etapas futuras de expansión.
 

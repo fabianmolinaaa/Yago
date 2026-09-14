@@ -25,7 +25,7 @@ Todos los usuarios cuentan con el mismo tipo de cuenta y tienen acceso a todas l
   * Consultar publicaciones de mascotas encontradas.
 * **Feed y comunidad:**
   * Crear publicaciones para el feed comunitario (novedades, fotos cotidianas, relatos de final feliz y consejos).
-  * Consultar e interactuar con publicaciones del feed (likes y comentarios).
+  * Consultar e interactuar con publicaciones del feed (reaccionar con "me gusta").
 * **Feed de reportes y zona en mapa:**
   * Consultar publicaciones de reportes de pérdidas y hallazgos con detalles completos.
   * Consultar en el mapa contextual la zona de extravío o último avistamiento de cualquier reporte.
