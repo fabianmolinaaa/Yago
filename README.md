@@ -41,6 +41,7 @@ Toda la especificación técnica, funcional y de diseño se encuentra disponible
 * [**Design System**](docs/DesignSystem.md): Identidad visual, paleta cromática, tipografías, componentes interactivos (`PetCard`, `YagoBottomNavBar`).
 * [**Políticas de GitHub**](docs/PoliticasGitHub.md): Directivas de visibilidad, prefijado de commits por historia de usuario y etiquetado de sprints (`tags`).
 * [**Gestión en Trello**](docs/GestionTrello.md): Estructura de listas, ciclo de vida de historias, gestión de evidencias y entrega por sprint.
+* [**Product Backlog**](docs/ProductBacklog.md): Estado detallado de historias, tareas técnicas, trazabilidad y estado de avance con base de datos.
 
 ---
 
