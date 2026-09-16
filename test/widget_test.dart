@@ -188,4 +188,29 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Mi Perfil'), findsOneWidget);
   });
+
+  testWidgets('ProfileTab shows profile info and logout button is accessible', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ProfileTab(),
+        ),
+      ),
+    );
+
+    expect(find.text('Mi Perfil'), findsOneWidget);
+
+    final logoutButtonFinder = find.text('Cerrar sesión');
+    expect(logoutButtonFinder, findsOneWidget);
+
+    // Hacer scroll hasta que el botón sea visible y tocarlo
+    await tester.ensureVisible(logoutButtonFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(logoutButtonFinder);
+    await tester.pumpAndSettle();
+
+    // Comprobar que aparece el diálogo de confirmación
+    expect(find.text('¿Estás seguro de que deseas salir de tu cuenta?'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+  });
 }

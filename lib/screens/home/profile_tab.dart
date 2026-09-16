@@ -59,6 +59,7 @@ class _ProfileTabState extends State<ProfileTab> {
         : 'Usuario de la Comunidad';
     final userEmail = user?.email ?? 'usuario@yago.app';
     final myReports = MockDataService().getMyReports();
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,6 +67,7 @@ class _ProfileTabState extends State<ProfileTab> {
         title: const Text('Mi Perfil'),
       ),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Column(
           children: [
@@ -308,7 +310,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            // Espacio de separación para asegurar que el menú de navegación inferior flotante no tape el botón
+            SizedBox(height: 96.0 + bottomInset),
           ],
         ),
       ),
