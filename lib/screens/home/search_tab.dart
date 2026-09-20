@@ -114,6 +114,7 @@ class _SearchTabState extends State<SearchTab> {
                       _buildStatusChip('Perdidas', YagoPetStatus.lost),
                       _buildStatusChip('Encontradas', YagoPetStatus.found),
                       _buildStatusChip('Reunidas', YagoPetStatus.reunited),
+                      _buildStatusChip('Apareamiento', YagoPetStatus.mating),
                     ],
                   ),
                 ),

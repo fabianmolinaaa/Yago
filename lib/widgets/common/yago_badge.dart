@@ -20,6 +20,8 @@ extension YagoPetStatusUI on YagoPetStatus {
         return 'URGENTE';
       case YagoPetStatus.isNew:
         return 'NUEVA';
+      case YagoPetStatus.mating:
+        return 'APAREAMIENTO';
     }
   }
 
@@ -36,6 +38,8 @@ extension YagoPetStatusUI on YagoPetStatus {
         return AppColors.community;
       case YagoPetStatus.isNew:
         return AppColors.statusNew;
+      case YagoPetStatus.mating:
+        return AppColors.mating;
     }
   }
 
@@ -52,6 +56,8 @@ extension YagoPetStatusUI on YagoPetStatus {
         return AppColors.communityBg;
       case YagoPetStatus.isNew:
         return AppColors.statusNewBg;
+      case YagoPetStatus.mating:
+        return AppColors.matingBg;
     }
   }
 }

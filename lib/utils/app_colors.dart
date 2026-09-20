@@ -76,6 +76,11 @@ class AppColors {
   static const Color communityBg = Color(0xFFF2ECF7);
   static const Color communityText = Color(0xFF70628E);
 
+  /// Búsqueda de Pareja / Apareamiento (Violeta Nórdico Suave #7C5CBF)
+  static const Color mating = Color(0xFF7C5CBF);
+  static const Color matingBg = Color(0xFFF3EBF9);
+  static const Color matingText = Color(0xFF6B48B0);
+
   /// Nueva publicación / Alerta
   static const Color statusNew = Color(0xFFD46761);
   static const Color statusNewBg = Color(0xFFFCECEB);

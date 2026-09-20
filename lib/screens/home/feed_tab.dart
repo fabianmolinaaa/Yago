@@ -20,7 +20,7 @@ class FeedTab extends StatefulWidget {
 }
 
 class _FeedTabState extends State<FeedTab> {
-  // Filtro activo: 0 = Todos, 1 = Perdidas, 2 = Encontradas, 3 = Reunidas, 4 = Comunidad
+  // Filtro activo: 0 = Todos, 1 = Perdidas, 2 = Encontradas, 3 = Reunidas, 4 = Apareamiento, 5 = Comunidad
   int _selectedFilterIndex = 0;
   bool _isFabVisible = true;
   final List<String> _filters = [
@@ -28,6 +28,7 @@ class _FeedTabState extends State<FeedTab> {
     'Perdidas',
     'Encontradas',
     'Reunidas',
+    'Apareamiento',
     'Comunidad',
   ];
 
@@ -43,6 +44,8 @@ class _FeedTabState extends State<FeedTab> {
       case 3:
         return allPets.where((pet) => pet.status == YagoPetStatus.reunited).toList();
       case 4:
+        return allPets.where((pet) => pet.status == YagoPetStatus.mating).toList();
+      case 5:
         // Filtrar por Comunidad: incluye tanto reportes con estado o etiqueta 'comunidad' (como Rocky)
         // como publicaciones y consejos comunitarios
         final communityPets = allPets

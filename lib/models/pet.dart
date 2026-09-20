@@ -5,6 +5,7 @@ enum YagoPetStatus {
   community,
   urgent,
   isNew,
+  mating,
 }
 
 class Pet {

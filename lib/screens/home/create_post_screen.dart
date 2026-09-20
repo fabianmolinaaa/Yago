@@ -28,6 +28,7 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _petNameController = TextEditingController();
+  final TextEditingController _breedController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
@@ -36,9 +37,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   // Tipo de publicación opcional (null = momento libre con tu mascota)
   String? _selectedCategory;
+  String _selectedGender = 'Macho';
+
   final List<String> _categories = [
     'Perdida',
     'Encontrada',
+    'Apareamiento',
     'Consejo',
     'Reencuentro',
   ];
@@ -47,6 +51,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _contentController.dispose();
     _petNameController.dispose();
+    _breedController.dispose();
     _locationController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -58,6 +63,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.lost;
       case 'Encontrada':
         return AppColors.found;
+      case 'Apareamiento':
+        return AppColors.mating;
       case 'Reencuentro':
         return AppColors.reunited;
       case 'Consejo':
@@ -73,6 +80,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.lostBg;
       case 'Encontrada':
         return AppColors.foundBg;
+      case 'Apareamiento':
+        return AppColors.matingBg;
       case 'Reencuentro':
         return AppColors.reunitedBg;
       case 'Consejo':
@@ -88,6 +97,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.lostText;
       case 'Encontrada':
         return AppColors.foundText;
+      case 'Apareamiento':
+        return AppColors.matingText;
       case 'Reencuentro':
         return AppColors.reunitedText;
       case 'Consejo':
@@ -190,16 +201,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _publishPost() async {
     final isPetAlert = _selectedCategory == 'Perdida' || _selectedCategory == 'Encontrada';
+    final isMating = _selectedCategory == 'Apareamiento';
+    final isPetEntity = isPetAlert || isMating;
     final content = _contentController.text.trim();
     final petName = _petNameController.text.trim();
+    final breed = _breedController.text.trim();
     final location = _locationController.text.trim();
     final phone = _phoneController.text.trim();
 
-    if (isPetAlert) {
+    if (isPetEntity) {
       if (content.isEmpty && petName.isEmpty && _selectedImageFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Por favor completa los datos de la mascota para publicar el reporte.'),
+          SnackBar(
+            content: Text(
+              isMating
+                  ? 'Por favor completa los datos de la mascota para publicar la búsqueda de pareja.'
+                  : 'Por favor completa los datos de la mascota para publicar el reporte.',
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -226,7 +244,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       try {
         uploadedImageUrl = await StorageService().uploadImage(
           file: _selectedImageFile!,
-          folder: isPetAlert ? 'reports' : 'community_posts',
+          folder: isMating
+              ? 'mating_posts'
+              : (isPetAlert ? 'reports' : 'community_posts'),
         );
       } catch (e) {
         if (!mounted) return;
@@ -247,33 +267,49 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         : 'Comunidad Yago';
     final authorAvatar = currentUser?.photoURL;
 
-    if (isPetAlert) {
+    if (isPetEntity) {
       final isLost = _selectedCategory == 'Perdida';
-      final finalName = petName.isNotEmpty
-          ? petName
+      final defaultName = isMating
+          ? 'Mascota'
           : (isLost ? 'Mascota sin nombre' : 'Mascota encontrada');
+      final finalName = petName.isNotEmpty ? petName : defaultName;
+      final finalBreed = isMating && breed.isNotEmpty ? breed : 'Mestizo';
+      final finalGender = isMating ? _selectedGender : 'Sin especificar';
       final finalLocation = location.isNotEmpty ? location : 'CABA';
       final finalPhone = phone.isNotEmpty ? phone : '+54 9 11 0000-0000';
       final finalDesc = content.isNotEmpty
           ? content
-          : (isLost
-              ? 'Se extravió recientemente. Si la ves, por favor avisa de inmediato.'
-              : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.');
+          : (isMating
+              ? 'Búsqueda de pareja para cruza responsable. Contactar por mensaje directo.'
+              : (isLost
+                  ? 'Se extravió recientemente. Si la ves, por favor avisa de inmediato.'
+                  : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.'));
+
+      final YagoPetStatus status = isMating
+          ? YagoPetStatus.mating
+          : (isLost ? YagoPetStatus.lost : YagoPetStatus.found);
+
+      final List<String> tags = isMating
+          ? ['Apareamiento', 'Busca pareja', _selectedGender]
+          : (isLost ? ['Urgente', 'Se busca'] : ['Encontrada', 'Avistamiento']);
 
       final newPet = Pet(
         id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
         name: finalName,
-        breed: 'Mestizo',
+        breed: finalBreed,
         species: 'Perro',
-        gender: 'Sin especificar',
+        gender: finalGender,
         age: 'Adulto',
-        status: isLost ? YagoPetStatus.lost : YagoPetStatus.found,
+        status: status,
         location: finalLocation,
         timeAgo: 'Recién publicado',
         date: DateTime.now(),
         description: finalDesc,
-        imageUrl: uploadedImageUrl ?? 'assets/images/IMG_3508.JPG',
-        tags: isLost ? ['Urgente', 'Se busca'] : ['Encontrada', 'Avistamiento'],
+        imageUrl: uploadedImageUrl ??
+            (isMating
+                ? 'assets/images/IMG_5370.JPG'
+                : 'assets/images/IMG_3508.JPG'),
+        tags: tags,
         contactName: authorName,
         contactPhone: finalPhone,
         latitude: -34.5900,
@@ -308,15 +344,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isPetAlert
-              ? (_selectedCategory == 'Perdida'
-                  ? '¡Alerta de mascota perdida publicada con éxito!'
-                  : '¡Reporte de mascota encontrada publicado con éxito!')
-              : '¡Publicación compartida con éxito en el feed!',
+          isMating
+              ? '¡Publicación de búsqueda de pareja creada con éxito!'
+              : (isPetAlert
+                  ? (_selectedCategory == 'Perdida'
+                      ? '¡Alerta de mascota perdida publicada con éxito!'
+                      : '¡Reporte de mascota encontrada publicado con éxito!')
+                  : '¡Publicación compartida con éxito en el feed!'),
         ),
-        backgroundColor: isPetAlert
-            ? (_selectedCategory == 'Perdida' ? AppColors.lost : AppColors.found)
-            : AppColors.primary,
+        backgroundColor: isMating
+            ? AppColors.mating
+            : (isPetAlert
+                ? (_selectedCategory == 'Perdida'
+                    ? AppColors.lost
+                    : AppColors.found)
+                : AppColors.primary),
       ),
     );
 
@@ -334,6 +376,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         ? currentUser!.displayName!
         : 'Usuario Yago';
     final isPetAlert = _selectedCategory == 'Perdida' || _selectedCategory == 'Encontrada';
+    final isMating = _selectedCategory == 'Apareamiento';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -376,7 +419,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       : null,
                   child: currentUser?.photoURL == null
                       ? Icon(
-                          isPetAlert ? Icons.pets_rounded : Icons.person_rounded,
+                          (isPetAlert || isMating) ? Icons.pets_rounded : Icons.person_rounded,
                           color: _getCategoryActiveColor(_selectedCategory),
                           size: 22,
                         )
@@ -407,11 +450,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             ? 'Alerta de pérdida urgente'
                             : (_selectedCategory == 'Encontrada'
                                 ? 'Reporte de mascota encontrada'
-                                : (_selectedCategory == 'Reencuentro'
-                                    ? 'Historia de reencuentro'
-                                    : (_selectedCategory == 'Consejo'
-                                        ? 'Consejo para la comunidad'
-                                        : 'Momento con mi mascota'))),
+                                : (_selectedCategory == 'Apareamiento'
+                                    ? 'Búsqueda de pareja / Apareamiento'
+                                    : (_selectedCategory == 'Reencuentro'
+                                        ? 'Historia de reencuentro'
+                                        : (_selectedCategory == 'Consejo'
+                                            ? 'Consejo para la comunidad'
+                                            : 'Momento con mi mascota')))),
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -470,9 +515,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ? '🚨 Perdida'
                         : (cat == 'Encontrada'
                             ? '🐾 Encontrada'
-                            : (cat == 'Reencuentro'
-                                ? '❤️ Reencuentro'
-                                : '💡 Consejo')),
+                            : (cat == 'Apareamiento'
+                                ? '💕 Apareamiento'
+                                : (cat == 'Reencuentro'
+                                    ? '❤️ Reencuentro'
+                                    : '💡 Consejo'))),
                   ),
                   selected: isSelected,
                   onSelected: (selected) {
@@ -536,6 +583,107 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               const SizedBox(height: 14),
             ],
 
+            // Campos contextuales para Búsqueda de Pareja (Apareamiento)
+            if (isMating) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: YagoTextField(
+                      label: 'Nombre de la mascota',
+                      hint: 'Ej: Simba, Bella',
+                      controller: _petNameController,
+                      prefixIcon: const Icon(Icons.pets_rounded, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: YagoTextField(
+                      label: 'Raza',
+                      hint: 'Ej: Golden Retriever',
+                      controller: _breedController,
+                      prefixIcon: const Icon(Icons.pets_outlined, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Sexo',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            ChoiceChip(
+                              label: const Text('♂ Macho'),
+                              selected: _selectedGender == 'Macho',
+                              selectedColor: AppColors.mating,
+                              backgroundColor: AppColors.matingBg,
+                              labelStyle: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedGender == 'Macho'
+                                    ? Colors.white
+                                    : AppColors.matingText,
+                              ),
+                              onSelected: (_) => setState(() => _selectedGender = 'Macho'),
+                            ),
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: const Text('♀ Hembra'),
+                              selected: _selectedGender == 'Hembra',
+                              selectedColor: AppColors.mating,
+                              backgroundColor: AppColors.matingBg,
+                              labelStyle: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _selectedGender == 'Hembra'
+                                    ? Colors.white
+                                    : AppColors.matingText,
+                              ),
+                              onSelected: (_) => setState(() => _selectedGender = 'Hembra'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: YagoTextField(
+                      label: 'Zona / Barrio',
+                      hint: 'Ej: Belgrano, CABA',
+                      controller: _locationController,
+                      prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              YagoTextField(
+                label: 'Teléfono de contacto (Opcional)',
+                hint: 'Ej: +54 9 11 3456-7890',
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),
+              ),
+              const SizedBox(height: 14),
+            ],
+
             // Campo de texto principal con label solicitado
             const Text(
               'Descripción de la publicación',
@@ -561,11 +709,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ? (_selectedCategory == 'Perdida'
                         ? 'Describe señas particulares, collar, cómo ocurrió la pérdida o cualquier dato útil...'
                         : 'Describe el estado de la mascota, señas particulares o dónde está retenida...')
-                    : (_selectedCategory == 'Consejo'
-                        ? 'Comparte un consejo de salud, adiestramiento o cuidado animal...'
-                        : (_selectedCategory == 'Reencuentro'
-                            ? 'Comparte la historia del final feliz de tu mascota reunida...'
-                            : 'Comparte una foto o lo que quieras sobre tu mascota...')),
+                    : (_selectedCategory == 'Apareamiento'
+                        ? 'Describe temperamento, vacunas, certificado de salud, pedigrí o qué buscas en su pareja...'
+                        : (_selectedCategory == 'Consejo'
+                            ? 'Comparte un consejo de salud, adiestramiento o cuidado animal...'
+                            : (_selectedCategory == 'Reencuentro'
+                                ? 'Comparte la historia del final feliz de tu mascota reunida...'
+                                : 'Comparte una foto o lo que quieras sobre tu mascota...'))),
                 hintStyle: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -684,7 +834,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        isPetAlert
+                        (isPetAlert || isMating)
                             ? 'Fotografía de la mascota (Muy recomendada)'
                             : 'Adjuntar fotografía a la publicación',
                         style: const TextStyle(

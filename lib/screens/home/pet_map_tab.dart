@@ -103,6 +103,9 @@ class _PetMapTabState extends State<PetMapTab> {
                           case YagoPetStatus.reunited:
                             pinColor = AppColors.reunited;
                             break;
+                          case YagoPetStatus.mating:
+                            pinColor = AppColors.mating;
+                            break;
                           default:
                             pinColor = AppColors.community;
                         }

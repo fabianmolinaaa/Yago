@@ -91,11 +91,17 @@ void main() {
   testWidgets('Design System - YagoStatusBadge renders labels', (WidgetTester tester) async {
     await tester.pumpWidget(
       const YagoApp(
-        home: YagoStatusBadge(status: YagoPetStatus.lost),
+        home: Column(
+          children: [
+            YagoStatusBadge(status: YagoPetStatus.lost),
+            YagoStatusBadge(status: YagoPetStatus.mating),
+          ],
+        ),
       ),
     );
 
     expect(find.text('PERDIDA'), findsOneWidget);
+    expect(find.text('APAREAMIENTO'), findsOneWidget);
   });
 
   testWidgets('RegisterScreen renders form fields correctly', (WidgetTester tester) async {
@@ -226,8 +232,20 @@ void main() {
     expect(find.text('Publicar'), findsOneWidget);
     expect(find.text('Descripción de la publicación'), findsOneWidget);
     expect(find.textContaining('Perdida'), findsWidgets);
+    expect(find.textContaining('Apareamiento'), findsOneWidget);
     expect(find.textContaining('Consejo'), findsOneWidget);
     expect(find.textContaining('Reencuentro'), findsOneWidget);
     expect(find.text('Anécdota'), findsNothing);
+
+    // Al seleccionar el chip de Apareamiento deben mostrarse los campos contextuales
+    await tester.tap(find.textContaining('Apareamiento'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Búsqueda de pareja / Apareamiento'), findsOneWidget);
+    expect(find.text('Nombre de la mascota'), findsOneWidget);
+    expect(find.text('Raza'), findsOneWidget);
+    expect(find.text('Sexo'), findsOneWidget);
+    expect(find.text('♂ Macho'), findsOneWidget);
+    expect(find.text('♀ Hembra'), findsOneWidget);
   });
 }
