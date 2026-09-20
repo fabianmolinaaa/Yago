@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../models/pet.dart';
 import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
@@ -16,6 +18,13 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  // Estado para likes interactivos dentro de las publicaciones del perfil
+  final Set<String> _likedPostIds = {'user-post-1'};
+  final Map<String, int> _postLikesCount = {
+    'user-post-1': 18,
+    'user-report-1': 45,
+  };
+
   void _handleLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -51,300 +60,1092 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  void _toggleLike(String postId) {
+    setState(() {
+      if (_likedPostIds.contains(postId)) {
+        _likedPostIds.remove(postId);
+        _postLikesCount[postId] = (_postLikesCount[postId] ?? 1) - 1;
+      } else {
+        _likedPostIds.add(postId);
+        _postLikesCount[postId] = (_postLikesCount[postId] ?? 0) + 1;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
-    final userName = (user?.displayName != null && user!.displayName!.isNotEmpty)
-        ? user.displayName!
-        : 'Usuario de la Comunidad';
-    final userEmail = user?.email ?? 'usuario@yago.app';
+    final userName =
+        (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
+            ? user.displayName!.trim()
+            : 'Fabián';
     final myReports = MockDataService().getMyReports();
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-      ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: Column(
-          children: [
-            // Avatar de usuario
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 46,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 52,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.found,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check, size: 14, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: 14),
-
-            // Nombre y correo
-            Text(
-              userName,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.search_rounded,
                 color: AppColors.textPrimary,
               ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Buscador de perfil'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 4),
-            Text(
-              userEmail,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 8),
-
-            // Rol del usuario
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+            PopupMenuButton<String>(
+              icon: const Icon(
+                Icons.more_vert_rounded,
+                color: AppColors.textPrimary,
               ),
-              child: const Text(
-                'Rol: Usuario de la Comunidad',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+              onSelected: (val) {
+                if (val == 'logout') {
+                  _handleLogout(context);
+                } else if (val == 'share') {
+                  _showShareSnackbar();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'share',
+                  child: Row(
+                    children: [
+                      Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+                      SizedBox(width: 10),
+                      Text('Compartir perfil'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout_rounded, size: 18, color: AppColors.lost),
+                      SizedBox(width: 10),
+                      Text('Cerrar sesión', style: TextStyle(color: AppColors.lost)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverToBoxAdapter(
+              child: _buildProfileHeader(context, userName),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  indicatorColor: AppColors.textPrimary,
+                  indicatorWeight: 3.2,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelColor: AppColors.textPrimary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  labelStyle: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                  tabs: const [
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.article_outlined, size: 18),
+                          SizedBox(width: 6),
+                          Text('Posts'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.campaign_outlined, size: 18),
+                          SizedBox(width: 6),
+                          Text('Reportes'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bookmark_border_rounded, size: 18),
+                          SizedBox(width: 6),
+                          Text('Guardados'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          body: TabBarView(
+            children: [
+              _buildPostsTab(context, userName, myReports, bottomInset),
+              _buildReportsTab(context, myReports, bottomInset),
+              _buildSavedTab(context, bottomInset),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showShareSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Enlace al perfil copiado al portapapeles'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Encabezado superior con estilo X: avatar circular a la izquierda, nombre,
+  /// cerrojo de privacidad, metadatos y botones redondeados. Sin foto de portada,
+  /// sin arroba (@) y sin contadores de seguidores/seguidos.
+  Widget _buildProfileHeader(BuildContext context, String userName) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar circular grande
+          Container(
+            width: 78,
+            height: 78,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primaryTint,
+              border: Border.all(
+                color: AppColors.border,
+                width: 1.5,
+              ),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/yago_icon.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.person_rounded,
+                  size: 46,
                   color: AppColors.primary,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 12),
 
-            // Tarjetas de estadísticas de usuario
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard('Mis Reportes', '${myReports.length}', Icons.campaign_rounded),
+          // Nombre de usuario + Candado / Privado
+          Row(
+            children: [
+              Text(
+                userName,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.4,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('Guardados', '3', Icons.bookmark_rounded),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('Reunidos', '1', Icons.favorite_rounded),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-
-            // Mis publicaciones activas
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Mis reportes publicados',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (widget.onGoToCreateReport != null)
-                  TextButton.icon(
-                    onPressed: widget.onGoToCreateReport,
-                    icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-                    label: const Text(
-                      'Nuevo',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (myReports.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: AppRadius.mdBorder,
-                ),
-                child: const Text(
-                  'Aún no has publicado reportes de mascotas.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                ),
-              )
-            else
-              ...myReports.map((pet) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: Material(
-                    color: Colors.white,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadius.mdBorder,
-                      side: BorderSide(color: AppColors.border),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    leading: ClipRRect(
-                      borderRadius: AppRadius.smBorder,
-                      child: pet.imageUrl.startsWith('assets/')
-                          ? Image.asset(
-                              pet.imageUrl,
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                width: 48,
-                                height: 48,
-                                color: AppColors.surface,
-                                child: const Icon(Icons.pets, size: 24, color: AppColors.subtle),
-                              ),
-                            )
-                          : Image.network(
-                              pet.imageUrl,
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                width: 48,
-                                height: 48,
-                                color: AppColors.surface,
-                                child: const Icon(Icons.pets, size: 24, color: AppColors.subtle),
-                              ),
-                            ),
-                    ),
-                    title: Text(
-                      pet.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    subtitle: Text(
-                      '${pet.breed} · ${pet.location}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    trailing: YagoStatusBadge(status: pet.status),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => PetDetailScreen(pet: pet),
-                        ),
-                      ).then((_) => setState(() {}));
-                    },
-                    ),
-                  ),
-                );
-              }),
-            const SizedBox(height: 24),
-
-            // Tarjeta informativa del Proyecto
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.lgBorder,
-                border: Border.all(color: AppColors.border),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.pets_rounded, size: 18, color: AppColors.primary),
-                      SizedBox(width: 8),
-                      Text(
-                        'Acerca de Yago',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.lock_rounded,
+                size: 17,
+                color: AppColors.textPrimary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Biografía descriptiva
+          const Text(
+            'Amante de los animales y voluntario en la comunidad Yago. Ayudando a que todas las mascotas regresen a casa 🐾',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.35,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Metadatos: Ubicación y Fecha de registro
+          const Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              SizedBox(width: 4),
+              Text(
+                'Santa Cruz, Argentina',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 15,
+                color: AppColors.textSecondary,
+              ),
+              SizedBox(width: 5),
+              Text(
+                'Se unió en febrero de 2024',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Botones de acción: Compartir perfil y Editar perfil (Píldoras redondeadas)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _showShareSnackbar,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Plataforma colaborativa para el reencuentro de mascotas perdidas y encontradas con la comunidad.\nLaboratorio de Desarrollo de Software',
+                  child: const Text(
+                    'Compartir perfil',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Botón Cerrar Sesión
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _handleLogout(context),
-                icon: const Icon(Icons.logout_rounded, size: 18, color: AppColors.lost),
-                label: const Text(
-                  'Cerrar sesión',
-                  style: TextStyle(color: AppColors.lost, fontWeight: FontWeight.w600),
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.lost.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.mdBorder,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Editar perfil'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                  ),
+                  child: const Text(
+                    'Editar perfil',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+
+  /// Pestaña 1 (Posts - Predeterminada): feed unificado con publicaciones de todo tipo
+  /// hechas por el usuario (posts sociales y reportes de mascotas).
+  Widget _buildPostsTab(
+    BuildContext context,
+    String userName,
+    List<Pet> myReports,
+    double bottomInset,
+  ) {
+    return ListView(
+      padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
+      children: [
+        // Publicación comunitaria del usuario
+        _buildSocialPostCard(
+          postId: 'user-post-1',
+          authorName: userName,
+          timeAgo: 'Hace 2 h',
+          content:
+              'Paseando por la costanera con mi compañero fiel. Siempre atentos por si vemos a alguna mascota extraviada de los reportes del barrio 🐾🐶',
+          imageAsset: 'assets/images/IMG_5667.JPG',
+          commentsCount: 4,
+          repostsCount: 2,
+          viewsCount: 156,
+        ),
+
+        // Reporte de mascota publicado por el usuario (si existe)
+        if (myReports.isNotEmpty)
+          _buildReportPostCard(
+            context: context,
+            postId: 'user-report-1',
+            authorName: userName,
+            timeAgo: 'Ayer',
+            content:
+                '¡Alerta de búsqueda activa! Se asustó en Plaza Armenia y salió corriendo hacia Av. Santa Fe. Si alguien la vio por favor contáctenme de inmediato 🙏',
+            pet: myReports.first,
+            commentsCount: 12,
+            repostsCount: 28,
+            viewsCount: 820,
+          ),
+
+        // Resto de reportes si hubiera más
+        for (int i = 1; i < myReports.length; i++)
+          _buildReportPostCard(
+            context: context,
+            postId: 'user-report-${myReports[i].id}',
+            authorName: userName,
+            timeAgo: myReports[i].timeAgo,
+            content: myReports[i].description,
+            pet: myReports[i],
+            commentsCount: 3,
+            repostsCount: 5,
+            viewsCount: 210,
+          ),
+      ],
+    );
+  }
+
+  /// Pestaña 2: Reportes de mascotas publicados por el usuario
+  Widget _buildReportsTab(
+    BuildContext context,
+    List<Pet> myReports,
+    double bottomInset,
+  ) {
+    if (myReports.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 32.0,
+            right: 32.0,
+            bottom: 96.0 + bottomInset,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.campaign_outlined,
+                size: 56,
+                color: AppColors.subtle.withValues(alpha: 0.6),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Sin reportes activos',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Tus alertas de mascotas perdidas o encontradas aparecerán listadas aquí.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 96.0 + bottomInset),
+      itemCount: myReports.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final pet = myReports[index];
+        return Material(
+          color: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.mdBorder,
+            side: BorderSide(color: AppColors.border),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            leading: ClipRRect(
+              borderRadius: AppRadius.smBorder,
+              child: pet.imageUrl.startsWith('assets/')
+                  ? Image.asset(
+                      pet.imageUrl,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 52,
+                        height: 52,
+                        color: AppColors.surfaceSecondary,
+                        child: const Icon(Icons.pets, color: AppColors.subtle),
+                      ),
+                    )
+                  : Image.network(
+                      pet.imageUrl,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 52,
+                        height: 52,
+                        color: AppColors.surfaceSecondary,
+                        child: const Icon(Icons.pets, color: AppColors.subtle),
+                      ),
+                    ),
             ),
-            // Espacio de separación para asegurar que el menú de navegación inferior flotante no tape el botón
-            SizedBox(height: 96.0 + bottomInset),
+            title: Text(
+              pet.name,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              '${pet.breed} · ${pet.location}',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            trailing: YagoStatusBadge(status: pet.status),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PetDetailScreen(pet: pet),
+                ),
+              ).then((_) => setState(() {}));
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Pestaña 3: Publicaciones y reportes guardados
+  Widget _buildSavedTab(BuildContext context, double bottomInset) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 32.0,
+          right: 32.0,
+          bottom: 96.0 + bottomInset,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bookmark_border_rounded,
+              size: 56,
+              color: AppColors.subtle.withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No tienes elementos guardados',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Las mascotas o avisos que guardes para hacerles seguimiento se almacenarán aquí.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  /// Tarjeta de publicación comunitaria con estética de X (Twitter)
+  Widget _buildSocialPostCard({
+    required String postId,
+    required String authorName,
+    required String timeAgo,
+    required String content,
+    String? imageAsset,
+    required int commentsCount,
+    required int repostsCount,
+    required int viewsCount,
+  }) {
+    final isLiked = _likedPostIds.contains(postId);
+    final likesCount = _postLikesCount[postId] ?? 0;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: AppRadius.mdBorder,
-        border: Border.all(color: AppColors.border),
+        border: Border(
+          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
+        ),
       ),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          // Mini avatar circular
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primaryTint,
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/yago_icon.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.person_rounded,
+                  size: 22,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+
+          // Contenido del post
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabecera: Nombre + Candado + Fecha (sin @)
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.lock_rounded,
+                      size: 13,
+                      color: AppColors.textPrimary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '· $timeAgo',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Texto del post
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13.5,
+                    height: 1.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+
+                // Foto adjunta
+                if (imageAsset != null) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.asset(
+                      imageAsset,
+                      width: double.infinity,
+                      height: 180,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+
+                // Barra de interacciones estilo X (comentarios, reposts, likes, vistas, compartir)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildIconAction(
+                      Icons.chat_bubble_outline_rounded,
+                      '$commentsCount',
+                    ),
+                    _buildIconAction(
+                      Icons.repeat_rounded,
+                      '$repostsCount',
+                    ),
+                    GestureDetector(
+                      onTap: () => _toggleLike(postId),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 17,
+                            color: isLiked
+                                ? AppColors.likeRed
+                                : AppColors.twitterAction,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '$likesCount',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: isLiked
+                                  ? AppColors.likeRed
+                                  : AppColors.twitterAction,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildIconAction(
+                      Icons.bar_chart_rounded,
+                      '$viewsCount',
+                    ),
+                    const Icon(
+                      Icons.bookmark_border_rounded,
+                      size: 17,
+                      color: AppColors.twitterAction,
+                    ),
+                    const Icon(
+                      Icons.ios_share_rounded,
+                      size: 17,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// Tarjeta de reporte de mascota integrado en el feed de publicaciones del usuario
+  Widget _buildReportPostCard({
+    required BuildContext context,
+    required String postId,
+    required String authorName,
+    required String timeAgo,
+    required String content,
+    required Pet pet,
+    required int commentsCount,
+    required int repostsCount,
+    required int viewsCount,
+  }) {
+    final isLiked = _likedPostIds.contains(postId);
+    final likesCount = _postLikesCount[postId] ?? 0;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Mini avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primaryTint,
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/yago_icon.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.person_rounded,
+                  size: 22,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Contenido del reporte
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabecera: Nombre + Candado + Tiempo (sin @)
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.lock_rounded,
+                      size: 13,
+                      color: AppColors.textPrimary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '· $timeAgo',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Mensaje introductorio
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13.5,
+                    height: 1.35,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Tarjeta embebida de la mascota
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PetDetailScreen(pet: pet),
+                      ),
+                    ).then((_) => setState(() {}));
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border, width: 1),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Imagen de la mascota con badge de estado
+                        Stack(
+                          children: [
+                            pet.imageUrl.startsWith('assets/')
+                                ? Image.asset(
+                                    pet.imageUrl,
+                                    width: double.infinity,
+                                    height: 170,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      width: double.infinity,
+                                      height: 170,
+                                      color: AppColors.border,
+                                      child: const Icon(Icons.pets,
+                                          size: 36, color: AppColors.subtle),
+                                    ),
+                                  )
+                                : Image.network(
+                                    pet.imageUrl,
+                                    width: double.infinity,
+                                    height: 170,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      width: double.infinity,
+                                      height: 170,
+                                      color: AppColors.border,
+                                      child: const Icon(Icons.pets,
+                                          size: 36, color: AppColors.subtle),
+                                    ),
+                                  ),
+                            Positioned(
+                              top: 10,
+                              left: 10,
+                              child: YagoStatusBadge(status: pet.status),
+                            ),
+                          ],
+                        ),
+
+                        // Datos de la mascota
+                        Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pet.name,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${pet.breed} · ${pet.gender} · ${pet.age}',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12.5,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    pet.location,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Barra de interacciones
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildIconAction(
+                      Icons.chat_bubble_outline_rounded,
+                      '$commentsCount',
+                    ),
+                    _buildIconAction(
+                      Icons.repeat_rounded,
+                      '$repostsCount',
+                    ),
+                    GestureDetector(
+                      onTap: () => _toggleLike(postId),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 17,
+                            color: isLiked
+                                ? AppColors.likeRed
+                                : AppColors.twitterAction,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '$likesCount',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: isLiked
+                                  ? AppColors.likeRed
+                                  : AppColors.twitterAction,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildIconAction(
+                      Icons.bar_chart_rounded,
+                      '$viewsCount',
+                    ),
+                    const Icon(
+                      Icons.bookmark_border_rounded,
+                      size: 17,
+                      color: AppColors.twitterAction,
+                    ),
+                    const Icon(
+                      Icons.ios_share_rounded,
+                      size: 17,
+                      color: AppColors.twitterAction,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconAction(IconData icon, String count) {
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: AppColors.twitterAction),
+        const SizedBox(width: 5),
+        Text(
+          count,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: AppColors.twitterAction,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Delegado para mantener fijada la barra de pestañas durante el scroll
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _SliverTabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height + 1.0;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height + 1.0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          tabBar,
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.feedDivider,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }

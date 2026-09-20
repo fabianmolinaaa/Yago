@@ -216,7 +216,8 @@ void main() {
     await tester.tap(find.byTooltip('Perfil'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Mi Perfil'), findsOneWidget);
+    expect(find.text('Compartir perfil'), findsOneWidget);
+    expect(find.text('Posts'), findsOneWidget);
   });
 
   testWidgets('ProfileTab shows profile info and logout button is accessible', (WidgetTester tester) async {
@@ -228,15 +229,19 @@ void main() {
       ),
     );
 
-    expect(find.text('Mi Perfil'), findsOneWidget);
+    expect(find.text('Compartir perfil'), findsOneWidget);
+    expect(find.text('Editar perfil'), findsOneWidget);
+    expect(find.text('Posts'), findsOneWidget);
+    expect(find.text('Reportes'), findsOneWidget);
+    expect(find.text('Guardados'), findsOneWidget);
 
-    final logoutButtonFinder = find.text('Cerrar sesión');
-    expect(logoutButtonFinder, findsOneWidget);
-
-    // Hacer scroll hasta que el botón sea visible y tocarlo
-    await tester.ensureVisible(logoutButtonFinder);
+    // Tocar el menú de opciones del AppBar para acceder a Cerrar sesión
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await tester.pumpAndSettle();
-    await tester.tap(logoutButtonFinder);
+
+    final logoutOptionFinder = find.text('Cerrar sesión');
+    expect(logoutOptionFinder, findsOneWidget);
+    await tester.tap(logoutOptionFinder);
     await tester.pumpAndSettle();
 
     // Comprobar que aparece el diálogo de confirmación
