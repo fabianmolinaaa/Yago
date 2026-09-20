@@ -480,8 +480,6 @@ class _ProfileTabState extends State<ProfileTab> {
               'Paseando por la costanera con mi compañero fiel. Siempre atentos por si vemos a alguna mascota extraviada de los reportes del barrio 🐾🐶',
           imageUrl: 'assets/images/IMG_5667.JPG',
           commentsCount: 4,
-          repostsCount: 2,
-          viewsCount: 156,
         ),
 
         // Publicación de reporte de mascota del usuario:
@@ -499,8 +497,6 @@ class _ProfileTabState extends State<ProfileTab> {
             imageUrl: myReports.first.imageUrl,
             pet: myReports.first,
             commentsCount: 12,
-            repostsCount: 28,
-            viewsCount: 820,
           ),
 
         // Resto de reportes del usuario si hubiera más
@@ -516,8 +512,6 @@ class _ProfileTabState extends State<ProfileTab> {
             imageUrl: myReports[i].imageUrl,
             pet: myReports[i],
             commentsCount: 3,
-            repostsCount: 5,
-            viewsCount: 210,
           ),
       ],
     );
@@ -702,8 +696,6 @@ class _ProfileTabState extends State<ProfileTab> {
     String? imageUrl,
     Pet? pet,
     required int commentsCount,
-    required int repostsCount,
-    required int viewsCount,
   }) {
     final isLiked = _likedPostIds.contains(postId);
     final likesCount = _postLikesCount[postId] ?? 0;
@@ -811,17 +803,13 @@ class _ProfileTabState extends State<ProfileTab> {
                 ],
                 const SizedBox(height: 12),
 
-                // Barra de interacciones estilo X (comentarios, reposts, likes, vistas, compartir)
+                // Barra de interacciones (comentarios, me gusta, compartir)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildIconAction(
                       Icons.chat_bubble_outline_rounded,
                       '$commentsCount',
-                    ),
-                    _buildIconAction(
-                      Icons.repeat_rounded,
-                      '$repostsCount',
                     ),
                     GestureDetector(
                       onTap: () => _toggleLike(postId),
@@ -850,15 +838,6 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                         ],
                       ),
-                    ),
-                    _buildIconAction(
-                      Icons.bar_chart_rounded,
-                      '$viewsCount',
-                    ),
-                    const Icon(
-                      Icons.bookmark_border_rounded,
-                      size: 17,
-                      color: AppColors.twitterAction,
                     ),
                     const Icon(
                       Icons.ios_share_rounded,
