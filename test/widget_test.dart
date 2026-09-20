@@ -105,7 +105,7 @@ void main() {
     expect(find.text('APAREAMIENTO'), findsOneWidget);
   });
 
-  testWidgets('RegisterScreen renders form fields correctly', (WidgetTester tester) async {
+  testWidgets('RegisterScreen renders form fields correctly and validates inputs', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: RegisterScreen(),
@@ -116,6 +116,14 @@ void main() {
     expect(find.text('Nombre completo'), findsOneWidget);
     expect(find.text('Correo electrónico'), findsOneWidget);
     expect(find.text('Registrarse'), findsOneWidget);
+
+    // Intentar registrarse con campos vacíos activa la validación
+    final registerButton = find.text('Registrarse');
+    await tester.ensureVisible(registerButton);
+    await tester.pumpAndSettle();
+    await tester.tap(registerButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Por favor, ingresa tu nombre completo.'), findsOneWidget);
   });
 
   testWidgets('PetCard renders pet information and contact action', (WidgetTester tester) async {

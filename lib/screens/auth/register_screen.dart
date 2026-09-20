@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
+import '../home/home_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -78,8 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         displayName: name,
       );
       if (mounted) {
-        // Al registrarse exitosamente, volver a la pantalla anterior o el AuthGate redirigirá automáticamente
-        Navigator.of(context).pop();
+        _showSuccessDialog(name);
       }
     } catch (e) {
       if (mounted) {
@@ -92,6 +92,80 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showSuccessDialog(String userName) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.foundBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.found,
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '¡Cuenta creada con éxito!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '¡Bienvenido a Yago, $userName! Tu cuenta ha sido registrada correctamente.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: YagoButton(
+                text: 'Comenzar a explorar',
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('¡Bienvenido a la comunidad, $userName!'),
+                        backgroundColor: AppColors.primaryDark,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
