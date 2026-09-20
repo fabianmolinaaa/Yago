@@ -43,7 +43,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(hours: 2)),
       description:
           'Lleva un moño rosa en la cabeza. Se asustó en Plaza Armenia y salió corriendo hacia Av. Santa Fe. Es muy dócil pero asustadiza con ruidos fuertes.',
-      imageUrl: 'assets/images/IMG_3508.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_caniche.jpg?alt=media&token=c423ae85-7535-49ca-ac88-110119309b7f',
       tags: const ['Moño rosa', 'Con chip', 'Pelaje blanco'],
       contactName: 'Camila Rodriguez',
       contactPhone: '+54 9 11 4567-8901',
@@ -63,7 +64,8 @@ class FirestoreService {
       timeAgo: 'Hace 5 horas',
       date: DateTime.now().subtract(const Duration(hours: 5)),
       description: 'Paseando un rato...',
-      imageUrl: 'assets/images/IMG_4178.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Frocky_labrador.jpg?alt=media&token=f02b9044-ce93-4688-885f-a368f57f23d0',
       tags: const ['Pelaje negro', 'Pecho blanco', 'Muy sociable'],
       contactName: 'Equipo Yago',
       contactPhone: '+54 9 11 5566-7788',
@@ -83,7 +85,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(hours: 4)),
       description:
           'Buscamos compañera para cruza. Excelente estado de salud, libreta sanitaria y vacunas completas al día. Certificado libre de displasia. Súper cariñoso y dócil.',
-      imageUrl: 'assets/images/IMG_5370.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fsimba_golden.jpg?alt=media&token=9c6b56dc-c05e-4ef7-9b23-7a00daf0e1f5',
       tags: const ['Pedigrí', 'Vacunas al día', 'Libre de displasia'],
       contactName: 'Martín Gómez',
       contactPhone: '+54 9 11 3456-7890',
@@ -103,7 +106,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(days: 1)),
       description:
           'Encontrado merodeando en las escaleras de un edificio sobre Av. Las Heras. Es blanco con manchas coloradas en la cabeza y orejas. Muy mimoso y juguetón.',
-      imageUrl: 'assets/images/IMG_2935.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fmilo_gato.jpg?alt=media&token=bbf9da6a-3f5b-492d-984f-57bcebae6f5f',
       tags: const ['Blanco y naranja', 'Sin collar', 'Cariñoso'],
       contactName: 'Lucía Fernández',
       contactPhone: '+54 9 11 9988-1122',
@@ -123,7 +127,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(hours: 3)),
       description:
           'Gracias a todos los que colaboraron. Ya encontré a Luna!!!',
-      imageUrl: 'assets/images/IMG_5667.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_reunida.jpg?alt=media&token=04efce98-a4fa-426b-92b0-ef83b53621f0',
       tags: const ['Reencuentro', 'Final feliz', 'En casa'],
       contactName: 'William Rodriguez',
       contactPhone: '+54 9 11 4567-8901',
@@ -145,7 +150,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(days: 1)),
       description:
           'Encontrado acostado en la vereda cerca de Parque Rivadavia. Pelaje negro liso, contextura grande y collar verde agua. Manso y amigable con las personas.',
-      imageUrl: 'assets/images/IMG_5370.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fthor_boyero.jpg?alt=media&token=a4bd0a7a-477e-4709-917c-b42c7202fba9',
       tags: const ['Collar verde', 'Pelaje negro', 'Tamaño grande'],
       contactName: 'Facundo Silva',
       contactPhone: '+54 9 11 2233-4455',
@@ -165,7 +171,8 @@ class FirestoreService {
       date: DateTime.now().subtract(const Duration(days: 2)),
       description:
           '¡Final feliz! Gracias a una vecina que la vio en el feed de Yago, Luna ya está de nuevo en casa, abrigada y descansando con su familia.',
-      imageUrl: 'assets/images/IMG_5560.JPG',
+      imageUrl:
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_final_feliz.jpg?alt=media&token=9d19a6cf-4f32-40f7-9a8c-f8f7a19b2248',
       tags: const ['Final feliz', 'Reunida', 'Abrigada'],
       contactName: 'Comunidad Yago',
       contactPhone: '+54 9 11 0000-0000',
