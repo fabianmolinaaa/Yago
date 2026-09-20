@@ -4,6 +4,7 @@ import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
 import 'package:yago/screens/home/create_post_screen.dart';
+import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/profile_tab.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
@@ -275,5 +276,38 @@ void main() {
     expect(find.text('Sexo'), findsOneWidget);
     expect(find.text('Macho'), findsOneWidget);
     expect(find.text('Hembra'), findsOneWidget);
+  });
+
+  testWidgets('EditProfileScreen renders fields and allows saving changes', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: EditProfileScreen(
+          initialName: 'Fabián Molina',
+          initialBio: 'Amante de los animales',
+          initialLocation: 'Santa Cruz, Argentina',
+          initialPhone: '+54 9 297 412-3456',
+        ),
+      ),
+    );
+
+    expect(find.text('Editar perfil'), findsOneWidget);
+    expect(find.text('Guardar'), findsOneWidget);
+    expect(find.text('Guardar cambios'), findsOneWidget);
+    expect(find.text('Cambiar foto de perfil'), findsOneWidget);
+    expect(find.text('Nombre'), findsOneWidget);
+    expect(find.text('Biografía'), findsOneWidget);
+    expect(find.text('Ubicación'), findsOneWidget);
+    expect(find.text('Teléfono de contacto'), findsOneWidget);
+
+    // Verificar valores iniciales
+    expect(find.text('Fabián Molina'), findsOneWidget);
+    expect(find.text('Amante de los animales'), findsOneWidget);
+
+    // Pulsar Guardar cambios
+    final saveButtonFinder = find.text('Guardar cambios');
+    await tester.ensureVisible(saveButtonFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(saveButtonFinder);
+    await tester.pumpAndSettle();
   });
 }

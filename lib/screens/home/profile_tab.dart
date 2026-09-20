@@ -7,6 +7,7 @@ import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../auth/login_screen.dart';
 import '../pet_detail/pet_detail_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final VoidCallback? onGoToCreateReport;
@@ -80,7 +81,9 @@ class _ProfileTabState extends State<ProfileTab> {
             ? user.displayName!.trim()
             : 'Fabián';
     final userEmail = user?.email ?? 'usuario@yago.app';
-    final userPhoto = user?.photoURL;
+    final userPhoto = user?.photoURL ?? MockDataService().userCustomPhotoUrl;
+    final userBio = MockDataService().userBio;
+    final userLocation = MockDataService().userLocation;
     final myReports = MockDataService().getMyReports();
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -163,6 +166,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 context: context,
                 userName: userName,
                 userEmail: userEmail,
+                userBio: userBio,
+                userLocation: userLocation,
                 userPhoto: userPhoto,
               ),
             ),
@@ -300,6 +305,8 @@ class _ProfileTabState extends State<ProfileTab> {
     required BuildContext context,
     required String userName,
     required String userEmail,
+    required String userBio,
+    required String userLocation,
     String? userPhoto,
   }) {
     return Padding(
@@ -344,9 +351,9 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 8),
 
           // Biografía descriptiva
-          const Text(
-            'Amante de los animales y voluntario en la comunidad Yago. Ayudando a que todas las mascotas regresen a casa 🐾',
-            style: TextStyle(
+          Text(
+            userBio,
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
               height: 1.35,
@@ -356,17 +363,17 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 12),
 
           // Metadatos: Ubicación y Fecha de registro
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.location_on_outlined,
                 size: 16,
                 color: AppColors.textSecondary,
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text(
-                'Santa Cruz, Argentina',
-                style: TextStyle(
+                userLocation,
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -423,12 +430,21 @@ class _ProfileTabState extends State<ProfileTab> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Editar perfil'),
-                        duration: Duration(seconds: 1),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(
+                          initialName: userName,
+                          initialBio: userBio,
+                          initialLocation: userLocation,
+                          initialPhone: MockDataService().userPhone,
+                          currentPhotoUrl: userPhoto,
+                        ),
                       ),
-                    );
+                    ).then((_) {
+                      if (context.mounted) {
+                        setState(() {});
+                      }
+                    });
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.border, width: 1.2),

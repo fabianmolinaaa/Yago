@@ -141,4 +141,28 @@ class MockDataService {
       FirestoreService().togglePostLike(postId, newIsLiked).catchError((_) {});
     }
   }
+
+  // ─── Gestión de Perfil de Usuario ──────────────────────────────────────────
+  String _userBio =
+      'Amante de los animales y voluntario en la comunidad Yago. Ayudando a que todas las mascotas regresen a casa 🐾';
+  String _userLocation = 'Santa Cruz, Argentina';
+  String _userPhone = '+54 9 297 412-3456';
+  String? _userCustomPhotoUrl;
+
+  String get userBio => _userBio;
+  String get userLocation => _userLocation;
+  String get userPhone => _userPhone;
+  String? get userCustomPhotoUrl => _userCustomPhotoUrl;
+
+  void updateUserProfile({
+    String? bio,
+    String? location,
+    String? phone,
+    String? photoUrl,
+  }) {
+    if (bio != null) _userBio = bio.trim();
+    if (location != null) _userLocation = location.trim();
+    if (phone != null) _userPhone = phone.trim();
+    if (photoUrl != null) _userCustomPhotoUrl = photoUrl.trim();
+  }
 }

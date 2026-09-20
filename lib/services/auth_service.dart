@@ -65,6 +65,21 @@ class AuthService {
     await _auth.signOut();
   }
 
+  /// Actualiza el perfil del usuario autenticado (nombre y/o foto)
+  Future<void> updateProfile({String? displayName, String? photoURL}) async {
+    try {
+      if (_auth.currentUser != null) {
+        if (displayName != null && displayName.trim().isNotEmpty) {
+          await _auth.currentUser!.updateDisplayName(displayName.trim());
+        }
+        if (photoURL != null && photoURL.trim().isNotEmpty) {
+          await _auth.currentUser!.updatePhotoURL(photoURL.trim());
+        }
+        await _auth.currentUser!.reload();
+      }
+    } catch (_) {}
+  }
+
   /// Traduce excepciones de Firebase Auth a mensajes amigables en español
   static String getErrorMessage(dynamic error) {
     if (error is FirebaseAuthException) {
