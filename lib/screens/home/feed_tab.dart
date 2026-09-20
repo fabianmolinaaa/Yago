@@ -456,11 +456,14 @@ class _FeedTabState extends State<FeedTab> {
                       tags: pet.tags,
                       storyText: pet.storyText,
                       description: pet.description,
-                      authorName: pet.contactName.isNotEmpty
-                          ? pet.contactName
-                          : 'Comunidad Yago',
-                      authorHandle:
-                          '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
+                      authorName: pet.status == YagoPetStatus.community
+                          ? 'Equipo Yago'
+                          : (pet.contactName.isNotEmpty
+                              ? pet.contactName
+                              : 'Comunidad Yago'),
+                      authorHandle: pet.status == YagoPetStatus.community
+                          ? '@yago.app'
+                          : '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
                       commentsCount: 8 + (pet.name.length * 2),
                       sharesCount: 15 + (pet.name.length * 3),
                       likesCount: 95 + (pet.name.length * 14),
@@ -499,6 +502,14 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   void _showContactModal(BuildContext context, Pet pet) {
+    final isCommunity = pet.status == YagoPetStatus.community;
+    final contactTitle = isCommunity
+        ? 'Equipo Yago'
+        : (pet.contactName.isNotEmpty ? pet.contactName : 'Dueño / Reportante');
+    final contactSubtitle = isCommunity
+        ? 'Equipo oficial de la comunidad Yago'
+        : 'Reportante de ${pet.name}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -518,36 +529,65 @@ class _FeedTabState extends State<FeedTab> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: AppColors.primary.withValues(
-                        alpha: 0.12,
+                    if (isCommunity)
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryTint,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: const YagoLogoIcon(size: 26),
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.12,
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          size: 26,
+                          color: AppColors.primary,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        size: 26,
-                        color: AppColors.primary,
-                      ),
-                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            pet.contactName.isNotEmpty
-                                ? pet.contactName
-                                : 'Dueño / Reportante',
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  contactTitle,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isCommunity) ...[
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Reportante de ${pet.name}',
+                            contactSubtitle,
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 12,
@@ -563,8 +603,9 @@ class _FeedTabState extends State<FeedTab> {
                 SizedBox(
                   width: double.infinity,
                   child: YagoButton(
-                    text:
-                        'Enviar mensaje directo a ${pet.contactName.isNotEmpty ? pet.contactName.split(' ').first : 'Dueño'}',
+                    text: isCommunity
+                        ? 'Enviar mensaje directo al equipo de Yago'
+                        : 'Enviar mensaje directo a ${pet.contactName.isNotEmpty ? pet.contactName.split(' ').first : 'Dueño'}',
                     icon: const Icon(
                       Icons.mail_outline_rounded,
                       color: Colors.white,
@@ -575,7 +616,9 @@ class _FeedTabState extends State<FeedTab> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Mensaje directo iniciado con ${pet.contactName}',
+                            isCommunity
+                                ? 'Mensaje directo iniciado con el Equipo de Yago'
+                                : 'Mensaje directo iniciado con ${pet.contactName}',
                           ),
                           backgroundColor: AppColors.textPrimary,
                         ),
@@ -610,6 +653,10 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   Widget _buildCommunityPostCard(FeedPost post) {
+    final isYagoOfficial = post.authorName == 'Comunidad Yago' ||
+        post.authorName == 'Equipo Yago' ||
+        post.authorAvatar == null;
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -621,23 +668,28 @@ class _FeedTabState extends State<FeedTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.community.withValues(alpha: 0.12),
-            backgroundImage: post.authorAvatar != null
-                ? NetworkImage(post.authorAvatar!)
-                : null,
-            onBackgroundImageError: post.authorAvatar != null
-                ? (_, _) {}
-                : null,
-            child: post.authorAvatar == null
-                ? const Icon(
-                    Icons.person_rounded,
-                    size: 22,
-                    color: AppColors.community,
-                  )
-                : null,
-          ),
+          if (post.authorAvatar != null)
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.community.withValues(alpha: 0.12),
+              backgroundImage: NetworkImage(post.authorAvatar!),
+              onBackgroundImageError: (_, _) {},
+            )
+          else
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primaryTint,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.border,
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.all(5),
+              child: const YagoLogoIcon(size: 24),
+            ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -657,9 +709,19 @@ class _FeedTabState extends State<FeedTab> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (isYagoOfficial) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                    ],
                     const SizedBox(width: 4),
                     Text(
-                      '@${post.authorName.toLowerCase().replaceAll(' ', '')}',
+                      isYagoOfficial
+                          ? '@yago.app'
+                          : '@${post.authorName.toLowerCase().replaceAll(' ', '')}',
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         color: AppColors.twitterHandle,

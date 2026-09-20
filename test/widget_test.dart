@@ -142,6 +142,29 @@ void main() {
     expect(find.byType(AnimatedPawIcon), findsOneWidget);
   });
 
+  testWidgets('PetCard renders community post with Yago logo and Equipo Yago branding', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PetCard(
+            name: 'Rocky',
+            details: 'Mestizo de Labrador · 2 años',
+            locationAndTime: 'Costanera, Caleta Olivia · Hace 5 horas',
+            imageUrl: 'assets/images/IMG_4178.JPG',
+            status: YagoPetStatus.community,
+            tags: const ['Pelaje negro'],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Rocky'), findsOneWidget);
+    expect(find.text('Equipo Yago'), findsOneWidget);
+    expect(find.text('COMUNIDAD'), findsOneWidget);
+    expect(find.byType(YagoLogoIcon), findsOneWidget);
+    expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
+  });
+
   testWidgets('ComingSoonView renders title, badge and description', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(

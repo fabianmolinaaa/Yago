@@ -4,6 +4,7 @@ import '../../utils/design_system.dart';
 import 'animated_paw_icon.dart';
 import 'yago_badge.dart';
 import 'yago_button.dart';
+import 'yago_logo.dart';
 
 /// Card de publicación de mascota con diseño estilo Instagram/Twitter optimizado para Yago.
 class PetCard extends StatefulWidget {
@@ -94,7 +95,10 @@ class _PetCardState extends State<PetCard> {
 
   @override
   Widget build(BuildContext context) {
-    final author = widget.authorName ?? 'Comunidad Yago';
+    final isCommunity = widget.status == YagoPetStatus.community;
+    final author = isCommunity
+        ? 'Equipo Yago'
+        : (widget.authorName ?? 'Comunidad Yago');
 
     // Separar ubicación y tiempo si viene con " · " (ej: "Palermo, CABA · Hace 2 horas")
     final parts = widget.locationAndTime.split(' · ');
@@ -121,32 +125,65 @@ class _PetCardState extends State<PetCard> {
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 17,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                  backgroundImage: widget.authorAvatar != null
-                      ? NetworkImage(widget.authorAvatar!)
-                      : null,
-                  child: widget.authorAvatar == null
-                      ? const Icon(
-                          Icons.person_rounded,
-                          size: 20,
-                          color: AppColors.primary,
-                        )
-                      : null,
-                ),
+                if (isCommunity)
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryTint,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.border,
+                        width: 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: const YagoLogoIcon(size: 20),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 17,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                    backgroundImage: widget.authorAvatar != null
+                        ? (widget.authorAvatar!.startsWith('assets/')
+                            ? AssetImage(widget.authorAvatar!) as ImageProvider
+                            : NetworkImage(widget.authorAvatar!))
+                        : null,
+                    child: widget.authorAvatar == null
+                        ? const Icon(
+                            Icons.person_rounded,
+                            size: 20,
+                            color: AppColors.primary,
+                          )
+                        : null,
+                  ),
                 const SizedBox(width: 9),
                 Flexible(
-                  child: Text(
-                    author,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          author,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isCommunity) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),

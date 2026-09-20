@@ -45,7 +45,7 @@ class MockDataService {
           'Paseando un rato...',
       imageUrl: 'assets/images/IMG_4178.JPG',
       tags: ['Pelaje negro', 'Pecho blanco', 'Muy sociable'],
-      contactName: 'Fabian Molina',
+      contactName: 'Equipo Yago',
       contactPhone: '+54 9 11 5566-7788',
       latitude: -34.5614,
       longitude: -58.4563,

@@ -46,28 +46,65 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: const Icon(Icons.person, color: AppColors.primary),
-                ),
+                if (_pet.status == YagoPetStatus.community)
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryTint,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: const YagoLogoIcon(size: 28),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    child: const Icon(Icons.person, color: AppColors.primary),
+                  ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _pet.contactName,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _pet.status == YagoPetStatus.community
+                                  ? 'Equipo Yago'
+                                  : _pet.contactName,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (_pet.status == YagoPetStatus.community) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _pet.isUserOwner ? 'Dueño de la mascota' : 'Persona que reportó',
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        _pet.status == YagoPetStatus.community
+                            ? 'Equipo oficial de la comunidad Yago'
+                            : (_pet.isUserOwner
+                                ? 'Dueño de la mascota'
+                                : 'Persona que reportó'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
