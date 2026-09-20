@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/feed_post.dart';
 import '../models/pet.dart';
+import '../models/user_model.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -28,6 +29,9 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>>? get _postsRef =>
       _db?.collection('feed_posts');
 
+  CollectionReference<Map<String, dynamic>>? get _usersRef =>
+      _db?.collection('users');
+
   /// Datos iniciales exactos existentes para el sembrado inicial en Firestore
   final List<Pet> existingPets = [
     Pet(
@@ -50,7 +54,8 @@ class FirestoreService {
       contactPhone: '+54 9 11 4567-8901',
       latitude: -34.5889,
       longitude: -58.4233,
-      isUserOwner: true,
+      ownerId: 'seed-camila-rodriguez',
+      isUserOwner: false,
     ),
     Pet(
       id: 'pet-2',
@@ -363,5 +368,54 @@ class FirestoreService {
         'isLiked': newIsLiked,
       });
     } catch (_) {}
+  }
+
+  // ─── Gestión de Perfiles de Usuario (/users) ─────────────────────────────
+
+  /// Guarda o actualiza el documento de perfil de usuario en /users/{uid}
+  Future<void> setUserProfile(UserModel user) async {
+    if (!isFirebaseReady || _usersRef == null) return;
+    try {
+      await _usersRef!.doc(user.uid).set(user.toMap(), SetOptions(merge: true));
+    } catch (e) {
+      throw Exception('No se pudo guardar el perfil de usuario: $e');
+    }
+  }
+
+  /// Obtiene el perfil de un usuario desde Firestore
+  Future<UserModel?> getUserProfile(String uid) async {
+    if (!isFirebaseReady || _usersRef == null) return null;
+    try {
+      final doc = await _usersRef!.doc(uid).get();
+      if (doc.exists) {
+        return UserModel.fromFirestore(doc);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Stream reactivo del perfil del usuario
+  Stream<UserModel?> streamUserProfile(String uid) {
+    if (!isFirebaseReady || _usersRef == null) {
+      return Stream.value(null);
+    }
+    return _usersRef!.doc(uid).snapshots().map((doc) {
+      if (doc.exists) {
+        return UserModel.fromFirestore(doc);
+      }
+      return null;
+    });
+  }
+
+  /// Actualización parcial del perfil
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+    if (!isFirebaseReady || _usersRef == null) return;
+    try {
+      final updateData = Map<String, dynamic>.from(data);
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      await _usersRef!.doc(uid).update(updateData);
+    } catch (e) {
+      throw Exception('No se pudo actualizar el perfil: $e');
+    }
   }
 }

@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/design_system.dart';
@@ -182,11 +184,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         photoURL: photoUrl,
       );
 
-      // Actualizar metadatos persistentes en MockDataService
+      final bio = _bioController.text.trim();
+      final location = _locationController.text.trim();
+      final phone = _phoneController.text.trim();
+      final currentUser = AuthService().currentUser;
+
+      // Actualizar en Cloud Firestore si está autenticado
+      if (currentUser != null) {
+        try {
+          await FirestoreService().setUserProfile(
+            UserModel(
+              uid: currentUser.uid,
+              email: currentUser.email ?? '',
+              displayName: name,
+              photoUrl: photoUrl,
+              phoneNumber: phone,
+              bio: bio,
+              location: location,
+              updatedAt: DateTime.now(),
+            ),
+          );
+        } catch (_) {}
+      }
+
+      // Actualizar metadatos en caché local de MockDataService
       MockDataService().updateUserProfile(
-        bio: _bioController.text.trim(),
-        location: _locationController.text.trim(),
-        phone: _phoneController.text.trim(),
+        bio: bio,
+        location: location,
+        phone: phone,
         photoUrl: photoUrl,
       );
 

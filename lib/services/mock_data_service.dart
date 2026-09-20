@@ -121,6 +121,20 @@ class MockDataService {
   /// Posts comunitarios
   List<FeedPost> getCommunityPosts() => List.unmodifiable(_communityPosts);
 
+  /// Obtiene los posts comunitarios del usuario autenticado
+  List<FeedPost> getMyPosts({String? userId, String? userName}) {
+    if (userId == null && userName == null) return const [];
+    return _communityPosts.where((post) {
+      if (userId != null && post.authorId != null && post.authorId!.isNotEmpty) {
+        return post.authorId == userId;
+      }
+      if (userName != null && userName.trim().isNotEmpty) {
+        return post.authorName.trim().toLowerCase() == userName.trim().toLowerCase();
+      }
+      return false;
+    }).toList();
+  }
+
   /// Agrega una nueva publicación comunitaria y la persiste en Firestore
   void addCommunityPost(FeedPost post) {
     _communityPosts.insert(0, post);
@@ -143,10 +157,9 @@ class MockDataService {
   }
 
   // ─── Gestión de Perfil de Usuario ──────────────────────────────────────────
-  String _userBio =
-      'Amante de los animales y voluntario en la comunidad Yago. Ayudando a que todas las mascotas regresen a casa 🐾';
-  String _userLocation = 'Santa Cruz, Argentina';
-  String _userPhone = '+54 9 297 412-3456';
+  String _userBio = '';
+  String _userLocation = '';
+  String _userPhone = '';
   String? _userCustomPhotoUrl;
 
   String get userBio => _userBio;
@@ -164,5 +177,12 @@ class MockDataService {
     if (location != null) _userLocation = location.trim();
     if (phone != null) _userPhone = phone.trim();
     if (photoUrl != null) _userCustomPhotoUrl = photoUrl.trim();
+  }
+
+  void clearUserProfileCache() {
+    _userBio = '';
+    _userLocation = '';
+    _userPhone = '';
+    _userCustomPhotoUrl = null;
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeedPost {
   final String id;
+  final String? authorId;
   final String authorName;
   final String? authorAvatar;
   final String timeAgo;
@@ -13,6 +14,7 @@ class FeedPost {
 
   const FeedPost({
     required this.id,
+    this.authorId,
     required this.authorName,
     this.authorAvatar,
     required this.timeAgo,
@@ -26,6 +28,7 @@ class FeedPost {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'authorId': authorId,
       'authorName': authorName,
       'authorAvatar': authorAvatar,
       'timeAgo': timeAgo,
@@ -40,6 +43,7 @@ class FeedPost {
   factory FeedPost.fromMap(Map<String, dynamic> map, String docId) {
     return FeedPost(
       id: map['id'] ?? docId,
+      authorId: map['authorId'] as String?,
       authorName: map['authorName'] ?? 'Comunidad Yago',
       authorAvatar: map['authorAvatar'] as String?,
       timeAgo: map['timeAgo'] ?? 'Reciente',
@@ -58,6 +62,7 @@ class FeedPost {
 
   FeedPost copyWith({
     String? id,
+    String? authorId,
     String? authorName,
     String? authorAvatar,
     String? timeAgo,
@@ -69,6 +74,7 @@ class FeedPost {
   }) {
     return FeedPost(
       id: id ?? this.id,
+      authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
       authorAvatar: authorAvatar ?? this.authorAvatar,
       timeAgo: timeAgo ?? this.timeAgo,

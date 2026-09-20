@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 enum YagoPetStatus {
   lost,
@@ -12,6 +13,7 @@ enum YagoPetStatus {
 
 class Pet {
   final String id;
+  final String? ownerId;
   final String name;
   final String breed; // Raza, ej: "Golden Retriever", "Mestizo", "Siamés"
   final String species; // "Perro", "Gato", "Otro"
@@ -28,11 +30,12 @@ class Pet {
   final String contactPhone;
   final double latitude;
   final double longitude;
-  final bool isUserOwner;
+  final bool _explicitUserOwner;
   final String? storyText;
 
   const Pet({
     required this.id,
+    this.ownerId,
     required this.name,
     required this.breed,
     required this.species,
@@ -49,9 +52,17 @@ class Pet {
     required this.contactPhone,
     required this.latitude,
     required this.longitude,
-    this.isUserOwner = false,
+    bool isUserOwner = false,
     this.storyText,
-  });
+  }) : _explicitUserOwner = isUserOwner;
+
+  bool get isUserOwner {
+    final currentUid = AuthService().currentUser?.uid;
+    if (currentUid != null && ownerId != null && ownerId!.isNotEmpty) {
+      return ownerId == currentUid;
+    }
+    return _explicitUserOwner;
+  }
 
   /// Detalle resumido para PetCard (ej: "Golden Retriever · Macho · 2 años")
   String get detailsSummary => '$breed · $gender · $age';
@@ -83,6 +94,7 @@ class Pet {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'ownerId': ownerId,
       'name': name,
       'breed': breed,
       'species': species,
@@ -115,6 +127,7 @@ class Pet {
 
     return Pet(
       id: map['id'] ?? docId,
+      ownerId: map['ownerId'] as String?,
       name: map['name'] ?? '',
       breed: map['breed'] ?? '',
       species: map['species'] ?? '',
@@ -143,6 +156,7 @@ class Pet {
 
   Pet copyWith({
     String? id,
+    String? ownerId,
     String? name,
     String? breed,
     String? species,
@@ -164,6 +178,7 @@ class Pet {
   }) {
     return Pet(
       id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
       name: name ?? this.name,
       breed: breed ?? this.breed,
       species: species ?? this.species,

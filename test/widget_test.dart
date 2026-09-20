@@ -318,4 +318,33 @@ void main() {
     await tester.tap(saveButtonFinder);
     await tester.pumpAndSettle();
   });
+
+  testWidgets('ProfileTab does not show hardcoded demo data and shows clean empty states', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ProfileTab(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No debe mostrar publicaciones ajenas de prueba (costanera o Luna)
+    expect(find.textContaining('Paseando por la costanera'), findsNothing);
+    expect(find.textContaining('¡Buscamos a Luna!'), findsNothing);
+
+    // No debe mostrar la biografía hardcodeada antigua
+    expect(find.textContaining('Amante de los animales y voluntario en la comunidad Yago'), findsNothing);
+
+    // No debe mostrar fecha fija de febrero de 2024
+    expect(find.text('Se unió en febrero de 2024'), findsNothing);
+
+    // En su lugar debe mostrar el estado vacío de publicaciones
+    expect(find.text('Sin publicaciones aún'), findsOneWidget);
+
+    // Navegar a Reportes y comprobar estado vacío sin reportes ajenos
+    await tester.tap(find.text('Reportes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sin reportes activos'), findsOneWidget);
+  });
 }

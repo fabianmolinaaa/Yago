@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../models/feed_post.dart';
 import '../../models/pet.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
@@ -73,168 +76,234 @@ class _ProfileTabState extends State<ProfileTab> {
     });
   }
 
+  String _formatJoinDate(DateTime? dateTime) {
+    if (dateTime == null) return 'Miembro de la comunidad';
+    const months = [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre'
+    ];
+    final monthIndex =
+        (dateTime.month >= 1 && dateTime.month <= 12) ? dateTime.month - 1 : 0;
+    return 'Se unió en ${months[monthIndex]} de ${dateTime.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
-    final userName =
+    final fallbackName =
         (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
             ? user.displayName!.trim()
-            : 'Fabián';
-    final userEmail = user?.email ?? 'usuario@yago.app';
-    final userPhoto = user?.photoURL ?? MockDataService().userCustomPhotoUrl;
-    final userBio = MockDataService().userBio;
-    final userLocation = MockDataService().userLocation;
-    final myReports = MockDataService().getMyReports();
+            : (user?.email != null && user!.email!.trim().isNotEmpty
+                ? user.email!.split('@').first
+                : 'Usuario');
+    final userEmail = user?.email ?? '';
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppColors.textPrimary,
-            ),
-            onPressed: () {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textPrimary,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Buscador de perfil'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(
-                Icons.more_vert_rounded,
-                color: AppColors.textPrimary,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
-              onSelected: (val) {
-                if (val == 'logout') {
-                  _handleLogout(context);
-                } else if (val == 'share') {
-                  _showShareSnackbar();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'share',
-                  child: Row(
-                    children: [
-                      Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
-                      SizedBox(width: 10),
-                      Text('Compartir perfil'),
-                    ],
-                  ),
+    return StreamBuilder<UserModel?>(
+      stream: user != null
+          ? FirestoreService().streamUserProfile(user.uid)
+          : Stream<UserModel?>.value(null),
+      builder: (context, snapshot) {
+        final userModel = snapshot.data;
+        final userName = (userModel?.displayName != null &&
+                userModel!.displayName.trim().isNotEmpty)
+            ? userModel.displayName.trim()
+            : fallbackName;
+        final userPhoto = userModel?.photoUrl ??
+            user?.photoURL ??
+            MockDataService().userCustomPhotoUrl;
+        final userBio = (userModel?.bio != null &&
+                userModel!.bio!.trim().isNotEmpty)
+            ? userModel.bio!.trim()
+            : MockDataService().userBio;
+        final userLocation = (userModel?.location != null &&
+                userModel!.location!.trim().isNotEmpty)
+            ? userModel.location!.trim()
+            : MockDataService().userLocation;
+        final userPhone = (userModel?.phoneNumber != null &&
+                userModel!.phoneNumber!.trim().isNotEmpty)
+            ? userModel.phoneNumber!.trim()
+            : MockDataService().userPhone;
+        final myReports = MockDataService().getMyReports();
+        final userPosts = MockDataService().getMyPosts(
+          userId: user?.uid,
+          userName: userName,
+        );
+        final joinDate = user?.metadata.creationTime ?? userModel?.createdAt;
+
+        return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppColors.textPrimary,
                 ),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout_rounded, size: 18, color: AppColors.lost),
-                      SizedBox(width: 10),
-                      Text('Cerrar sesión', style: TextStyle(color: AppColors.lost)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverToBoxAdapter(
-              child: _buildProfileHeader(
-                context: context,
-                userName: userName,
-                userEmail: userEmail,
-                userBio: userBio,
-                userLocation: userLocation,
-                userPhoto: userPhoto,
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverTabBarDelegate(
-                TabBar(
-                  indicatorColor: AppColors.textPrimary,
-                  indicatorWeight: 3.2,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelColor: AppColors.textPrimary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  labelStyle: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textPrimary,
                   ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Buscador de perfil'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    color: AppColors.textPrimary,
                   ),
-                  tabs: const [
-                    Tab(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.mdBorder),
+                  onSelected: (val) {
+                    if (val == 'logout') {
+                      _handleLogout(context);
+                    } else if (val == 'share') {
+                      _showShareSnackbar();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'share',
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.article_outlined, size: 18),
-                          SizedBox(width: 6),
-                          Text('Posts'),
+                          Icon(Icons.share_outlined,
+                              size: 18, color: AppColors.textPrimary),
+                          SizedBox(width: 10),
+                          Text('Compartir perfil'),
                         ],
                       ),
                     ),
-                    Tab(
+                    const PopupMenuItem(
+                      value: 'logout',
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.campaign_outlined, size: 18),
-                          SizedBox(width: 6),
-                          Text('Reportes'),
-                        ],
-                      ),
-                    ),
-                    Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.bookmark_border_rounded, size: 18),
-                          SizedBox(width: 6),
-                          Text('Guardados'),
+                          Icon(Icons.logout_rounded,
+                              size: 18, color: AppColors.lost),
+                          SizedBox(width: 10),
+                          Text('Cerrar sesión',
+                              style: TextStyle(color: AppColors.lost)),
                         ],
                       ),
                     ),
                   ],
                 ),
+              ],
+            ),
+            body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(
+                  child: _buildProfileHeader(
+                    context: context,
+                    userName: userName,
+                    userEmail: userEmail,
+                    userBio: userBio,
+                    userLocation: userLocation,
+                    userPhone: userPhone,
+                    userJoinDate: joinDate,
+                    userPhoto: userPhoto,
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverTabBarDelegate(
+                    TabBar(
+                      indicatorColor: AppColors.textPrimary,
+                      indicatorWeight: 3.2,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelColor: AppColors.textPrimary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      labelStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                      tabs: const [
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.article_outlined, size: 18),
+                              SizedBox(width: 6),
+                              Text('Posts'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.campaign_outlined, size: 18),
+                              SizedBox(width: 6),
+                              Text('Reportes'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bookmark_border_rounded, size: 18),
+                              SizedBox(width: 6),
+                              Text('Guardados'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              body: TabBarView(
+                children: [
+                  _buildPostsTab(
+                    context: context,
+                    userName: userName,
+                    userPhoto: userPhoto,
+                    userPosts: userPosts,
+                    myReports: myReports,
+                    bottomInset: bottomInset,
+                  ),
+                  _buildReportsTab(context, myReports, bottomInset),
+                  _buildSavedTab(context, bottomInset),
+                ],
               ),
             ),
-          ],
-          body: TabBarView(
-            children: [
-              _buildPostsTab(context, userName, userPhoto, myReports, bottomInset),
-              _buildReportsTab(context, myReports, bottomInset),
-              _buildSavedTab(context, bottomInset),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -307,6 +376,8 @@ class _ProfileTabState extends State<ProfileTab> {
     required String userEmail,
     required String userBio,
     required String userLocation,
+    required String userPhone,
+    DateTime? userJoinDate,
     String? userPhoto,
   }) {
     return Padding(
@@ -333,66 +404,84 @@ class _ProfileTabState extends State<ProfileTab> {
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  userEmail,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13.5,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w400,
+              if (userEmail.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    userEmail,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
 
           // Biografía descriptiva
-          Text(
-            userBio,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              height: 1.35,
-              color: AppColors.textPrimary,
+          if (userBio.isNotEmpty) ...[
+            Text(
+              userBio,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                height: 1.35,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+          ] else ...[
+            Text(
+              'Aún no has agregado una biografía. ¡Edita tu perfil para que la comunidad te conozca! 🐾',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13.5,
+                fontStyle: FontStyle.italic,
+                height: 1.35,
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // Metadatos: Ubicación y Fecha de registro
+          if (userLocation.isNotEmpty) ...[
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  userLocation,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           Row(
             children: [
               const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                userLocation,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Row(
-            children: [
-              Icon(
                 Icons.calendar_today_outlined,
                 size: 15,
                 color: AppColors.textSecondary,
               ),
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
               Text(
-                'Se unió en febrero de 2024',
-                style: TextStyle(
+                _formatJoinDate(userJoinDate),
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -436,7 +525,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           initialName: userName,
                           initialBio: userBio,
                           initialLocation: userLocation,
-                          initialPhone: MockDataService().userPhone,
+                          initialPhone: userPhone,
                           currentPhotoUrl: userPhoto,
                         ),
                       ),
@@ -472,62 +561,80 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Pestaña 1 (Posts - Predeterminada): feed unificado con publicaciones de todo tipo.
-  /// Mantiene exactamente el mismo diseño de publicación normal tanto para posts
-  /// cotidianos como para reportes, agregando la etiqueta de estado al lado del nombre.
-  Widget _buildPostsTab(
-    BuildContext context,
-    String userName,
+  /// Pestaña 1 (Posts - Predeterminada): feed con publicaciones y reportes propios del usuario.
+  Widget _buildPostsTab({
+    required BuildContext context,
+    required String userName,
     String? userPhoto,
-    List<Pet> myReports,
-    double bottomInset,
-  ) {
+    required List<FeedPost> userPosts,
+    required List<Pet> myReports,
+    required double bottomInset,
+  }) {
+    if (userPosts.isEmpty && myReports.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
+        children: [
+          const SizedBox(height: 16),
+          Icon(
+            Icons.article_outlined,
+            size: 56,
+            color: AppColors.subtle.withValues(alpha: 0.6),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Sin publicaciones aún',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tus publicaciones cotidianas o alertas creadas aparecerán listadas aquí.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      );
+    }
+
     return ListView(
       padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
       children: [
-        // Publicación cotidiana normal del usuario
-        _buildPostCard(
-          context: context,
-          postId: 'user-post-1',
-          authorName: userName,
-          authorPhoto: userPhoto,
-          timeAgo: 'Hace 2 h',
-          content:
-              'Paseando por la costanera con mi compañero fiel. Siempre atentos por si vemos a alguna mascota extraviada de los reportes del barrio 🐾🐶',
-          imageUrl: 'assets/images/IMG_5667.JPG',
-          commentsCount: 4,
-        ),
-
-        // Publicación de reporte de mascota del usuario:
-        // Mismo diseño exacto de post normal, solo con la etiqueta de estado al lado del nombre.
-        if (myReports.isNotEmpty)
+        // Publicaciones comunitarias del usuario
+        for (final post in userPosts)
           _buildPostCard(
             context: context,
-            postId: 'user-report-1',
+            postId: post.id,
             authorName: userName,
             authorPhoto: userPhoto,
-            statusBadge: myReports.first.status,
-            timeAgo: 'Ayer',
-            content:
-                '¡Buscamos a ${myReports.first.name}! ${myReports.first.description}',
-            imageUrl: myReports.first.imageUrl,
-            pet: myReports.first,
-            commentsCount: 12,
+            timeAgo: post.timeAgo,
+            content: post.content,
+            imageUrl: post.imageUrl,
+            commentsCount: post.commentsCount,
           ),
 
-        // Resto de reportes del usuario si hubiera más
-        for (int i = 1; i < myReports.length; i++)
+        // Reportes de mascotas publicados por el usuario
+        for (final pet in myReports)
           _buildPostCard(
             context: context,
-            postId: 'user-report-${myReports[i].id}',
+            postId: 'user-report-${pet.id}',
             authorName: userName,
             authorPhoto: userPhoto,
-            statusBadge: myReports[i].status,
-            timeAgo: myReports[i].timeAgo,
-            content: myReports[i].description,
-            imageUrl: myReports[i].imageUrl,
-            pet: myReports[i],
-            commentsCount: 3,
+            statusBadge: pet.status,
+            timeAgo: pet.timeAgo,
+            content: pet.description,
+            imageUrl: pet.imageUrl,
+            pet: pet,
+            commentsCount: 0,
           ),
       ],
     );
@@ -540,44 +647,38 @@ class _ProfileTabState extends State<ProfileTab> {
     double bottomInset,
   ) {
     if (myReports.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 32.0,
-            right: 32.0,
-            bottom: 96.0 + bottomInset,
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
+        children: [
+          const SizedBox(height: 16),
+          Icon(
+            Icons.campaign_outlined,
+            size: 56,
+            color: AppColors.subtle.withValues(alpha: 0.6),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.campaign_outlined,
-                size: 56,
-                color: AppColors.subtle.withValues(alpha: 0.6),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Sin reportes activos',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Tus alertas de mascotas perdidas o encontradas aparecerán listadas aquí.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+          const SizedBox(height: 12),
+          const Text(
+            'Sin reportes activos',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tus alertas de mascotas perdidas o encontradas aparecerán listadas aquí.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       );
     }
 
@@ -657,44 +758,38 @@ class _ProfileTabState extends State<ProfileTab> {
 
   /// Pestaña 3: Publicaciones y reportes guardados
   Widget _buildSavedTab(BuildContext context, double bottomInset) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 32.0,
-          right: 32.0,
-          bottom: 96.0 + bottomInset,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
+      children: [
+        const SizedBox(height: 16),
+        Icon(
+          Icons.bookmark_border_rounded,
+          size: 56,
+          color: AppColors.subtle.withValues(alpha: 0.6),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.bookmark_border_rounded,
-              size: 56,
-              color: AppColors.subtle.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No tienes elementos guardados',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Las mascotas o avisos que guardes para hacerles seguimiento se almacenarán aquí.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+        const SizedBox(height: 12),
+        const Text(
+          'No tienes elementos guardados',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        const Text(
+          'Las mascotas o avisos que guardes para hacerles seguimiento se almacenarán aquí.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 

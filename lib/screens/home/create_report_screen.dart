@@ -216,6 +216,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     final newPet = Pet(
       id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
+      ownerId: currentUser?.uid,
       name: name,
       breed: breed,
       species: _selectedSpecies,

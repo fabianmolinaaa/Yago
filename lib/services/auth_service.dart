@@ -1,4 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_model.dart';
+import 'firestore_service.dart';
+import 'mock_data_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -47,9 +50,30 @@ class AuthService {
       password: password,
     );
 
-    if (credential.user != null && displayName.trim().isNotEmpty) {
-      await credential.user!.updateDisplayName(displayName.trim());
-      await credential.user!.reload();
+    if (credential.user != null) {
+      final name = displayName.trim();
+      if (name.isNotEmpty) {
+        await credential.user!.updateDisplayName(name);
+        await credential.user!.reload();
+      }
+
+      // Persistir documento inicial limpio en Cloud Firestore (/users/{uid})
+      try {
+        final newUser = UserModel(
+          uid: credential.user!.uid,
+          email: email.trim(),
+          displayName: name,
+          photoUrl: null,
+          phoneNumber: '',
+          bio: '',
+          location: '',
+          role: 'user',
+          isActive: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await FirestoreService().setUserProfile(newUser);
+      } catch (_) {}
     }
 
     return credential;
@@ -63,6 +87,7 @@ class AuthService {
   /// Cierra la sesión activa
   Future<void> signOut() async {
     await _auth.signOut();
+    MockDataService().clearUserProfileCache();
   }
 
   /// Actualiza el perfil del usuario autenticado (nombre y/o foto)
@@ -76,6 +101,15 @@ class AuthService {
           await _auth.currentUser!.updatePhotoURL(photoURL.trim());
         }
         await _auth.currentUser!.reload();
+
+        // Actualizar en Firestore
+        final uid = _auth.currentUser!.uid;
+        final Map<String, dynamic> updateData = {};
+        if (displayName != null) updateData['displayName'] = displayName.trim();
+        if (photoURL != null) updateData['photoUrl'] = photoURL.trim();
+        if (updateData.isNotEmpty) {
+          await FirestoreService().updateUserProfile(uid, updateData);
+        }
       }
     } catch (_) {}
   }

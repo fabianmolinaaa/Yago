@@ -319,6 +319,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       final newPet = Pet(
         id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
+        ownerId: currentUser?.uid,
         name: finalName,
         breed: finalBreed,
         species: 'Perro',
@@ -350,6 +351,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       final newPost = FeedPost(
         id: 'post-${DateTime.now().millisecondsSinceEpoch}',
+        authorId: currentUser?.uid,
         authorName: authorName,
         authorAvatar: authorAvatar,
         timeAgo: 'Recién publicado',
