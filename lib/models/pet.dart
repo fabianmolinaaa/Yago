@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum YagoPetStatus {
   lost,
   found,
@@ -56,6 +58,88 @@ class Pet {
 
   /// Ubicación y tiempo para PetCard (ej: "Palermo, CABA · Hace 2 horas")
   String get locationAndTime => '$location · $timeAgo';
+
+  static YagoPetStatus parseStatus(String? statusStr) {
+    switch (statusStr) {
+      case 'lost':
+        return YagoPetStatus.lost;
+      case 'found':
+        return YagoPetStatus.found;
+      case 'reunited':
+        return YagoPetStatus.reunited;
+      case 'community':
+        return YagoPetStatus.community;
+      case 'urgent':
+        return YagoPetStatus.urgent;
+      case 'mating':
+        return YagoPetStatus.mating;
+      case 'isNew':
+        return YagoPetStatus.isNew;
+      default:
+        return YagoPetStatus.lost;
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'breed': breed,
+      'species': species,
+      'gender': gender,
+      'age': age,
+      'status': status.name,
+      'location': location,
+      'locationName': location,
+      'timeAgo': timeAgo,
+      'date': Timestamp.fromDate(date),
+      'description': description,
+      'imageUrl': imageUrl,
+      'tags': tags,
+      'contactName': contactName,
+      'contactPhone': contactPhone,
+      'latitude': latitude,
+      'longitude': longitude,
+      'isUserOwner': isUserOwner,
+      'storyText': storyText,
+    };
+  }
+
+  factory Pet.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime parsedDate = DateTime.now();
+    if (map['date'] is Timestamp) {
+      parsedDate = (map['date'] as Timestamp).toDate();
+    } else if (map['date'] is String) {
+      parsedDate = DateTime.tryParse(map['date'] as String) ?? DateTime.now();
+    }
+
+    return Pet(
+      id: map['id'] ?? docId,
+      name: map['name'] ?? '',
+      breed: map['breed'] ?? '',
+      species: map['species'] ?? '',
+      gender: map['gender'] ?? '',
+      age: map['age'] ?? '',
+      status: parseStatus(map['status']),
+      location: map['location'] ?? map['locationName'] ?? '',
+      timeAgo: map['timeAgo'] ?? '',
+      date: parsedDate,
+      description: map['description'] ?? '',
+      imageUrl: map['imageUrl'] ?? '',
+      tags: List<String>.from(map['tags'] ?? []),
+      contactName: map['contactName'] ?? '',
+      contactPhone: map['contactPhone'] ?? '',
+      latitude: (map['latitude'] as num?)?.toDouble() ?? -34.5889,
+      longitude: (map['longitude'] as num?)?.toDouble() ?? -58.4233,
+      isUserOwner: map['isUserOwner'] as bool? ?? false,
+      storyText: map['storyText'] as String?,
+    );
+  }
+
+  factory Pet.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return Pet.fromMap(data, doc.id);
+  }
 
   Pet copyWith({
     String? id,

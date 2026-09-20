@@ -328,7 +328,10 @@ class _FeedTabState extends State<FeedTab> {
         child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            setState(() {});
+            await MockDataService().refreshFromFirestore();
+            if (mounted) {
+              setState(() {});
+            }
           },
           child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
