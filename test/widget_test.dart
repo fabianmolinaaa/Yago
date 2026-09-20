@@ -245,7 +245,7 @@ void main() {
     expect(find.text('Nombre de la mascota'), findsOneWidget);
     expect(find.text('Raza'), findsOneWidget);
     expect(find.text('Sexo'), findsOneWidget);
-    expect(find.text('♂ Macho'), findsOneWidget);
-    expect(find.text('♀ Hembra'), findsOneWidget);
+    expect(find.text('Macho'), findsOneWidget);
+    expect(find.text('Hembra'), findsOneWidget);
   });
 }

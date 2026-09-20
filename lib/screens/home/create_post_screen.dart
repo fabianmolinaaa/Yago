@@ -108,6 +108,30 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
+  Widget _buildGenderPill(String gender) {
+    final isSelected = _selectedGender == gender;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedGender = gender),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.textPrimary : const Color(0xFFEFF3F4),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          gender,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final file = await StorageService().pickImage(source: source);
@@ -608,61 +632,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               const SizedBox(height: 14),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sexo',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            ChoiceChip(
-                              label: const Text('♂ Macho'),
-                              selected: _selectedGender == 'Macho',
-                              selectedColor: AppColors.mating,
-                              backgroundColor: AppColors.matingBg,
-                              labelStyle: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _selectedGender == 'Macho'
-                                    ? Colors.white
-                                    : AppColors.matingText,
-                              ),
-                              onSelected: (_) => setState(() => _selectedGender = 'Macho'),
-                            ),
-                            const SizedBox(width: 8),
-                            ChoiceChip(
-                              label: const Text('♀ Hembra'),
-                              selected: _selectedGender == 'Hembra',
-                              selectedColor: AppColors.mating,
-                              backgroundColor: AppColors.matingBg,
-                              labelStyle: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _selectedGender == 'Hembra'
-                                    ? Colors.white
-                                    : AppColors.matingText,
-                              ),
-                              onSelected: (_) => setState(() => _selectedGender = 'Hembra'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: YagoTextField(
                       label: 'Zona / Barrio',
@@ -671,15 +641,42 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.subtle),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: YagoTextField(
+                      label: 'Teléfono (Opcional)',
+                      hint: 'Ej: +54 9 11 3456-7890',
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
-              YagoTextField(
-                label: 'Teléfono de contacto (Opcional)',
-                hint: 'Ej: +54 9 11 3456-7890',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),
+
+              // Selector de sexo minimalista y elegante sin color
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Sexo',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildGenderPill('Macho'),
+                      const SizedBox(width: 8),
+                      _buildGenderPill('Hembra'),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
             ],
