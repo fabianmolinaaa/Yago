@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../models/feed_post.dart';
 import '../../models/pet.dart';
-import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
@@ -80,66 +79,6 @@ class _FeedTabState extends State<FeedTab> {
         ),
       ),
     ).then((_) => setState(() {}));
-  }
-
-  Widget _buildCreatePostPrompt() {
-    final currentUser = AuthService().currentUser;
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 17,
-            backgroundColor: AppColors.community.withValues(alpha: 0.12),
-            backgroundImage: currentUser?.photoURL != null
-                ? NetworkImage(currentUser!.photoURL!)
-                : null,
-            child: currentUser?.photoURL == null
-                ? const Icon(Icons.person_rounded, size: 20, color: AppColors.community)
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: _openCreatePost,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Text(
-                  '¿Tienes un consejo o historia para compartir?',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          IconButton(
-            icon: const Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 22,
-              color: AppColors.primary,
-            ),
-            tooltip: 'Crear publicación con foto',
-            onPressed: _openCreatePost,
-          ),
-        ],
-      ),
-    );
   }
 
   void _openTopFilterModal() {
@@ -339,6 +278,26 @@ class _FeedTabState extends State<FeedTab> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 66.0),
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: FloatingActionButton(
+            heroTag: 'createPostFab',
+            onPressed: _openCreatePost,
+            backgroundColor: AppColors.primary,
+            elevation: 3,
+            shape: const CircleBorder(),
+            tooltip: 'Crear publicación',
+            child: const Icon(
+              Icons.add_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -377,17 +336,6 @@ class _FeedTabState extends State<FeedTab> {
                 ],
               ),
               actions: [
-                // Botón para redactar publicación comunitaria (HU-S1-02)
-                IconButton(
-                  icon: const Icon(
-                    Icons.edit_note_rounded,
-                    size: 26,
-                    color: AppColors.textPrimary,
-                  ),
-                  tooltip: 'Crear publicación comunitaria',
-                  onPressed: _openCreatePost,
-                ),
-
                 // Botón de filtros con indicador de filtro activo
                 IconButton(
                   icon: Stack(
@@ -418,11 +366,6 @@ class _FeedTabState extends State<FeedTab> {
                 ),
                 const SizedBox(width: 8),
               ],
-            ),
-
-            // Barra rápida para compartir publicación comunitaria (HU-S1-02)
-            SliverToBoxAdapter(
-              child: _buildCreatePostPrompt(),
             ),
 
             // Contenido según filtro
