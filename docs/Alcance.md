@@ -64,9 +64,10 @@ El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **
 * **Coordinación y avistamientos:** Permite a quien vio o retuvo a un animal contactar de forma inmediata, privada y segura a la persona a cargo del reporte para aportar pistas, fotos o coordinar el reencuentro.
 * **Bandeja de conversaciones:** Listado de chats activos vinculados al contexto del reporte de la mascota para evitar confusiones.
 
-### 4.5 Gestión de usuarios y perfiles
-* **Autenticación completa:** Registro e inicio de sesión con email y contraseña mediante Firebase Authentication, recuperación de clave y persistencia de sesión.
-* **Perfil de usuario:** Consulta de datos personales, historial de reportes creados y estado de la cuenta.
+### 4.5 Base técnica transversal: Autenticación y cuentas de usuario
+*(Infraestructura de soporte requerida para la autoría, seguridad y persistencia de datos, no contemplada como historias de usuario de negocio en el backlog):*
+* **Autenticación:** Registro e inicio de sesión mediante Firebase Authentication, recuperación de contraseña y persistencia de sesión.
+* **Perfil básico:** Datos de contacto del usuario necesarios para la autoría y coordinación en reportes y publicaciones.
 
 ### 4.6 Administración y moderación
 * Panel y herramientas para moderar o dar de baja publicaciones inapropiadas, falsas o spam, y atender denuncias comunitarias.

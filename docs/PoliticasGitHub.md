@@ -25,11 +25,10 @@ Para garantizar la **trazabilidad bidireccional** entre la planificación en Tre
    ```text
    [Código HU]: [descripción concisa de lo implementado]
    ```
-
 ### Ejemplos válidos:
-* `HU-S1-01: feat(auth): implementa registro e inicio de sesión con Firebase Auth`
-* `HU-S1-01: fix(auth): corrige validación de formato de correo electrónico`
-* `HU-S1-02: crea pantalla de feed comunitario y widgets de publicación`
+* `HU-S1-01: feat(feed): implementa visualización del feed comunitario con Firestore`
+* `HU-S1-01: fix(feed): corrige ordenamiento cronológico de publicaciones`
+* `HU-S1-02: crea pantalla de creación de publicaciones comunitarias`
 * `HU-S2-03: agrega formulario de reporte de mascota perdida`
 
 > **Nota sobre commits técnicos o de soporte:** 

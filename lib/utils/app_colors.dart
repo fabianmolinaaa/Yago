@@ -53,6 +53,9 @@ class AppColors {
   static const Color accent = Color(0xFF5E6672);
 
   // ─── Estados Semánticos (Pasteles Terrosos Desaturados) ─────────────────────
+  /// Error o alerta crítica (#D46761)
+  static const Color error = Color(0xFFD46761);
+
   /// Mascota Perdida (Dusty Coral / Terracota #D46761)
   static const Color lost = Color(0xFFD46761);
   static const Color lostBg = Color(0xFFFCECEB);

@@ -20,8 +20,8 @@ Este archivo establece las reglas operativas, convenciones de código y directiv
      [Código HU]: [descripción concisa]
      ```
    * *Ejemplos:* 
-     * `HU-S1-01: feat(auth): implementa registro e inicio de sesión`
-     * `HU-S1-02: crea pantalla de feed comunitario y tarjetas de publicación`
+     * `HU-S1-01: feat(feed): implementa visualización del feed comunitario`
+     * `HU-S1-02: crea pantalla de creación de publicaciones comunitarias`
 2. **Entrega de Commits para Trello:**
    * Al finalizar la implementación de una historia o tarea, el agente **debe proporcionar explícitamente el hash y el enlace directo al commit** (`https://github.com/fabianmolinaaa/Yago/commit/[hash]`) para que el usuario pueda pegarlo en el checklist *"Evidencias"* de la tarjeta en Trello.
 3. **Cierre de Sprint y Tags:**

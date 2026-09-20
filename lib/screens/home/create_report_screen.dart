@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/pet.dart';
 import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
+import '../../services/storage_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 
@@ -32,7 +35,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   final List<String> _tags = [];
   bool _isSubmitting = false;
 
-  // Foto de muestra seleccionada por defecto
+  // Foto de la mascota: archivo local seleccionado o muestra
+  File? _pickedImageFile;
   String _selectedImageUrl = 'assets/images/IMG_3508.JPG';
 
   final List<String> _sampleImages = [
@@ -64,7 +68,111 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     }
   }
 
-  void _submitReport() {
+  Future<void> _pickImage(ImageSource source) async {
+    Navigator.of(context).pop();
+    try {
+      final file = await StorageService().pickImage(source: source);
+      if (file != null) {
+        setState(() {
+          _pickedImageFile = file;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo seleccionar la imagen: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _showImageSourceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Text(
+                  'Fotografía de la mascota',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                  ),
+                  title: const Text('Tomar foto con la cámara', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Captura una imagen al instante'),
+                  onTap: () => _pickImage(ImageSource.camera),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.found.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.found),
+                  ),
+                  title: const Text('Elegir de la galería', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Selecciona una foto de tu dispositivo'),
+                  onTap: () => _pickImage(ImageSource.gallery),
+                ),
+                if (_pickedImageFile != null)
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                    ),
+                    title: const Text('Quitar foto seleccionada', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      setState(() {
+                        _pickedImageFile = null;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _submitReport() async {
     final name = _nameController.text.trim().isEmpty
         ? (_isLostReport ? 'Mascota sin nombre' : 'Mascota encontrada')
         : _nameController.text.trim();
@@ -81,6 +189,28 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     setState(() => _isSubmitting = true);
 
+    String finalImageUrl = _selectedImageUrl;
+
+    // Si el usuario seleccionó una foto propia, la subimos a Firebase Storage
+    if (_pickedImageFile != null) {
+      try {
+        finalImageUrl = await StorageService().uploadImage(
+          file: _pickedImageFile!,
+          folder: 'reports',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No se pudo subir la foto a Firebase Storage: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
     final currentUser = AuthService().currentUser;
     final contactName = currentUser?.displayName ?? 'Usuario Yago';
 
@@ -96,7 +226,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       timeAgo: 'Recién publicado',
       date: DateTime.now(),
       description: description,
-      imageUrl: _selectedImageUrl,
+      imageUrl: finalImageUrl,
       tags: _tags.isEmpty ? ['Se busca ayuda'] : List.from(_tags),
       contactName: contactName,
       contactPhone: phone,
@@ -106,6 +236,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     );
 
     MockDataService().addPet(newPet);
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -221,49 +353,136 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             const SizedBox(height: 20),
 
             // Selector de foto de la mascota
-            const Text(
-              'Fotografía de la mascota',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 180,
-              decoration: BoxDecoration(
-                borderRadius: AppRadius.lgBorder,
-                border: Border.all(color: AppColors.border),
-                image: DecorationImage(
-                  image: _selectedImageUrl.startsWith('assets/')
-                      ? AssetImage(_selectedImageUrl) as ImageProvider
-                      : NetworkImage(_selectedImageUrl),
-                  fit: BoxFit.cover,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Fotografía de la mascota',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.lgBorder,
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
-                  ),
-                ),
-                padding: const EdgeInsets.all(12),
-                alignment: Alignment.bottomLeft,
-                child: const Row(
-                  children: [
-                    Icon(Icons.photo_camera_rounded, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Toca abajo para cambiar la foto de muestra',
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                if (_pickedImageFile != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.found.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
-              ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_rounded, size: 12, color: AppColors.found),
+                        SizedBox(width: 4),
+                        Text(
+                          'Foto propia cargada',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.found,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
 
-            // Miniaturas de fotos
+            // Contenedor principal de la foto interactivo
+            GestureDetector(
+              onTap: _showImageSourceModal,
+              child: Container(
+                height: 190,
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.lgBorder,
+                  border: Border.all(
+                    color: _pickedImageFile != null ? AppColors.primary : AppColors.border,
+                    width: _pickedImageFile != null ? 2 : 1,
+                  ),
+                  image: _pickedImageFile != null
+                      ? DecorationImage(
+                          image: FileImage(_pickedImageFile!),
+                          fit: BoxFit.cover,
+                        )
+                      : DecorationImage(
+                          image: _selectedImageUrl.startsWith('assets/')
+                              ? AssetImage(_selectedImageUrl) as ImageProvider
+                              : NetworkImage(_selectedImageUrl),
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadius.lgBorder,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  alignment: Alignment.bottomLeft,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.photo_camera_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            _pickedImageFile != null
+                                ? 'Toca para cambiar de foto'
+                                : 'Toca para tomar foto o abrir galería',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Miniaturas de fotos de muestra alternativas
+            Row(
+              children: [
+                const Text(
+                  'O usa una foto de muestra:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (_pickedImageFile != null) ...[
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => setState(() => _pickedImageFile = null),
+                    child: const Text(
+                      'Restablecer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
             SizedBox(
               height: 52,
               child: ListView.builder(
@@ -271,9 +490,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 itemCount: _sampleImages.length,
                 itemBuilder: (context, index) {
                   final img = _sampleImages[index];
-                  final isSelected = _selectedImageUrl == img;
+                  final isSelected = _pickedImageFile == null && _selectedImageUrl == img;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedImageUrl = img),
+                    onTap: () => setState(() {
+                      _pickedImageFile = null;
+                      _selectedImageUrl = img;
+                    }),
                     child: Container(
                       width: 52,
                       margin: const EdgeInsets.only(right: 8),

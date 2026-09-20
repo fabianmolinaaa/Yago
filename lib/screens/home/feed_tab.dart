@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../models/feed_post.dart';
 import '../../models/pet.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../pet_detail/pet_detail_screen.dart';
+import 'create_post_screen.dart';
 
 class FeedTab extends StatefulWidget {
   final VoidCallback? onGoToSearch;
@@ -27,17 +30,116 @@ class _FeedTabState extends State<FeedTab> {
     'Comunidad',
   ];
 
-  List<Pet> _getPets() {
+  List<dynamic> _getFeedItems() {
+    final allPets = MockDataService().getAllPets();
+    final communityPosts = MockDataService().getCommunityPosts();
+
     switch (_selectedFilterIndex) {
       case 1:
-        return MockDataService().getPetsByStatus(YagoPetStatus.lost);
+        return allPets.where((pet) => pet.status == YagoPetStatus.lost).toList();
       case 2:
-        return MockDataService().getPetsByStatus(YagoPetStatus.found);
+        return allPets.where((pet) => pet.status == YagoPetStatus.found).toList();
       case 3:
-        return MockDataService().getPetsByStatus(YagoPetStatus.reunited);
+        return allPets.where((pet) => pet.status == YagoPetStatus.reunited).toList();
+      case 4:
+        // Filtrar por Comunidad: incluye tanto reportes con estado o etiqueta 'comunidad' (como Rocky)
+        // como publicaciones y consejos comunitarios
+        final communityPets = allPets
+            .where((pet) => pet.status == YagoPetStatus.community)
+            .toList();
+        final List<dynamic> items = [];
+        items.addAll(communityPets);
+        items.addAll(communityPosts);
+        return items;
       default:
-        return MockDataService().getAllPets();
+        // Feed principal (Todos): integra reportes de mascotas intercalados con
+        // las publicaciones comunitarias y consejos de seguridad
+        final List<dynamic> items = [];
+        int postIdx = 0;
+        for (int i = 0; i < allPets.length; i++) {
+          if (postIdx < communityPosts.length &&
+              (i == 1 || (i > 1 && i % 3 == 0))) {
+            items.add(communityPosts[postIdx++]);
+          }
+          items.add(allPets[i]);
+        }
+        while (postIdx < communityPosts.length) {
+          items.add(communityPosts[postIdx++]);
+        }
+        return items;
     }
+  }
+
+  void _openCreatePost() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreatePostScreen(
+          onPostCreated: () {
+            setState(() {});
+          },
+        ),
+      ),
+    ).then((_) => setState(() {}));
+  }
+
+  Widget _buildCreatePostPrompt() {
+    final currentUser = AuthService().currentUser;
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: AppColors.community.withValues(alpha: 0.12),
+            backgroundImage: currentUser?.photoURL != null
+                ? NetworkImage(currentUser!.photoURL!)
+                : null,
+            child: currentUser?.photoURL == null
+                ? const Icon(Icons.person_rounded, size: 20, color: AppColors.community)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: _openCreatePost,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Text(
+                  '¿Tienes un consejo o historia para compartir?',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            icon: const Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 22,
+              color: AppColors.primary,
+            ),
+            tooltip: 'Crear publicación con foto',
+            onPressed: _openCreatePost,
+          ),
+        ],
+      ),
+    );
   }
 
   void _openTopFilterModal() {
@@ -233,9 +335,7 @@ class _FeedTabState extends State<FeedTab> {
 
   @override
   Widget build(BuildContext context) {
-    final isCommunity = _selectedFilterIndex == 4;
-    final pets = _getPets();
-    final communityPosts = MockDataService().getCommunityPosts();
+    final feedItems = _getFeedItems();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -277,6 +377,17 @@ class _FeedTabState extends State<FeedTab> {
                 ],
               ),
               actions: [
+                // Botón para redactar publicación comunitaria (HU-S1-02)
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_note_rounded,
+                    size: 26,
+                    color: AppColors.textPrimary,
+                  ),
+                  tooltip: 'Crear publicación comunitaria',
+                  onPressed: _openCreatePost,
+                ),
+
                 // Botón de filtros con indicador de filtro activo
                 IconButton(
                   icon: Stack(
@@ -309,16 +420,13 @@ class _FeedTabState extends State<FeedTab> {
               ],
             ),
 
+            // Barra rápida para compartir publicación comunitaria (HU-S1-02)
+            SliverToBoxAdapter(
+              child: _buildCreatePostPrompt(),
+            ),
+
             // Contenido según filtro
-            if (isCommunity)
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _buildCommunityPostCard(communityPosts[index]),
-                  childCount: communityPosts.length,
-                ),
-              )
-            else if (pets.isEmpty)
+            if (feedItems.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Container(
@@ -333,7 +441,7 @@ class _FeedTabState extends State<FeedTab> {
                       ),
                       SizedBox(height: 14),
                       Text(
-                        'No hay reportes en esta categoría',
+                        'No hay publicaciones en esta categoría',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16,
@@ -358,7 +466,15 @@ class _FeedTabState extends State<FeedTab> {
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final pet = pets[index];
+                    final item = feedItems[index];
+
+                    // Publicaciones comunitarias / consejos
+                    if (item is FeedPost) {
+                      return _buildCommunityPostCard(item);
+                    }
+
+                    // Reportes y fichas de mascotas
+                    final pet = item as Pet;
                     final isBookmarked =
                         MockDataService().isBookmarked(pet.id);
                     return PetCard(
@@ -398,7 +514,7 @@ class _FeedTabState extends State<FeedTab> {
                       },
                     );
                   },
-                  childCount: pets.length,
+                  childCount: feedItems.length,
                 ),
               ),
 
@@ -522,7 +638,7 @@ class _FeedTabState extends State<FeedTab> {
     );
   }
 
-  Widget _buildCommunityPostCard(dynamic post) {
+  Widget _buildCommunityPostCard(FeedPost post) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -539,6 +655,9 @@ class _FeedTabState extends State<FeedTab> {
             backgroundColor: AppColors.community.withValues(alpha: 0.12),
             backgroundImage: post.authorAvatar != null
                 ? NetworkImage(post.authorAvatar!)
+                : null,
+            onBackgroundImageError: post.authorAvatar != null
+                ? (_, _) {}
                 : null,
             child: post.authorAvatar == null
                 ? const Icon(
@@ -606,6 +725,25 @@ class _FeedTabState extends State<FeedTab> {
                     color: AppColors.textPrimary,
                   ),
                 ),
+                if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: post.imageUrl!.startsWith('assets/')
+                        ? Image.asset(
+                            post.imageUrl!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.network(
+                            post.imageUrl!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                const SizedBox.shrink(),
+                          ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -614,9 +752,37 @@ class _FeedTabState extends State<FeedTab> {
                       Icons.chat_bubble_outline_rounded,
                       '${post.commentsCount}',
                     ),
-                    _buildMiniAction(
-                      Icons.favorite_border_rounded,
-                      '${post.likesCount}',
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          MockDataService().togglePostLike(post.id);
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            post.isLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 17,
+                            color: post.isLiked
+                                ? AppColors.likeRed
+                                : AppColors.twitterAction,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${post.likesCount}',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: post.isLiked
+                                  ? AppColors.likeRed
+                                  : AppColors.twitterAction,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const Icon(
                       Icons.ios_share_rounded,

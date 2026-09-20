@@ -64,7 +64,7 @@ Cada tarjeta en el backlog o en el sprint representa una **Historia de Usuario f
 
 ### Formato de campos:
 * **Título:** `[Código] – [Nombre breve]`  
-  *Ejemplo:* `HU-S1-01 – Iniciar sesión con email` o `HU-07 – Solicitar turno`.
+  *Ejemplo:* `HU-S1-01 – Feed social comunitario` o `HU-S2-03 – Publicar alerta de mascota perdida`.
 * **Descripción:** 
   ```text
   Como [tipo de usuario], quiero [acción], para [beneficio].

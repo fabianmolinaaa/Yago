@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
         badgeText: 'PRÓXIMAMENTE',
         accentColor: AppColors.primary,
         featureHighlight:
-            'Identificación fenotípica inteligente al instante en la vía pública con aviso y contacto directo al dueño.',
+            'Identificación inteligente al instante en la vía pública con aviso y contacto directo al dueño.',
       ),
       const ComingSoonView(
         title: 'Chat Directo',

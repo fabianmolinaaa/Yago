@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
+import 'package:yago/screens/home/create_post_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/profile_tab.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
@@ -212,5 +213,20 @@ void main() {
     // Comprobar que aparece el diálogo de confirmación
     expect(find.text('¿Estás seguro de que deseas salir de tu cuenta?'), findsOneWidget);
     expect(find.text('Cancelar'), findsOneWidget);
+  });
+
+  testWidgets('CreatePostScreen renders category chips, content field and publish action', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreatePostScreen(),
+      ),
+    );
+
+    expect(find.text('Crear Publicación'), findsOneWidget);
+    expect(find.text('Publicar'), findsOneWidget);
+    expect(find.text('Consejo'), findsOneWidget);
+    expect(find.text('Reencuentro'), findsOneWidget);
+    expect(find.text('Anécdota'), findsOneWidget);
+    expect(find.text('Adjuntar fotografía a la publicación'), findsOneWidget);
   });
 }

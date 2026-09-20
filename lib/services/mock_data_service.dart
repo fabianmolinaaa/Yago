@@ -12,7 +12,7 @@ class MockDataService {
     Pet(
       id: 'pet-1',
       name: 'Luna',
-      breed: 'Lhasa Apso',
+      breed: 'Caniche',
       species: 'Perro',
       gender: 'Hembra',
       age: '3 años',
@@ -34,18 +34,18 @@ class MockDataService {
       id: 'pet-2',
       name: 'Rocky',
       breed: 'Mestizo de Labrador',
-      species: 'Perro',
-      gender: 'Macho',
+      species: '',
+      gender: '',
       age: '2 años',
-      status: YagoPetStatus.lost,
-      location: 'Belgrano, CABA',
+      status: YagoPetStatus.community,
+      location: 'Costanera, Caleta Olivia',
       timeAgo: 'Hace 5 horas',
       date: DateTime.now().subtract(const Duration(hours: 5)),
       description:
-          'Pelaje negro brillante con pequeña mancha blanca en el pecho. Le encanta andar en auto y es súper cariñoso. Se perdió cerca de Barrancas de Belgrano.',
+          'Paseando un rato...',
       imageUrl: 'assets/images/IMG_4178.JPG',
       tags: ['Pelaje negro', 'Pecho blanco', 'Muy sociable'],
-      contactName: 'Martín Gomez',
+      contactName: 'Fabian Molina',
       contactPhone: '+54 9 11 5566-7788',
       latitude: -34.5614,
       longitude: -58.4563,
@@ -71,6 +71,28 @@ class MockDataService {
       longitude: -58.3974,
     ),
     Pet(
+      id: 'pet-6',
+      name: 'Luna',
+      breed: 'Cachorra Mestiza',
+      species: 'Perro',
+      gender: 'Hembra',
+      age: '1 año',
+      status: YagoPetStatus.reunited,
+      location: 'Barrio Patagonia',
+      timeAgo: 'Hace 3 horas',
+      date: DateTime.now().subtract(const Duration(hours: 3)),
+      description:
+          'Gracias a todos los que colaboraron. Ya encontré a Luna!!!',
+      imageUrl: 'assets/images/IMG_5667.JPG',
+      tags: ['Reencuentro', 'Final feliz', 'En casa'],
+      contactName: 'William Rodriguez',
+      contactPhone: '+54 9 11 4567-8901',
+      latitude: -34.5889,
+      longitude: -58.4233,
+      storyText:
+          '¡Luna y William ya están juntos! Un vecino de la zona la reconoció gracias a la publicación en Yago y avisó de inmediato. Luna ya está descansando feliz con su familia.',
+    ),
+    Pet(
       id: 'pet-4',
       name: 'Thor',
       breed: 'Mestizo grande',
@@ -93,13 +115,13 @@ class MockDataService {
     Pet(
       id: 'pet-5',
       name: 'Luna',
-      breed: 'Lhasa Apso',
+      breed: 'Caniche',
       species: 'Perro',
       gender: 'Hembra',
       age: '3 años',
       status: YagoPetStatus.reunited,
       location: 'Núñez, CABA',
-      timeAgo: 'Hace 2 días',
+      timeAgo: 'Hace 2 minutos',
       date: DateTime.now().subtract(const Duration(days: 2)),
       description:
           '¡Final feliz! Gracias a una vecina que la vio en el feed de Yago, Luna ya está de nuevo en casa, abrigada y descansando con su familia.',
@@ -201,4 +223,23 @@ class MockDataService {
 
   /// Posts comunitarios
   List<FeedPost> getCommunityPosts() => List.unmodifiable(_communityPosts);
+
+  /// Agrega una nueva publicación comunitaria
+  void addCommunityPost(FeedPost post) {
+    _communityPosts.insert(0, post);
+  }
+
+  /// Alterna 'me gusta' en una publicación comunitaria
+  void togglePostLike(String postId) {
+    final index = _communityPosts.indexWhere((p) => p.id == postId);
+    if (index != -1) {
+      final post = _communityPosts[index];
+      final newIsLiked = !post.isLiked;
+      final newLikesCount = newIsLiked ? post.likesCount + 1 : (post.likesCount > 0 ? post.likesCount - 1 : 0);
+      _communityPosts[index] = post.copyWith(
+        isLiked: newIsLiked,
+        likesCount: newLikesCount,
+      );
+    }
+  }
 }

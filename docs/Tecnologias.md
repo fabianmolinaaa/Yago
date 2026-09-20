@@ -27,8 +27,9 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
     * Traducción y mapeo localizado de excepciones de Firebase a mensajes claros en español.
 * **Cloud Firestore**
   * *Uso:* Base de datos NoSQL para perfiles de usuarios, publicaciones del feed social, reportes de mascotas (atributos, coordenadas geográficas, fechas y estados) y **conversaciones del chat directo en tiempo real** con suscripciones reactivas.
-* **Firebase Cloud Storage**
-  * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados y fotos compartidas en el chat.
+* **Firebase Cloud Storage (`firebase_storage: ^13.6.0`) — *Implementado***
+  * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados y fotos compartidas en el feed social o chat.
+  * *Servicio:* `StorageService` (`lib/services/storage_service.dart`) con compresión automática y control de tipos MIME.
 * **Firebase Cloud Messaging (FCM)**
   * *Uso (Tentativo):* Envío de notificaciones push ante mensajes nuevos de chat o alertas de extravío.
 
@@ -67,7 +68,7 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 | **Autenticación** | Firebase Authentication (`firebase_auth`) | **Implementado** | Inicio de sesión, registro, recuperación de contraseña y AuthGate reactivo |
 | **Configuración Android** | Gradle (`com.example.yago`) + Google Services | **Implementado** | Vinculación nativa de la app móvil con Firebase |
 | **Base de Datos & Chat**| Cloud Firestore | Próximo paso | Reportes, feed comunitario y chat directo 1 a 1 en tiempo real |
-| **Almacenamiento Multimedia** | Cloud Storage | Planificado | Subida y optimización de fotos de mascotas y adjuntos de chat |
+| **Almacenamiento Multimedia** | Cloud Storage (`firebase_storage`) + `image_picker` | **Implementado** | Subida, compresión y optimización de fotos de mascotas |
 | **Mapas Contextuales** | SDK de Mapas / Map View | Planificado | Visualización de zona de extravío/avistamiento por reporte |
 | **Cámara & Análisis IA**| Gemini Multimodal / Cloud Vision API | Planificado | Análisis fenotípico de fotos en la calle y cotejo contra BD de perdidos |
 | **Control de Versiones** | Git + GitHub | Activo | Gestión del código fuente |
