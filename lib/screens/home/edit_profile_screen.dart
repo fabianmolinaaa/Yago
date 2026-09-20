@@ -354,7 +354,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hint: 'Cuéntale a la comunidad sobre ti y tus mascotas...',
               controller: _bioController,
               maxLines: 3,
-              helperText: 'Describe tu rol o cómo colaboras con la comunidad.',
             ),
             const SizedBox(height: 16),
 
