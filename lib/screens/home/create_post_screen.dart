@@ -10,11 +10,12 @@ import '../../services/storage_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 
-/// Pantalla de acceso rápido para crear publicaciones de todo tipo:
-/// - Alertas urgentes de pérdida de mascotas (HU-S2-03)
+/// Pantalla de acceso rápido para crear publicaciones en el feed:
+/// - Momentos cotidianos o fotos con tu mascota (sin categoría obligatoria)
+/// - Alertas de pérdida de mascotas (HU-S2-03)
 /// - Reportes de mascotas encontradas (HU-S2-04)
-/// - Consejos de cuidado y relatos de reencuentro (HU-S1-02)
-/// - Avisos comunitarios
+/// - Consejos de cuidado o relatos de reencuentro
+/// (Nota: La etiqueta 'Comunidad' está reservada para avisos del equipo/moderadores de Yago).
 class CreatePostScreen extends StatefulWidget {
   final VoidCallback? onPostCreated;
 
@@ -33,14 +34,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   File? _selectedImageFile;
   bool _isPublishing = false;
 
-  // Categoría activa por defecto: 'Perdida' como acceso rápido de reporte
-  String _selectedCategory = 'Perdida';
+  // Tipo de publicación opcional (null = momento libre con tu mascota)
+  String? _selectedCategory;
   final List<String> _categories = [
     'Perdida',
     'Encontrada',
     'Consejo',
     'Reencuentro',
-    'Comunidad',
   ];
 
   @override
@@ -52,7 +52,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.dispose();
   }
 
-  Color _getCategoryActiveColor(String category) {
+  Color _getCategoryActiveColor(String? category) {
     switch (category) {
       case 'Perdida':
         return AppColors.lost;
@@ -62,13 +62,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.reunited;
       case 'Consejo':
         return AppColors.community;
-      case 'Comunidad':
       default:
         return AppColors.primary;
     }
   }
 
-  Color _getCategoryInactiveBg(String category) {
+  Color _getCategoryInactiveBg(String? category) {
     switch (category) {
       case 'Perdida':
         return AppColors.lostBg;
@@ -78,13 +77,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.reunitedBg;
       case 'Consejo':
         return AppColors.communityBg;
-      case 'Comunidad':
       default:
         return AppColors.surfaceSecondary;
     }
   }
 
-  Color _getCategoryInactiveTextColor(String category) {
+  Color _getCategoryInactiveTextColor(String? category) {
     switch (category) {
       case 'Perdida':
         return AppColors.lostText;
@@ -94,7 +92,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return AppColors.reunitedText;
       case 'Consejo':
         return AppColors.communityText;
-      case 'Comunidad':
       default:
         return AppColors.textSecondary;
     }
@@ -212,7 +209,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (content.isEmpty && _selectedImageFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Escribe un mensaje o adjunta una fotografía para publicar.'),
+            content: Text('Escribe una descripción o adjunta una fotografía para publicar.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -286,7 +283,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       MockDataService().addPet(newPet);
     } else {
-      final formattedContent = '[$_selectedCategory] $content';
+      // Si seleccionó Consejo o Reencuentro, añade la etiqueta; si es libre, guarda el contenido limpio
+      final formattedContent = _selectedCategory != null
+          ? '[$_selectedCategory] $content'
+          : content;
+
       final newPost = FeedPost(
         id: 'post-${DateTime.now().millisecondsSinceEpoch}',
         authorName: authorName,
@@ -311,11 +312,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ? (_selectedCategory == 'Perdida'
                   ? '¡Alerta de mascota perdida publicada con éxito!'
                   : '¡Reporte de mascota encontrada publicado con éxito!')
-              : '¡Publicación compartida con éxito en el feed comunitario!',
+              : '¡Publicación compartida con éxito en el feed!',
         ),
         backgroundColor: isPetAlert
             ? (_selectedCategory == 'Perdida' ? AppColors.lost : AppColors.found)
-            : AppColors.found,
+            : AppColors.primary,
       ),
     );
 
@@ -408,7 +409,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ? 'Reporte de mascota encontrada'
                                 : (_selectedCategory == 'Reencuentro'
                                     ? 'Historia de reencuentro'
-                                    : 'Publicación comunitaria')),
+                                    : (_selectedCategory == 'Consejo'
+                                        ? 'Consejo para la comunidad'
+                                        : 'Momento con mi mascota'))),
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -423,15 +426,33 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             const SizedBox(height: 18),
 
-            // Selector de categoría temática
-            const Text(
-              'Tipo de publicación:',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+            // Selector de tipo de publicación (opcional)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Tipo de publicación (Opcional):',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (_selectedCategory != null)
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = null),
+                    child: const Text(
+                      'Quitar etiqueta',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -451,13 +472,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             ? '🐾 Encontrada'
                             : (cat == 'Reencuentro'
                                 ? '❤️ Reencuentro'
-                                : (cat == 'Consejo'
-                                    ? '💡 Consejo'
-                                    : '💬 Comunidad'))),
+                                : '💡 Consejo')),
                   ),
                   selected: isSelected,
                   onSelected: (selected) {
-                    if (selected) setState(() => _selectedCategory = cat);
+                    setState(() {
+                      // Al tocar un chip activo se deselecciona
+                      _selectedCategory = selected ? cat : null;
+                    });
                   },
                   selectedColor: activeColor,
                   backgroundColor: inactiveBg,
@@ -514,10 +536,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               const SizedBox(height: 14),
             ],
 
-            // Campo de texto principal
-            Text(
-              isPetAlert ? 'Descripción y detalles:' : 'Mensaje o relato:',
-              style: const TextStyle(
+            // Campo de texto principal con label solicitado
+            const Text(
+              'Descripción de la publicación',
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -543,7 +565,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ? 'Comparte un consejo de salud, adiestramiento o cuidado animal...'
                         : (_selectedCategory == 'Reencuentro'
                             ? 'Comparte la historia del final feliz de tu mascota reunida...'
-                            : 'Comparte un aviso, consulta o vivencia con la comunidad...')),
+                            : 'Comparte una foto o lo que quieras sobre tu mascota...')),
                 hintStyle: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,

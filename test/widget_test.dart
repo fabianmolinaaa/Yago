@@ -224,6 +224,7 @@ void main() {
 
     expect(find.text('Crear Publicación'), findsOneWidget);
     expect(find.text('Publicar'), findsOneWidget);
+    expect(find.text('Descripción de la publicación'), findsOneWidget);
     expect(find.textContaining('Perdida'), findsWidgets);
     expect(find.textContaining('Consejo'), findsOneWidget);
     expect(find.textContaining('Reencuentro'), findsOneWidget);
