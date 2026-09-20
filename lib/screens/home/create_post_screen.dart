@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../models/feed_post.dart';
+import '../../models/pet.dart';
 import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 
-/// Pantalla para crear y compartir publicaciones comunitarias (HU-S1-02)
-/// Permite redactar anécdotas, consejos o vivencias y adjuntar fotos reales a Cloud Storage.
+/// Pantalla de acceso rápido para crear publicaciones de todo tipo:
+/// - Alertas urgentes de pérdida de mascotas (HU-S2-03)
+/// - Reportes de mascotas encontradas (HU-S2-04)
+/// - Consejos de cuidado y relatos de reencuentro (HU-S1-02)
+/// - Avisos comunitarios
 class CreatePostScreen extends StatefulWidget {
   final VoidCallback? onPostCreated;
 
@@ -22,21 +26,78 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _petNameController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
   File? _selectedImageFile;
   bool _isPublishing = false;
 
-  String _selectedCategory = 'Consejo';
+  // Categoría activa por defecto: 'Perdida' como acceso rápido de reporte
+  String _selectedCategory = 'Perdida';
   final List<String> _categories = [
+    'Perdida',
+    'Encontrada',
     'Consejo',
     'Reencuentro',
-    'Anécdota',
     'Comunidad',
   ];
 
   @override
   void dispose() {
     _contentController.dispose();
+    _petNameController.dispose();
+    _locationController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  Color _getCategoryActiveColor(String category) {
+    switch (category) {
+      case 'Perdida':
+        return AppColors.lost;
+      case 'Encontrada':
+        return AppColors.found;
+      case 'Reencuentro':
+        return AppColors.reunited;
+      case 'Consejo':
+        return AppColors.community;
+      case 'Comunidad':
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  Color _getCategoryInactiveBg(String category) {
+    switch (category) {
+      case 'Perdida':
+        return AppColors.lostBg;
+      case 'Encontrada':
+        return AppColors.foundBg;
+      case 'Reencuentro':
+        return AppColors.reunitedBg;
+      case 'Consejo':
+        return AppColors.communityBg;
+      case 'Comunidad':
+      default:
+        return AppColors.surfaceSecondary;
+    }
+  }
+
+  Color _getCategoryInactiveTextColor(String category) {
+    switch (category) {
+      case 'Perdida':
+        return AppColors.lostText;
+      case 'Encontrada':
+        return AppColors.foundText;
+      case 'Reencuentro':
+        return AppColors.reunitedText;
+      case 'Consejo':
+        return AppColors.communityText;
+      case 'Comunidad':
+      default:
+        return AppColors.textSecondary;
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -82,7 +143,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ),
                 ),
                 const Text(
-                  'Adjuntar fotografía',
+                  'Fotografía de la publicación',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -100,7 +161,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
                   ),
                   title: const Text('Tomar foto con la cámara', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Comparte una foto capturada al instante'),
+                  subtitle: const Text('Captura una imagen al instante'),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _pickImage(ImageSource.camera);
@@ -131,27 +192,44 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _publishPost() async {
+    final isPetAlert = _selectedCategory == 'Perdida' || _selectedCategory == 'Encontrada';
     final content = _contentController.text.trim();
-    if (content.isEmpty && _selectedImageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Escribe un mensaje o adjunta una fotografía para publicar.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+    final petName = _petNameController.text.trim();
+    final location = _locationController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (isPetAlert) {
+      if (content.isEmpty && petName.isEmpty && _selectedImageFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor completa los datos de la mascota para publicar el reporte.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    } else {
+      if (content.isEmpty && _selectedImageFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Escribe un mensaje o adjunta una fotografía para publicar.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => _isPublishing = true);
 
     String? uploadedImageUrl;
 
-    // Subida a Firebase Cloud Storage si adjuntó una foto
+    // Subida a Firebase Cloud Storage
     if (_selectedImageFile != null) {
       try {
         uploadedImageUrl = await StorageService().uploadImage(
           file: _selectedImageFile!,
-          folder: 'community_posts',
+          folder: isPetAlert ? 'reports' : 'community_posts',
         );
       } catch (e) {
         if (!mounted) return;
@@ -172,29 +250,72 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         : 'Comunidad Yago';
     final authorAvatar = currentUser?.photoURL;
 
-    // Formatear contenido con la categoría seleccionada
-    final formattedContent = '[$_selectedCategory] $content';
+    if (isPetAlert) {
+      final isLost = _selectedCategory == 'Perdida';
+      final finalName = petName.isNotEmpty
+          ? petName
+          : (isLost ? 'Mascota sin nombre' : 'Mascota encontrada');
+      final finalLocation = location.isNotEmpty ? location : 'CABA';
+      final finalPhone = phone.isNotEmpty ? phone : '+54 9 11 0000-0000';
+      final finalDesc = content.isNotEmpty
+          ? content
+          : (isLost
+              ? 'Se extravió recientemente. Si la ves, por favor avisa de inmediato.'
+              : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.');
 
-    final newPost = FeedPost(
-      id: 'post-${DateTime.now().millisecondsSinceEpoch}',
-      authorName: authorName,
-      authorAvatar: authorAvatar,
-      timeAgo: 'Recién publicado',
-      content: formattedContent,
-      imageUrl: uploadedImageUrl,
-      likesCount: 0,
-      commentsCount: 0,
-      isLiked: false,
-    );
+      final newPet = Pet(
+        id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
+        name: finalName,
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Sin especificar',
+        age: 'Adulto',
+        status: isLost ? YagoPetStatus.lost : YagoPetStatus.found,
+        location: finalLocation,
+        timeAgo: 'Recién publicado',
+        date: DateTime.now(),
+        description: finalDesc,
+        imageUrl: uploadedImageUrl ?? 'assets/images/IMG_3508.JPG',
+        tags: isLost ? ['Urgente', 'Se busca'] : ['Encontrada', 'Avistamiento'],
+        contactName: authorName,
+        contactPhone: finalPhone,
+        latitude: -34.5900,
+        longitude: -58.4200,
+        isUserOwner: true,
+      );
 
-    MockDataService().addCommunityPost(newPost);
+      MockDataService().addPet(newPet);
+    } else {
+      final formattedContent = '[$_selectedCategory] $content';
+      final newPost = FeedPost(
+        id: 'post-${DateTime.now().millisecondsSinceEpoch}',
+        authorName: authorName,
+        authorAvatar: authorAvatar,
+        timeAgo: 'Recién publicado',
+        content: formattedContent,
+        imageUrl: uploadedImageUrl,
+        likesCount: 0,
+        commentsCount: 0,
+        isLiked: false,
+      );
+
+      MockDataService().addCommunityPost(newPost);
+    }
 
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('¡Publicación compartida con éxito en el feed comunitario!'),
-        backgroundColor: AppColors.found,
+      SnackBar(
+        content: Text(
+          isPetAlert
+              ? (_selectedCategory == 'Perdida'
+                  ? '¡Alerta de mascota perdida publicada con éxito!'
+                  : '¡Reporte de mascota encontrada publicado con éxito!')
+              : '¡Publicación compartida con éxito en el feed comunitario!',
+        ),
+        backgroundColor: isPetAlert
+            ? (_selectedCategory == 'Perdida' ? AppColors.lost : AppColors.found)
+            : AppColors.found,
       ),
     );
 
@@ -211,6 +332,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final authorName = currentUser?.displayName?.isNotEmpty == true
         ? currentUser!.displayName!
         : 'Usuario Yago';
+    final isPetAlert = _selectedCategory == 'Perdida' || _selectedCategory == 'Encontrada';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -247,12 +369,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppColors.community.withValues(alpha: 0.15),
+                  backgroundColor: _getCategoryActiveColor(_selectedCategory).withValues(alpha: 0.15),
                   backgroundImage: currentUser?.photoURL != null
                       ? NetworkImage(currentUser!.photoURL!)
                       : null,
                   child: currentUser?.photoURL == null
-                      ? const Icon(Icons.person_rounded, color: AppColors.community, size: 24)
+                      ? Icon(
+                          isPetAlert ? Icons.pets_rounded : Icons.person_rounded,
+                          color: _getCategoryActiveColor(_selectedCategory),
+                          size: 22,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -272,16 +398,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.communityBg,
+                        color: _getCategoryInactiveBg(_selectedCategory),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Publicación comunitaria',
+                      child: Text(
+                        _selectedCategory == 'Perdida'
+                            ? 'Alerta de pérdida urgente'
+                            : (_selectedCategory == 'Encontrada'
+                                ? 'Reporte de mascota encontrada'
+                                : (_selectedCategory == 'Reencuentro'
+                                    ? 'Historia de reencuentro'
+                                    : 'Publicación comunitaria')),
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.communityText,
+                          color: _getCategoryInactiveTextColor(_selectedCategory),
                         ),
                       ),
                     ),
@@ -293,7 +425,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
             // Selector de categoría temática
             const Text(
-              'Categoría:',
+              'Tipo de publicación:',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
@@ -304,37 +436,98 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: _categories.map((cat) {
                 final isSelected = _selectedCategory == cat;
+                final activeColor = _getCategoryActiveColor(cat);
+                final inactiveBg = _getCategoryInactiveBg(cat);
+                final inactiveTextColor = _getCategoryInactiveTextColor(cat);
+
                 return ChoiceChip(
-                  label: Text(cat),
+                  label: Text(
+                    cat == 'Perdida'
+                        ? '🚨 Perdida'
+                        : (cat == 'Encontrada'
+                            ? '🐾 Encontrada'
+                            : (cat == 'Reencuentro'
+                                ? '❤️ Reencuentro'
+                                : (cat == 'Consejo'
+                                    ? '💡 Consejo'
+                                    : '💬 Comunidad'))),
+                  ),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) setState(() => _selectedCategory = cat);
                   },
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceSecondary,
+                  selectedColor: activeColor,
+                  backgroundColor: inactiveBg,
                   labelStyle: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? Colors.white : inactiveTextColor,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: isSelected ? AppColors.primary : AppColors.border,
+                      color: isSelected ? activeColor : AppColors.border,
                     ),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Campo de texto principal para el contenido
+            // Campos contextuales para alertas de mascotas (Perdida / Encontrada)
+            if (isPetAlert) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: YagoTextField(
+                      label: _selectedCategory == 'Perdida'
+                          ? 'Nombre de la mascota'
+                          : 'Nombre conocido o apodo',
+                      hint: _selectedCategory == 'Perdida' ? 'Ej: Milo, Luna' : 'Ej: Sin nombre / "Negrito"',
+                      controller: _petNameController,
+                      prefixIcon: const Icon(Icons.pets_rounded, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: YagoTextField(
+                      label: 'Zona / Barrio',
+                      hint: 'Ej: Palermo, CABA',
+                      controller: _locationController,
+                      prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.subtle),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              YagoTextField(
+                label: 'Teléfono de contacto (Opcional)',
+                hint: 'Ej: +54 9 11 5566-7788',
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),
+              ),
+              const SizedBox(height: 14),
+            ],
+
+            // Campo de texto principal
+            Text(
+              isPetAlert ? 'Descripción y detalles:' : 'Mensaje o relato:',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: _contentController,
-              maxLines: 6,
+              maxLines: isPetAlert ? 4 : 5,
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 15,
@@ -342,10 +535,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: 'Comparte un relato de reencuentro, un consejo de cuidado o vivencia con la comunidad...',
+                hintText: isPetAlert
+                    ? (_selectedCategory == 'Perdida'
+                        ? 'Describe señas particulares, collar, cómo ocurrió la pérdida o cualquier dato útil...'
+                        : 'Describe el estado de la mascota, señas particulares o dónde está retenida...')
+                    : (_selectedCategory == 'Consejo'
+                        ? 'Comparte un consejo de salud, adiestramiento o cuidado animal...'
+                        : (_selectedCategory == 'Reencuentro'
+                            ? 'Comparte la historia del final feliz de tu mascota reunida...'
+                            : 'Comparte un aviso, consulta o vivencia con la comunidad...')),
                 hintStyle: const TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 15,
+                  fontSize: 14,
                   color: AppColors.subtle,
                 ),
                 border: OutlineInputBorder(
@@ -358,7 +559,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppRadius.lgBorder,
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  borderSide: BorderSide(
+                    color: _getCategoryActiveColor(_selectedCategory),
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
                 fillColor: AppColors.surface,
@@ -432,7 +636,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 onTap: _showImageSourceModal,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: AppRadius.lgBorder,
@@ -447,19 +651,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.08),
+                          color: _getCategoryActiveColor(_selectedCategory).withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.add_photo_alternate_rounded,
+                        child: Icon(
+                          Icons.add_a_photo_outlined,
                           size: 28,
-                          color: AppColors.primary,
+                          color: _getCategoryActiveColor(_selectedCategory),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Adjuntar fotografía a la publicación',
-                        style: TextStyle(
+                      Text(
+                        isPetAlert
+                            ? 'Fotografía de la mascota (Muy recomendada)'
+                            : 'Adjuntar fotografía a la publicación',
+                        style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

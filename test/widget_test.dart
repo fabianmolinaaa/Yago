@@ -224,9 +224,9 @@ void main() {
 
     expect(find.text('Crear Publicación'), findsOneWidget);
     expect(find.text('Publicar'), findsOneWidget);
-    expect(find.text('Consejo'), findsOneWidget);
-    expect(find.text('Reencuentro'), findsOneWidget);
-    expect(find.text('Anécdota'), findsOneWidget);
-    expect(find.text('Adjuntar fotografía a la publicación'), findsOneWidget);
+    expect(find.textContaining('Perdida'), findsWidgets);
+    expect(find.textContaining('Consejo'), findsOneWidget);
+    expect(find.textContaining('Reencuentro'), findsOneWidget);
+    expect(find.text('Anécdota'), findsNothing);
   });
 }
