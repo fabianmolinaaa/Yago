@@ -79,6 +79,8 @@ class _ProfileTabState extends State<ProfileTab> {
         (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
             ? user.displayName!.trim()
             : 'Fabián';
+    final userEmail = user?.email ?? 'usuario@yago.app';
+    final userPhoto = user?.photoURL;
     final myReports = MockDataService().getMyReports();
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -157,7 +159,12 @@ class _ProfileTabState extends State<ProfileTab> {
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverToBoxAdapter(
-              child: _buildProfileHeader(context, userName),
+              child: _buildProfileHeader(
+                context: context,
+                userName: userName,
+                userEmail: userEmail,
+                userPhoto: userPhoto,
+              ),
             ),
             SliverPersistentHeader(
               pinned: true,
@@ -216,7 +223,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ],
           body: TabBarView(
             children: [
-              _buildPostsTab(context, userName, myReports, bottomInset),
+              _buildPostsTab(context, userName, userPhoto, myReports, bottomInset),
               _buildReportsTab(context, myReports, bottomInset),
               _buildSavedTab(context, bottomInset),
             ],
@@ -235,43 +242,79 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Encabezado superior con estilo X: avatar circular a la izquierda, nombre,
-  /// cerrojo de privacidad, metadatos y botones redondeados. Sin foto de portada,
-  /// sin arroba (@) y sin contadores de seguidores/seguidos.
-  Widget _buildProfileHeader(BuildContext context, String userName) {
+  /// Helper reutilizable para el avatar del usuario:
+  /// Utiliza la imagen del usuario si existe, y si no tiene imagen muestra una genérica.
+  Widget _buildUserAvatar({required double radius, String? photoUrl}) {
+    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
+
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primary.withValues(alpha: 0.10),
+        border: Border.all(
+          color: AppColors.border,
+          width: radius > 25 ? 1.5 : 1.0,
+        ),
+      ),
+      child: ClipOval(
+        child: hasPhoto
+            ? (photoUrl.startsWith('assets/')
+                ? Image.asset(
+                    photoUrl,
+                    width: radius * 2,
+                    height: radius * 2,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
+                  )
+                : Image.network(
+                    photoUrl,
+                    width: radius * 2,
+                    height: radius * 2,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
+                  ))
+            : _buildGenericAvatarIcon(radius),
+      ),
+    );
+  }
+
+  Widget _buildGenericAvatarIcon(double radius) {
+    return Container(
+      color: AppColors.primary.withValues(alpha: 0.10),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_rounded,
+        size: radius * 1.15,
+        color: AppColors.primary,
+      ),
+    );
+  }
+
+  /// Encabezado superior con estilo X:
+  /// - Avatar del usuario (o genérico si no posee).
+  /// - Nombre del usuario con su correo al lado (sin candado, sin @).
+  /// - Biografía, ubicación, fecha de registro y botones redondeados.
+  Widget _buildProfileHeader({
+    required BuildContext context,
+    required String userName,
+    required String userEmail,
+    String? userPhoto,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar circular grande
-          Container(
-            width: 78,
-            height: 78,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primaryTint,
-              border: Border.all(
-                color: AppColors.border,
-                width: 1.5,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/yago_icon.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.person_rounded,
-                  size: 46,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
+          // Avatar circular grande del usuario (o genérico)
+          _buildUserAvatar(radius: 39, photoUrl: userPhoto),
           const SizedBox(height: 12),
 
-          // Nombre de usuario + Candado / Privado
+          // Nombre de usuario + Correo al lado (sin candado)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 userName,
@@ -283,11 +326,18 @@ class _ProfileTabState extends State<ProfileTab> {
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.lock_rounded,
-                size: 17,
-                color: AppColors.textPrimary,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  userEmail,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13.5,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -406,53 +456,64 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Pestaña 1 (Posts - Predeterminada): feed unificado con publicaciones de todo tipo
-  /// hechas por el usuario (posts sociales y reportes de mascotas).
+  /// Pestaña 1 (Posts - Predeterminada): feed unificado con publicaciones de todo tipo.
+  /// Mantiene exactamente el mismo diseño de publicación normal tanto para posts
+  /// cotidianos como para reportes, agregando la etiqueta de estado al lado del nombre.
   Widget _buildPostsTab(
     BuildContext context,
     String userName,
+    String? userPhoto,
     List<Pet> myReports,
     double bottomInset,
   ) {
     return ListView(
       padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
       children: [
-        // Publicación comunitaria del usuario
-        _buildSocialPostCard(
+        // Publicación cotidiana normal del usuario
+        _buildPostCard(
+          context: context,
           postId: 'user-post-1',
           authorName: userName,
+          authorPhoto: userPhoto,
           timeAgo: 'Hace 2 h',
           content:
               'Paseando por la costanera con mi compañero fiel. Siempre atentos por si vemos a alguna mascota extraviada de los reportes del barrio 🐾🐶',
-          imageAsset: 'assets/images/IMG_5667.JPG',
+          imageUrl: 'assets/images/IMG_5667.JPG',
           commentsCount: 4,
           repostsCount: 2,
           viewsCount: 156,
         ),
 
-        // Reporte de mascota publicado por el usuario (si existe)
+        // Publicación de reporte de mascota del usuario:
+        // Mismo diseño exacto de post normal, solo con la etiqueta de estado al lado del nombre.
         if (myReports.isNotEmpty)
-          _buildReportPostCard(
+          _buildPostCard(
             context: context,
             postId: 'user-report-1',
             authorName: userName,
+            authorPhoto: userPhoto,
+            statusBadge: myReports.first.status,
             timeAgo: 'Ayer',
             content:
-                '¡Alerta de búsqueda activa! Se asustó en Plaza Armenia y salió corriendo hacia Av. Santa Fe. Si alguien la vio por favor contáctenme de inmediato 🙏',
+                '¡Buscamos a ${myReports.first.name}! ${myReports.first.description}',
+            imageUrl: myReports.first.imageUrl,
             pet: myReports.first,
             commentsCount: 12,
             repostsCount: 28,
             viewsCount: 820,
           ),
 
-        // Resto de reportes si hubiera más
+        // Resto de reportes del usuario si hubiera más
         for (int i = 1; i < myReports.length; i++)
-          _buildReportPostCard(
+          _buildPostCard(
             context: context,
             postId: 'user-report-${myReports[i].id}',
             authorName: userName,
+            authorPhoto: userPhoto,
+            statusBadge: myReports[i].status,
             timeAgo: myReports[i].timeAgo,
             content: myReports[i].description,
+            imageUrl: myReports[i].imageUrl,
             pet: myReports[i],
             commentsCount: 3,
             repostsCount: 5,
@@ -627,13 +688,19 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Tarjeta de publicación comunitaria con estética de X (Twitter)
-  Widget _buildSocialPostCard({
+  /// Tarjeta unificada de publicación:
+  /// Utilizada de manera uniforme para publicaciones normales y publicaciones de reporte.
+  /// Si es un reporte, simplemente añade la etiqueta (YagoStatusBadge) al lado del nombre.
+  Widget _buildPostCard({
+    required BuildContext context,
     required String postId,
     required String authorName,
+    String? authorPhoto,
+    YagoPetStatus? statusBadge,
     required String timeAgo,
     required String content,
-    String? imageAsset,
+    String? imageUrl,
+    Pet? pet,
     required int commentsCount,
     required int repostsCount,
     required int viewsCount,
@@ -652,35 +719,16 @@ class _ProfileTabState extends State<ProfileTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mini avatar circular
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primaryTint,
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/yago_icon.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.person_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
+          // Avatar del autor (o genérico si no posee)
+          _buildUserAvatar(radius: 20, photoUrl: authorPhoto),
           const SizedBox(width: 12),
 
-          // Contenido del post
+          // Contenido de la publicación
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cabecera: Nombre + Candado + Fecha (sin @)
+                // Cabecera: Nombre + Etiqueta opcional (si es reporte) + Tiempo (sin @, sin correo, sin candado)
                 Row(
                   children: [
                     Flexible(
@@ -695,12 +743,10 @@ class _ProfileTabState extends State<ProfileTab> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.lock_rounded,
-                      size: 13,
-                      color: AppColors.textPrimary,
-                    ),
+                    if (statusBadge != null) ...[
+                      const SizedBox(width: 6),
+                      YagoStatusBadge(status: statusBadge),
+                    ],
                     const SizedBox(width: 6),
                     Text(
                       '· $timeAgo',
@@ -720,7 +766,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 const SizedBox(height: 6),
 
-                // Texto del post
+                // Texto de la publicación
                 Text(
                   content,
                   style: const TextStyle(
@@ -731,303 +777,41 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
 
-                // Foto adjunta
-                if (imageAsset != null) ...[
+                // Foto de la publicación (mismo diseño para cualquier tipo de post)
+                if (imageUrl != null && imageUrl.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.asset(
-                      imageAsset,
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  GestureDetector(
+                    onTap: pet != null
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PetDetailScreen(pet: pet),
+                              ),
+                            ).then((_) => setState(() {}));
+                          }
+                        : null,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: imageUrl.startsWith('assets/')
+                          ? Image.asset(
+                              imageUrl,
+                              width: double.infinity,
+                              height: 190,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.network(
+                              imageUrl,
+                              width: double.infinity,
+                              height: 190,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
                     ),
                   ),
                 ],
                 const SizedBox(height: 12),
 
                 // Barra de interacciones estilo X (comentarios, reposts, likes, vistas, compartir)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildIconAction(
-                      Icons.chat_bubble_outline_rounded,
-                      '$commentsCount',
-                    ),
-                    _buildIconAction(
-                      Icons.repeat_rounded,
-                      '$repostsCount',
-                    ),
-                    GestureDetector(
-                      onTap: () => _toggleLike(postId),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLiked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 17,
-                            color: isLiked
-                                ? AppColors.likeRed
-                                : AppColors.twitterAction,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '$likesCount',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: isLiked
-                                  ? AppColors.likeRed
-                                  : AppColors.twitterAction,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildIconAction(
-                      Icons.bar_chart_rounded,
-                      '$viewsCount',
-                    ),
-                    const Icon(
-                      Icons.bookmark_border_rounded,
-                      size: 17,
-                      color: AppColors.twitterAction,
-                    ),
-                    const Icon(
-                      Icons.ios_share_rounded,
-                      size: 17,
-                      color: AppColors.twitterAction,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Tarjeta de reporte de mascota integrado en el feed de publicaciones del usuario
-  Widget _buildReportPostCard({
-    required BuildContext context,
-    required String postId,
-    required String authorName,
-    required String timeAgo,
-    required String content,
-    required Pet pet,
-    required int commentsCount,
-    required int repostsCount,
-    required int viewsCount,
-  }) {
-    final isLiked = _likedPostIds.contains(postId);
-    final likesCount = _postLikesCount[postId] ?? 0;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: AppColors.feedDivider, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Mini avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primaryTint,
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/yago_icon.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.person_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Contenido del reporte
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cabecera: Nombre + Candado + Tiempo (sin @)
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        authorName,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14.5,
-                          color: AppColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.lock_rounded,
-                      size: 13,
-                      color: AppColors.textPrimary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '· $timeAgo',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      Icons.more_horiz_rounded,
-                      size: 18,
-                      color: AppColors.twitterAction,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                // Mensaje introductorio
-                Text(
-                  content,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13.5,
-                    height: 1.35,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Tarjeta embebida de la mascota
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PetDetailScreen(pet: pet),
-                      ),
-                    ).then((_) => setState(() {}));
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border, width: 1),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Imagen de la mascota con badge de estado
-                        Stack(
-                          children: [
-                            pet.imageUrl.startsWith('assets/')
-                                ? Image.asset(
-                                    pet.imageUrl,
-                                    width: double.infinity,
-                                    height: 170,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => Container(
-                                      width: double.infinity,
-                                      height: 170,
-                                      color: AppColors.border,
-                                      child: const Icon(Icons.pets,
-                                          size: 36, color: AppColors.subtle),
-                                    ),
-                                  )
-                                : Image.network(
-                                    pet.imageUrl,
-                                    width: double.infinity,
-                                    height: 170,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => Container(
-                                      width: double.infinity,
-                                      height: 170,
-                                      color: AppColors.border,
-                                      child: const Icon(Icons.pets,
-                                          size: 36, color: AppColors.subtle),
-                                    ),
-                                  ),
-                            Positioned(
-                              top: 10,
-                              left: 10,
-                              child: YagoStatusBadge(status: pet.status),
-                            ),
-                          ],
-                        ),
-
-                        // Datos de la mascota
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                pet.name,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${pet.breed} · ${pet.gender} · ${pet.age}',
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12.5,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.location_on_outlined,
-                                    size: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    pet.location,
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Barra de interacciones
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
