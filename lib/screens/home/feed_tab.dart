@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../models/feed_post.dart';
 import '../../models/pet.dart';
@@ -21,6 +22,7 @@ class FeedTab extends StatefulWidget {
 class _FeedTabState extends State<FeedTab> {
   // Filtro activo: 0 = Todos, 1 = Perdidas, 2 = Encontradas, 3 = Reunidas, 4 = Comunidad
   int _selectedFilterIndex = 0;
+  bool _isFabVisible = true;
   final List<String> _filters = [
     'Todos',
     'Perdidas',
@@ -279,31 +281,53 @@ class _FeedTabState extends State<FeedTab> {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 66.0),
-        child: SizedBox(
-          width: 52,
-          height: 52,
-          child: FloatingActionButton(
-            heroTag: 'createPostFab',
-            onPressed: _openCreatePost,
-            backgroundColor: AppColors.primary,
-            elevation: 3,
-            shape: const CircleBorder(),
-            tooltip: 'Crear publicación',
-            child: const Icon(
-              Icons.add_rounded,
-              color: Colors.white,
-              size: 28,
+        padding: const EdgeInsets.only(bottom: 96.0),
+        child: AnimatedScale(
+          scale: _isFabVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 240),
+          curve: _isFabVisible ? Curves.easeOutBack : Curves.easeInBack,
+          child: AnimatedOpacity(
+            opacity: _isFabVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 180),
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: FloatingActionButton(
+                heroTag: 'createPostFab',
+                onPressed: _isFabVisible ? _openCreatePost : null,
+                backgroundColor: AppColors.primary,
+                elevation: 4,
+                shape: const CircleBorder(),
+                tooltip: 'Crear publicación',
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
             ),
           ),
         ),
       ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () async {
-          setState(() {});
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.direction == ScrollDirection.reverse) {
+            if (_isFabVisible) {
+              setState(() => _isFabVisible = false);
+            }
+          } else if (notification.direction == ScrollDirection.forward) {
+            if (!_isFabVisible) {
+              setState(() => _isFabVisible = true);
+            }
+          }
+          return false;
         },
-        child: CustomScrollView(
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            setState(() {});
+          },
+          child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             // Encabezado que desaparece al hacer scroll hacia abajo
@@ -466,6 +490,7 @@ class _FeedTabState extends State<FeedTab> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import 'create_report_screen.dart';
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _isNavCompact = false;
 
   void _openCreateReport() {
     Navigator.of(context).push(
@@ -80,15 +82,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: views,
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.direction == ScrollDirection.reverse) {
+            if (!_isNavCompact) {
+              setState(() => _isNavCompact = true);
+            }
+          } else if (notification.direction == ScrollDirection.forward) {
+            if (_isNavCompact) {
+              setState(() => _isNavCompact = false);
+            }
+          }
+          return false;
+        },
+        child: IndexedStack(
+          index: _currentIndex,
+          children: views,
+        ),
       ),
       bottomNavigationBar: YagoBottomNavBar(
         currentIndex: _currentIndex,
+        isCompact: _isNavCompact,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
+            _isNavCompact = false;
           });
         },
         onPublishTap: _openCreateReport,

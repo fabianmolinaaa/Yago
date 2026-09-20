@@ -7,12 +7,14 @@ class YagoBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final VoidCallback? onPublishTap;
+  final bool isCompact;
 
   const YagoBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.onPublishTap,
+    this.isCompact = false,
   });
 
   // Colores monocromáticos minimalistas (sin colores llamativos)
@@ -23,27 +25,36 @@ class YagoBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 10.0),
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOutCubic,
+        padding: EdgeInsets.fromLTRB(
+          isCompact ? 32.0 : 16.0,
+          0,
+          isCompact ? 32.0 : 16.0,
+          isCompact ? 6.0 : 10.0,
+        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              height: 54,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              height: isCompact ? 44.0 : 54.0,
               decoration: BoxDecoration(
                 // Pequeña transparencia para dejar pasar la luz y colores del fondo
-                color: Colors.white.withValues(alpha: 0.82),
-                borderRadius: BorderRadius.circular(24),
+                color: Colors.white.withValues(alpha: isCompact ? 0.90 : 0.82),
+                borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.5),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: isCompact ? 0.04 : 0.06),
+                    blurRadius: isCompact ? 12 : 16,
+                    offset: Offset(0, isCompact ? 2 : 4),
                   ),
                 ],
               ),
@@ -110,7 +121,14 @@ class YagoBottomNavBar extends StatelessWidget {
           onTap: () => onTap(index),
           radius: 26,
           highlightShape: BoxShape.circle,
-          child: Center(child: Icon(icon, size: 26, color: color)),
+          child: Center(
+            child: AnimatedScale(
+              scale: isCompact ? 0.85 : 1.0,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              child: Icon(icon, size: 26, color: color),
+            ),
+          ),
         ),
       ),
     );
@@ -127,20 +145,22 @@ class YagoBottomNavBar extends StatelessWidget {
           radius: 26,
           highlightShape: BoxShape.circle,
           child: Center(
-            child: Container(
-              width: 34,
-              height: 34,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              width: isCompact ? 28 : 34,
+              height: isCompact ? 28 : 34,
               decoration: BoxDecoration(
                 color: isSelected ? _activeColor : Colors.transparent,
                 border: Border.all(
                   color: isSelected ? _activeColor : _inactiveColor,
-                  width: 1.6,
+                  width: isCompact ? 1.3 : 1.6,
                 ),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(isCompact ? 8 : 10),
               ),
               child: Icon(
                 Icons.center_focus_strong_rounded,
-                size: 20,
+                size: isCompact ? 16 : 20,
                 color: isSelected ? Colors.white : _activeColor,
               ),
             ),
