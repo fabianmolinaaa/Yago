@@ -347,4 +347,77 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sin reportes activos'), findsOneWidget);
   });
+
+  group('YagoPetImage asset resolution and rendering', () {
+    test('resolveAssetFallback maps storage URLs to bundled assets', () {
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_caniche.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_3508.JPG',
+      );
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Frocky_labrador.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_4178.JPG',
+      );
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fsimba_golden.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_5370.JPG',
+      );
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fmilo_gato.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_2935.JPG',
+      );
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_reunida.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_5667.JPG',
+      );
+      expect(
+        YagoPetImage.resolveAssetFallback(
+          'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_final_feliz.jpg?alt=media&token=123',
+        ),
+        'assets/images/IMG_5560.JPG',
+      );
+      expect(YagoPetImage.resolveAssetFallback(''), isNull);
+      expect(YagoPetImage.resolveAssetFallback(null), isNull);
+    });
+
+    testWidgets('YagoPetImage renders local asset directly for seed storage URLs', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: YagoPetImage(
+              imageUrl:
+                  'https://firebasestorage.googleapis.com/v0/b/yago-21b28.firebasestorage.app/o/reports%2Fluna_caniche.jpg?alt=media&token=c423ae85-7535-49ca-ac88-110119309b7f',
+            ),
+          ),
+        ),
+      );
+
+      // Debe renderizar un widget Image cargando el asset local sin quedar en placeholder genérico
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byIcon(Icons.pets_rounded), findsNothing);
+    });
+
+    testWidgets('YagoPetImage renders placeholder when URL is empty', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: YagoPetImage(imageUrl: ''),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
+    });
+  });
 }
+

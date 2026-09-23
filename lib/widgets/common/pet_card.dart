@@ -5,6 +5,8 @@ import 'animated_paw_icon.dart';
 import 'yago_badge.dart';
 import 'yago_button.dart';
 import 'yago_logo.dart';
+import 'yago_pet_image.dart';
+
 
 /// Card de publicación de mascota con diseño estilo Instagram/Twitter optimizado para Yago.
 class PetCard extends StatefulWidget {
@@ -149,6 +151,7 @@ class _PetCardState extends State<PetCard> {
                             ? AssetImage(widget.authorAvatar!) as ImageProvider
                             : NetworkImage(widget.authorAvatar!))
                         : null,
+                    onBackgroundImageError: widget.authorAvatar != null ? (_, _) {} : null,
                     child: widget.authorAvatar == null
                         ? const Icon(
                             Icons.person_rounded,
@@ -292,39 +295,12 @@ class _PetCardState extends State<PetCard> {
             onTap: widget.onTap,
             child: Stack(
               children: [
-                widget.imageUrl.startsWith('assets/')
-                    ? Image.asset(
-                        widget.imageUrl,
-                        width: double.infinity,
-                        fit: BoxFit.fitWidth,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 220,
-                          color: AppColors.surface,
-                          child: const Center(
-                            child: Icon(
-                              Icons.pets_rounded,
-                              size: 48,
-                              color: AppColors.subtle,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Image.network(
-                        widget.imageUrl,
-                        width: double.infinity,
-                        fit: BoxFit.fitWidth,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 220,
-                          color: AppColors.surface,
-                          child: const Center(
-                            child: Icon(
-                              Icons.pets_rounded,
-                              size: 48,
-                              color: AppColors.subtle,
-                            ),
-                          ),
-                        ),
-                      ),
+                YagoPetImage(
+                  imageUrl: widget.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                  placeholderHeight: 220,
+                ),
                 // Botón de mascota interactivo superpuesto en la esquina superior derecha
                 // Monocromático, patita estática con dedos apareciendo en secuencia apuntando a la esquina superior derecha
                 Positioned(

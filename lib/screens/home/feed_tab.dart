@@ -763,21 +763,11 @@ class _FeedTabState extends State<FeedTab> {
                 ),
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  ClipRRect(
+                  YagoPetImage(
+                    imageUrl: post.imageUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                     borderRadius: BorderRadius.circular(12),
-                    child: post.imageUrl!.startsWith('assets/')
-                        ? Image.asset(
-                            post.imageUrl!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.network(
-                            post.imageUrl!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                const SizedBox.shrink(),
-                          ),
                   ),
                 ],
                 const SizedBox(height: 12),

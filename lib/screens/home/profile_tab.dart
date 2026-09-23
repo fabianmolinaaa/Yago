@@ -699,31 +699,12 @@ class _ProfileTabState extends State<ProfileTab> {
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             leading: ClipRRect(
               borderRadius: AppRadius.smBorder,
-              child: pet.imageUrl.startsWith('assets/')
-                  ? Image.asset(
-                      pet.imageUrl,
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        width: 52,
-                        height: 52,
-                        color: AppColors.surfaceSecondary,
-                        child: const Icon(Icons.pets, color: AppColors.subtle),
-                      ),
-                    )
-                  : Image.network(
-                      pet.imageUrl,
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        width: 52,
-                        height: 52,
-                        color: AppColors.surfaceSecondary,
-                        child: const Icon(Icons.pets, color: AppColors.subtle),
-                      ),
-                    ),
+              child: YagoPetImage(
+                imageUrl: pet.imageUrl,
+                width: 52,
+                height: 52,
+                fit: BoxFit.cover,
+              ),
             ),
             title: Text(
               pet.name,
@@ -893,22 +874,12 @@ class _ProfileTabState extends State<ProfileTab> {
                             ).then((_) => setState(() {}));
                           }
                         : null,
-                    child: ClipRRect(
+                    child: YagoPetImage(
+                      imageUrl: imageUrl,
+                      width: double.infinity,
+                      height: 190,
+                      fit: BoxFit.cover,
                       borderRadius: BorderRadius.circular(14),
-                      child: imageUrl.startsWith('assets/')
-                          ? Image.asset(
-                              imageUrl,
-                              width: double.infinity,
-                              height: 190,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.network(
-                              imageUrl,
-                              width: double.infinity,
-                              height: 190,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                            ),
                     ),
                   ),
                 ],
