@@ -41,28 +41,31 @@ Será responsable de tareas de gestión y moderación de la plataforma.
 El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **4 pilares y pantallas fundamentales**:
 
 ### 4.1 Feed de publicaciones (Primera pantalla)
-* **Muro comunitario de publicaciones:** Espacio social y participativo donde la comunidad comparte situaciones, novedades, fotografías cotidianas de mascotas, relatos con final feliz, avisos de adopción y consejos de tenencia responsable.
-* **Interacción:** Opciones para indicar "me gusta" (reacciones), compartir publicaciones y contactar directamente al autor mediante mensaje privado, sin hilos de comentarios públicos.
+* **Muro comunitario de publicaciones:** Espacio social y participativo donde la comunidad comparte situaciones, novedades, fotografías cotidianas de mascotas, relatos con final feliz, avisos de adopción, consejos de tenencia responsable y búsquedas de pareja o apareamiento responsable.
+* **Creación de publicaciones diversas:** Formulario contextual para crear publicaciones según distintos tipos (momentos cotidianos, consejos, reencuentros, apareamiento con datos de raza/sexo o alertas directas) con carga de fotos desde cámara o galería.
+* **Filtrado por categorías:** Selector rápido y panel superior para filtrar el feed por tipo de contenido (*Todos*, *Perdidas*, *Encontradas*, *Reunidas*, *Apareamiento*, *Comunidad*).
+* **Interacción:** Opciones para indicar "me gusta" (reacciones), guardar en favoritos/marcadores y contactar directamente al autor mediante mensaje privado, sin hilos de comentarios públicos.
 
 ### 4.2 Feed de reportes (Segunda pantalla)
-* **Visualización optimizada de pérdidas y hallazgos:** Pantalla especialmente dispuesta y priorizada para la difusión y consulta de reportes de mascotas perdidas (con alertas urgentes) y animales encontrados.
-* **Fichas claras de reporte:** Fotografía del animal, estado semántico (*Perdida*, *Encontrada*, *Reunida*), señas particulares (raza, edad, sexo, chips, collar), fecha y datos de contacto del reportante.
+* **Visualización optimizada de pérdidas y hallazgos activos:** Pantalla especialmente dispuesta y priorizada para la difusión y consulta de reportes de mascotas perdidas (con alertas urgentes) y animales encontrados en estado activo (excluyendo casos ya resueltos para concentrar la atención en emergencias vigentes).
+* **Fichas claras de reporte:** Fotografía del animal, estado semántico (*Perdida*, *Encontrada*), señas particulares (raza, edad, sexo, chips, collar), fecha y datos de contacto del reportante.
 * **Visualización contextual de zona en mapa:** Cada publicación incluye una **opción directa para ver en qué zona del mapa se pudo haber perdido o visto por última vez**, desplegando un mapa contextual con el barrio, punto de referencia y radio aproximado del hecho (eliminando la necesidad de navegar por un mapa exploratorio global independiente).
-* **Gestión y alta de reportes:** Formularios dedicados para dar de alta reportes de pérdidas y hallazgos, editar información y marcar casos como resueltos/reunidos.
+* **Gestión y resolución de reportes:** Formularios dedicados para dar de alta reportes de pérdidas y hallazgos, editar información y marcar casos como resueltos especificando la causa (reencuentro con su familia, adopción/hogar definitivo, o fallecimiento).
 
 ### 4.3 Cámara para análisis con Inteligencia Artificial (Tercera pantalla)
-* **Identificación inteligente en la vía pública:** Herramienta diseñada para el momento en que una persona se encuentra un animal en la calle y desconoce si está perdido, si se escapó o si simplemente anda paseando fuera de su casa.
-* **Captura fotográfica directa:** El usuario abre la cámara analizadora desde la app y captura una fotografía del animal encontrado (o carga una foto reciente).
+* **Identificación inteligente en la vía pública:** Herramienta diseñada para el momento en que una persona se encuentra un animal en la calle o busca cotejar a su mascota perdida.
+* **Captura fotográfica directa:** El usuario abre la cámara analizadora desde la app y captura una fotografía del animal encontrado (o carga una foto reciente de la galería).
 * **Análisis visual con IA:** Mediante visión computacional y modelos multimodales, la IA analiza los rasgos físicos del animal (especie, raza, colores, patrones de pelaje y características distintivas).
-* **Cotejo contra la base de datos de mascotas perdidas:** El sistema busca de forma automática en el catálogo de animales reportados activamente como extraviados en Yago para verificar si hay coincidencias.
+* **Cotejo contra la base de datos de mascotas perdidas y encontradas:** El sistema busca de forma automática en el catálogo de reportes activos en Yago, contrastando contra casos de **mascotas perdidas** y **mascotas encontradas** para detectar coincidencias potenciales en ambas direcciones.
 * **Derivación de resultados:**
-  * **Con coincidencia:** Se presenta el reporte coincidente con porcentaje de similitud visual y botón directo para iniciar un **Chat directo** con el dueño para avisarle de inmediato.
+  * **Con coincidencia:** Se presenta el reporte coincidente con porcentaje de similitud visual y botón directo para iniciar un **Chat directo** con el dueño o la persona que reportó el hallazgo para avisarle de inmediato.
   * **Sin coincidencia:** La app notifica que no figura como reportado actualmente y ofrece la posibilidad de generar en pocos segundos un nuevo reporte de hallazgo reutilizando la imagen analizada.
 
 ### 4.4 Chat directo entre personas (Cuarta pantalla)
 * **Mensajería directa 1 a 1:** Canal de comunicación interna y en tiempo real entre usuarios dentro de la aplicación.
+* **Puntos de acceso directos:** Posibilidad de abrir un chat privado directamente desde una **publicación del feed comunitario** (consultas de apareamiento, consejos, etc.), desde una **ficha del feed de reportes** (aportar pistas de avistamientos o coordinar reencuentro) o desde el **resultado de la cámara con IA**.
 * **Coordinación y avistamientos:** Permite a quien vio o retuvo a un animal contactar de forma inmediata, privada y segura a la persona a cargo del reporte para aportar pistas, fotos o coordinar el reencuentro.
-* **Bandeja de conversaciones:** Listado de chats activos vinculados al contexto del reporte de la mascota para evitar confusiones.
+* **Bandeja de conversaciones:** Listado de chats activos vinculados al contexto del reporte o publicación correspondiente para evitar confusiones.
 
 ### 4.5 Base técnica transversal: Autenticación y cuentas de usuario
 *(Infraestructura de soporte requerida para la autoría, seguridad y persistencia de datos, no contemplada como historias de usuario de negocio en el backlog):*
