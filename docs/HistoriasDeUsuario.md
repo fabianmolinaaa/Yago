@@ -3,7 +3,7 @@
 ## Sprint 1: Feed de Publicaciones Comunitarias
 
 | ID | Historia de usuario | Prioridad |
-| :--- | :--- | :---: |\
+| :--- | :--- | :---: |
 | HU-S1-01 | Como usuario, quiero consultar un feed social comunitario que reúna momentos cotidianos, relatos de reencuentro, consejos de cuidado animal y publicaciones de búsqueda de pareja / apareamiento responsable. | Alta |
 | HU-S1-02 | Como usuario, quiero crear diferentes tipos de publicaciones en el feed (momentos libres, búsqueda de apareamiento con datos de raza/sexo, consejos útiles, historias de reencuentro o alertas rápidas) adjuntando fotos desde cámara/galería y completando sus datos contextuales. | Alta |
 | HU-S1-03 | Como usuario, quiero reaccionar con "me gusta" a las publicaciones comunitarias para expresar apoyo e interactuar con el contenido. | Media |
