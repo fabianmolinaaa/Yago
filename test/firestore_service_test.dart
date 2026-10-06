@@ -379,4 +379,40 @@ void main() {
       expect(formatTimeAgo(null, fallback: 'Desconocido'), 'Desconocido');
     });
   });
+
+  group('FeedPost Category Formatting', () {
+    test('categoryTag recognizes tip and removes [Consejo] in displayContent', () {
+      const tipPost = FeedPost(
+        id: 'post-tip-1',
+        authorName: 'Dr. Lucas',
+        content: '[Consejo] Evita alimentar a tu mascota con chocolate o uvas.',
+        timeAgo: 'Reciente',
+      );
+      expect(tipPost.categoryTag, 'Consejo');
+      expect(tipPost.displayContent, 'Evita alimentar a tu mascota con chocolate o uvas.');
+    });
+
+    test('categoryTag recognizes postType tip and preserves clean content', () {
+      const tipPost = FeedPost(
+        id: 'post-tip-2',
+        authorName: 'Veterinaria San Roque',
+        content: 'No dejes agua estancada para prevenir mosquitos.',
+        postType: 'tip',
+        timeAgo: 'Reciente',
+      );
+      expect(tipPost.categoryTag, 'Consejo');
+      expect(tipPost.displayContent, 'No dejes agua estancada para prevenir mosquitos.');
+    });
+
+    test('categoryTag recognizes reunion story', () {
+      const reunionPost = FeedPost(
+        id: 'post-reunion-1',
+        authorName: 'Ana',
+        content: '[Reencuentro] ¡Encontramos a Toby gracias a un vecino!',
+        timeAgo: 'Reciente',
+      );
+      expect(reunionPost.categoryTag, 'Reencuentro');
+      expect(reunionPost.displayContent, '¡Encontramos a Toby gracias a un vecino!');
+    });
+  });
 }

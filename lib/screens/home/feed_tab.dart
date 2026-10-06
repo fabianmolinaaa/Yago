@@ -659,6 +659,8 @@ class _FeedTabState extends State<FeedTab> {
     final isYagoOfficial = post.authorName == 'Comunidad Yago' ||
         post.authorName == 'Equipo Yago' ||
         post.authorAvatar == null;
+    final category = post.categoryTag;
+    final cleanText = post.displayContent;
 
     return Container(
       decoration: const BoxDecoration(
@@ -731,6 +733,10 @@ class _FeedTabState extends State<FeedTab> {
                         fontSize: 13,
                       ),
                     ),
+                    if (category != null) ...[
+                      const SizedBox(width: 6),
+                      YagoPostCategoryBadge(category: category),
+                    ],
                     const Text(
                       ' · ',
                       style: TextStyle(color: AppColors.twitterHandle),
@@ -755,15 +761,7 @@ class _FeedTabState extends State<FeedTab> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  post.content,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13.5,
-                    height: 1.35,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                _buildPostFormattedContent(cleanText, category),
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   YagoPetImage(
@@ -843,6 +841,128 @@ class _FeedTabState extends State<FeedTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPostFormattedContent(String content, String? category) {
+    if (category == 'Consejo') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
+                color: AppColors.communityBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 16,
+                color: AppColors.communityText,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Consejo para la comunidad',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.communityText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      height: 1.4,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (category == 'Reencuentro') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.reunitedBg.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.reunited.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
+                color: AppColors.reunitedBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                size: 16,
+                color: AppColors.reunitedText,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Historia de reencuentro',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.reunitedText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      height: 1.4,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Text(
+      content,
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 13.5,
+        height: 1.35,
+        color: AppColors.textPrimary,
+      ),
     );
   }
 }

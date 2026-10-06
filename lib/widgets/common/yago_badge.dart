@@ -134,3 +134,65 @@ class YagoFeatureTag extends StatelessWidget {
     );
   }
 }
+
+/// Badge oficial para categorías de publicaciones comunitarias (Consejo, Reencuentro, Comunidad).
+class YagoPostCategoryBadge extends StatelessWidget {
+  final String category;
+
+  const YagoPostCategoryBadge({super.key, required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color color;
+    IconData? icon;
+
+    switch (category.toLowerCase()) {
+      case 'consejo':
+        bg = AppColors.communityBg;
+        color = AppColors.communityText;
+        icon = Icons.lightbulb_outline_rounded;
+        break;
+      case 'reencuentro':
+        bg = AppColors.reunitedBg;
+        color = AppColors.reunitedText;
+        icon = Icons.favorite_rounded;
+        break;
+      case 'comunidad':
+      case 'aviso':
+        bg = AppColors.primaryTint;
+        color = AppColors.primary;
+        icon = Icons.campaign_rounded;
+        break;
+      default:
+        bg = AppColors.surfaceSecondary;
+        color = AppColors.textSecondary;
+        icon = null;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: AppRadius.fullBorder,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            category.toUpperCase(),
+            style: AppTypography.captionBold.copyWith(
+              color: color,
+              fontSize: 10,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

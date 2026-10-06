@@ -449,13 +449,11 @@ class _ProfileTabState extends State<ProfileTab> {
             const SizedBox(height: 12),
           ] else ...[
             Text(
-              'Aún no has agregado una biografía. ¡Edita tu perfil para que la comunidad te conozca! 🐾',
+              'Sin descripción.',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13.5,
-                fontStyle: FontStyle.italic,
-                height: 1.35,
-                color: AppColors.textSecondary.withValues(alpha: 0.8),
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -637,8 +635,9 @@ class _ProfileTabState extends State<ProfileTab> {
                 postId: item.post!.id,
                 authorName: userName,
                 authorPhoto: userPhoto,
+                categoryBadge: item.post!.categoryTag,
                 timeAgo: formatTimeAgo(item.dateTime, fallback: item.post!.timeAgo),
-                content: item.post!.content,
+                content: item.post!.displayContent,
                 imageUrl: item.post!.imageUrl,
                 commentsCount: item.post!.commentsCount,
                 feedPost: item.post,
@@ -852,14 +851,19 @@ class _ProfileTabState extends State<ProfileTab> {
   }) {
     final isReport = pet != null;
 
-    return PopupMenuButton<String>(
-      icon: const Icon(
-        Icons.more_horiz_rounded,
-        size: 19,
-        color: AppColors.twitterAction,
-      ),
-      padding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: PopupMenuButton<String>(
+        icon: const Icon(
+          Icons.more_horiz_rounded,
+          size: 19,
+          color: AppColors.twitterAction,
+        ),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        splashRadius: 16,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
       onSelected: (value) async {
         if (value == 'copy') {
           await Clipboard.setData(ClipboardData(text: content));
@@ -938,6 +942,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -1048,6 +1053,7 @@ class _ProfileTabState extends State<ProfileTab> {
     required String authorName,
     String? authorPhoto,
     YagoPetStatus? statusBadge,
+    String? categoryBadge,
     required String timeAgo,
     required String content,
     String? imageUrl,
@@ -1078,8 +1084,9 @@ class _ProfileTabState extends State<ProfileTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cabecera: Nombre + Etiqueta opcional (si es reporte) + Tiempo
+                // Cabecera: Nombre + Etiqueta opcional (si es reporte o post temático) + Tiempo
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Row(
@@ -1100,6 +1107,9 @@ class _ProfileTabState extends State<ProfileTab> {
                           if (statusBadge != null) ...[
                             const SizedBox(width: 6),
                             YagoStatusBadge(status: statusBadge),
+                          ] else if (categoryBadge != null) ...[
+                            const SizedBox(width: 6),
+                            YagoPostCategoryBadge(category: categoryBadge),
                           ],
                           const SizedBox(width: 6),
                           Flexible(
@@ -1125,18 +1135,10 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 3),
 
-                // Texto de la publicación
-                Text(
-                  content,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13.5,
-                    height: 1.35,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                // Contenido formateado según categoría
+                _buildPostFormattedContent(content, categoryBadge),
 
                 // Foto de la publicación (mismo diseño para cualquier tipo de post)
                 if (imageUrl != null && imageUrl.isNotEmpty) ...[
@@ -1228,6 +1230,128 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPostFormattedContent(String content, String? category) {
+    if (category == 'Consejo') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
+                color: AppColors.communityBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 16,
+                color: AppColors.communityText,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Consejo para la comunidad',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.communityText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      height: 1.4,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (category == 'Reencuentro') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.reunitedBg.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.reunited.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
+                color: AppColors.reunitedBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                size: 16,
+                color: AppColors.reunitedText,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Historia de reencuentro',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.reunitedText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13.5,
+                      height: 1.4,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Text(
+      content,
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 13.5,
+        height: 1.35,
+        color: AppColors.textPrimary,
+      ),
     );
   }
 }

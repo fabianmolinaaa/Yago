@@ -322,6 +322,7 @@ void main() {
   });
 
   testWidgets('ProfileTab does not show hardcoded demo data and shows clean empty states', (WidgetTester tester) async {
+    MockDataService().clearUserProfileCache();
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -340,6 +341,9 @@ void main() {
 
     // No debe mostrar fecha fija de febrero de 2024
     expect(find.text('Se unió en febrero de 2024'), findsNothing);
+
+    // Debe mostrar la descripción vacía limpia y minimalista
+    expect(find.text('Sin descripción.'), findsOneWidget);
 
     // En su lugar debe mostrar el estado vacío de publicaciones
     expect(find.text('Sin publicaciones aún'), findsOneWidget);
@@ -473,6 +477,26 @@ void main() {
 
       expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
     });
+  });
+
+  testWidgets('Design System - YagoPostCategoryBadge renders category label and icon', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              YagoPostCategoryBadge(category: 'Consejo'),
+              YagoPostCategoryBadge(category: 'Reencuentro'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('CONSEJO'), findsOneWidget);
+    expect(find.byIcon(Icons.lightbulb_outline_rounded), findsOneWidget);
+    expect(find.text('REENCUENTRO'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
   });
 }
 

@@ -345,10 +345,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
         await MockDataService().addPet(newPet);
       } else {
-        // Si seleccionó Consejo o Reencuentro, añade la etiqueta; si es libre, guarda el contenido limpio
-        final formattedContent = _selectedCategory != null
-            ? '[$_selectedCategory] $content'
-            : content;
+        final categoryType = _selectedCategory != null
+            ? (_selectedCategory == 'Consejo'
+                ? 'tip'
+                : (_selectedCategory == 'Reencuentro'
+                    ? 'reunion'
+                    : _selectedCategory!.toLowerCase()))
+            : 'general';
 
         final newPost = FeedPost(
           id: 'post-${DateTime.now().millisecondsSinceEpoch}',
@@ -356,11 +359,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           authorName: authorName,
           authorAvatar: authorAvatar,
           timeAgo: 'Recién publicado',
-          content: formattedContent,
+          content: content,
           imageUrl: uploadedImageUrl,
           likesCount: 0,
           commentsCount: 0,
           isLiked: false,
+          postType: categoryType,
           createdAt: DateTime.now(),
         );
 

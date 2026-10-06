@@ -124,4 +124,44 @@ class FeedPost {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  /// Categoría normalizada para presentación ('Consejo', 'Reencuentro', 'Comunidad', o null).
+  String? get categoryTag {
+    final type = postType.toLowerCase().trim();
+    if (type == 'tip' || type == 'consejo') return 'Consejo';
+    if (type == 'reunion' || type == 'reencuentro') return 'Reencuentro';
+    if (type == 'community' || type == 'comunidad' || type == 'aviso') return 'Comunidad';
+
+    final text = content.trim();
+    if (text.startsWith('[Consejo]') || text.startsWith('💡 Consejo')) return 'Consejo';
+    if (text.startsWith('[Reencuentro]') || text.startsWith('❤️ Reencuentro')) return 'Reencuentro';
+    if (text.startsWith('[Comunidad]') || text.startsWith('[Aviso]')) return 'Comunidad';
+
+    return null;
+  }
+
+  /// Texto limpio sin prefijos crudos como '[Consejo]' o '[Reencuentro]'.
+  String get displayContent {
+    String text = content.trim();
+    if (text.startsWith('[Consejo]')) {
+      final stripped = text.substring(9).trim();
+      if (stripped.isNotEmpty) return stripped;
+    } else if (text.startsWith('💡 Consejo de seguridad:')) {
+      final stripped = text.substring(24).trim();
+      if (stripped.isNotEmpty) return stripped;
+    } else if (text.startsWith('💡 Consejo:')) {
+      final stripped = text.substring(11).trim();
+      if (stripped.isNotEmpty) return stripped;
+    } else if (text.startsWith('[Reencuentro]')) {
+      final stripped = text.substring(13).trim();
+      if (stripped.isNotEmpty) return stripped;
+    } else if (text.startsWith('[Comunidad]')) {
+      final stripped = text.substring(11).trim();
+      if (stripped.isNotEmpty) return stripped;
+    } else if (text.startsWith('[Aviso]')) {
+      final stripped = text.substring(7).trim();
+      if (stripped.isNotEmpty) return stripped;
+    }
+    return text;
+  }
 }
