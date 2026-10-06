@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../../models/pet.dart';
 import '../../services/mock_data_service.dart';
@@ -11,8 +12,11 @@ import 'create_report_screen.dart';
 /// Pestaña oficial del Feed de Reportes (Pantalla 2 de Yago - HU-S2-01).
 ///
 /// Diseñada exclusivamente para reportes de mascotas perdidas y encontradas.
-/// Implementa una vista en mosaico visual de 2 columnas (panorama rápido) para
-/// cotejar rasgos físicos de mascotas sin necesidad de scrolling individual extensivo.
+/// Implementa una distribución estilo Pinterest (Masonry Grid de 2 columnas) con
+/// fotografías limpias donde el tamaño de cada tarjeta depende de la propia imagen,
+/// permitiendo un panorama visual inmediato y orgánico sin scrolls extensivos.
+///
+/// La filtración se gestiona exclusivamente a través del botón de filtros en el header.
 class ReportsFeedTab extends StatefulWidget {
   final VoidCallback? onGoToCreateReport;
 
@@ -29,11 +33,8 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
   // Filtro de estado: 0 = Todos (Perdidas y Encontradas), 1 = Solo Perdidas, 2 = Solo Encontradas
   int _selectedStatusIndex = 0;
 
-  // Filtro de especie: 'Todos', 'Perro', 'Gato', 'Otro'
+  // Filtro de especie: 'Todos', 'Perros', 'Gatos', 'Otros'
   String _selectedSpecies = 'Todos';
-
-  // Modalidad de visualización: true = Mosaico rápido 2 columnas (default), false = Lista compacta
-  bool _isGridView = true;
 
   // Búsqueda textual
   bool _isSearchVisible = false;
@@ -68,11 +69,14 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
     super.dispose();
   }
 
+  bool get _hasActiveFilters =>
+      _selectedStatusIndex != 0 || _selectedSpecies != 'Todos';
+
   /// Retorna exclusivamente reportes activos de mascotas perdidas y encontradas
   List<Pet> _getFilteredReports() {
     final allPets = MockDataService().getAllPets();
 
-    // 1. Filtrar solo mascotas activas de estado PERDIDA o ENCONTRADA (sin comunitarias, cruzas o resueltas)
+    // 1. Filtrar solo mascotas activas con estado PERDIDA o ENCONTRADA
     final reportsOnly = allPets.where((pet) {
       return pet.status == YagoPetStatus.lost ||
           pet.status == YagoPetStatus.found;
@@ -152,6 +156,112 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
     );
   }
 
+  void _showPetOptionsSheet(Pet pet) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final isBookmarked = MockDataService().isBookmarked(pet.id);
+        final isLost = pet.status == YagoPetStatus.lost;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Icon(
+                    Icons.map_outlined,
+                    color: isLost ? AppColors.lost : AppColors.found,
+                  ),
+                  title: const Text(
+                    'Ver zona en mapa',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Radio aproximado en ${pet.location}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openZoneModal(pet);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.pets_rounded,
+                    color: AppColors.textPrimary,
+                  ),
+                  title: const Text(
+                    'Ver ficha completa',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${pet.breed} · ${isLost ? "Mascota perdida" : "Mascota encontrada"}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openDetail(pet);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    isBookmarked
+                        ? Icons.bookmark_remove_rounded
+                        : Icons.bookmark_add_outlined,
+                    color: isBookmarked ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                  title: Text(
+                    isBookmarked ? 'Quitar de guardados' : 'Guardar reporte',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    MockDataService().toggleBookmark(pet.id);
+                    Navigator.pop(ctx);
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _openFilterDialog() {
     int tempStatus = _selectedStatusIndex;
     String tempSpecies = _selectedSpecies;
@@ -220,7 +330,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    'Filtrar alertas de reportes',
+                                    'Filtrar reportes',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
                                       fontSize: 16,
@@ -511,24 +621,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                         },
                       ),
 
-                      // Botón para alternar vista (Mosaico rápido vs Lista compacta)
-                      IconButton(
-                        icon: Icon(
-                          _isGridView
-                              ? Icons.view_agenda_outlined
-                              : Icons.grid_view_rounded,
-                          size: 21,
-                          color: AppColors.textPrimary,
-                        ),
-                        tooltip: _isGridView
-                            ? 'Cambiar a vista de lista'
-                            : 'Cambiar a mosaico rápido',
-                        onPressed: () {
-                          setState(() => _isGridView = !_isGridView);
-                        },
-                      ),
-
-                      // Botón modal de filtros avanzados
+                      // Botón modal de filtros en el header (único punto de filtración)
                       IconButton(
                         icon: Stack(
                           clipBehavior: Clip.none,
@@ -538,8 +631,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                               size: 22,
                               color: AppColors.textPrimary,
                             ),
-                            if (_selectedStatusIndex != 0 ||
-                                _selectedSpecies != 'Todos')
+                            if (_hasActiveFilters)
                               Positioned(
                                 right: -1,
                                 top: -1,
@@ -547,7 +639,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                                   width: 8,
                                   height: 8,
                                   decoration: const BoxDecoration(
-                                    color: AppColors.lost,
+                                    color: AppColors.primary,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -612,169 +704,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                       ),
                     ),
 
-                  // ─── 3. Barra de Chips de Filtro Rápido ───────────────────
-                  SliverToBoxAdapter(
-                    child: Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Fila 1: Filtro de Estado (Todos, Perdidas, Encontradas)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: List.generate(_statusFilters.length, (idx) {
-                                final isSelected = _selectedStatusIndex == idx;
-                                Color activeColor = AppColors.textPrimary;
-                                if (idx == 1) activeColor = AppColors.lost;
-                                if (idx == 2) activeColor = AppColors.found;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() => _selectedStatusIndex = idx);
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? activeColor
-                                            : const Color(0xFFF0F3F5),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (idx == 1) ...[
-                                            Container(
-                                              width: 7,
-                                              height: 7,
-                                              decoration: BoxDecoration(
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppColors.lost,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 5),
-                                          ] else if (idx == 2) ...[
-                                            Container(
-                                              width: 7,
-                                              height: 7,
-                                              decoration: BoxDecoration(
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppColors.found,
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 5),
-                                          ],
-                                          Text(
-                                            _statusFilters[idx],
-                                            style: TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 12.5,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w500,
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : AppColors.textPrimary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Fila 2: Filtro rápido de especie (Crucial para "cotejar perros parecidos")
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: _speciesFilters.map((sp) {
-                                final isSelected =
-                                    _selectedSpecies == sp['label'];
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 6),
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedSpecies = sp['label']!;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppColors.primaryTint
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.border,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            sp['icon']!,
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            sp['label']!,
-                                            style: TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontSize: 11.5,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w500,
-                                              color: isSelected
-                                                  ? AppColors.primary
-                                                  : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppColors.feedDivider,
-                    ),
-                  ),
-
-                  // ─── 4. Contenido Principal: Grilla / Lista de Reportes ──
+                  // ─── 3. Contenido: Distribución Estilo Pinterest (Masonry) ──
                   if (reports.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
@@ -785,7 +715,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppColors.surface,
                                 shape: BoxShape.circle,
                               ),
@@ -808,7 +738,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              'Prueba ajustando los filtros de estado o especie para ver más animales perdidos y encontrados.',
+                              'Prueba ajustando los filtros de estado o especie en el botón superior.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: 'Inter',
@@ -816,64 +746,43 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            YagoButton(
-                              text: 'Restablecer filtros',
-                              variant: YagoButtonVariant.secondary,
-                              onPressed: () {
-                                setState(() {
-                                  _selectedStatusIndex = 0;
-                                  _selectedSpecies = 'Todos';
-                                  _searchQuery = '';
-                                  _searchController.clear();
-                                });
-                              },
-                            ),
+                            if (_hasActiveFilters || _searchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              YagoButton(
+                                text: 'Restablecer filtros',
+                                variant: YagoButtonVariant.secondary,
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedStatusIndex = 0;
+                                    _selectedSpecies = 'Todos';
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                  });
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       ),
                     )
-                  else if (_isGridView)
-                    // Mosaico Rápido (2 columnas) para escanear parecidos
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 120),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.63,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final pet = reports[index];
-                            return ReportGridCard(
-                              pet: pet,
-                              onTap: () => _openDetail(pet),
-                              onZoneTap: () => _openZoneModal(pet),
-                            );
-                          },
-                          childCount: reports.length,
-                        ),
-                      ),
-                    )
                   else
-                    // Lista Compacta alternativa
+                    // Distribución Pinterest: 2 columnas con alturas variables según la foto
                     SliverPadding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 120),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final pet = reports[index];
-                            return ReportListCard(
-                              pet: pet,
-                              onTap: () => _openDetail(pet),
-                              onZoneTap: () => _openZoneModal(pet),
-                            );
-                          },
-                          childCount: reports.length,
-                        ),
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 120),
+                      sliver: SliverMasonryGrid.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        itemBuilder: (context, index) {
+                          final pet = reports[index];
+                          return ReportGridCard(
+                            pet: pet,
+                            onTap: () => _openDetail(pet),
+                            onZoneTap: () => _openZoneModal(pet),
+                            onOptionsTap: () => _showPetOptionsSheet(pet),
+                          );
+                        },
+                        childCount: reports.length,
                       ),
                     ),
                 ],

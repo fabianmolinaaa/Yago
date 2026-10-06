@@ -580,7 +580,7 @@ void main() {
     expect(find.text('Buscamos compañera para cruza.'), findsNothing);
   });
 
-  testWidgets('ReportsFeedTab toggles between grid and list views', (WidgetTester tester) async {
+  testWidgets('ReportsFeedTab displays Pinterest-style cards with more options bottom sheet', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -591,31 +591,23 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Inicialmente está en mosaico rápido (ReportGridCard)
+    // Debe mostrar tarjetas en distribución Pinterest (ReportGridCard)
     expect(find.byType(ReportGridCard), findsWidgets);
-    expect(find.byType(ReportListCard), findsNothing);
 
-    // Alternar a vista de lista tocando el botón de layout
-    final layoutToggle = find.byTooltip('Cambiar a vista de lista');
-    expect(layoutToggle, findsOneWidget);
-    await tester.tap(layoutToggle);
+    // Tocar el botón de tres puntos (...) en la primera tarjeta
+    final moreOptions = find.byIcon(Icons.more_horiz_rounded);
+    expect(moreOptions, findsWidgets);
+    await tester.tap(moreOptions.first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // Ahora debe renderizar ReportListCard
-    expect(find.byType(ReportListCard), findsWidgets);
-    expect(find.byType(ReportGridCard), findsNothing);
-
-    // Volver a alternar a mosaico rápido
-    final gridToggle = find.byTooltip('Cambiar a mosaico rápido');
-    await tester.tap(gridToggle);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(ReportGridCard), findsWidgets);
+    // Debe desplegar el menú de opciones inferior
+    expect(find.text('Ver zona en mapa'), findsOneWidget);
+    expect(find.text('Ver ficha completa'), findsOneWidget);
+    expect(find.text('Guardar reporte'), findsOneWidget);
   });
 
-  testWidgets('ReportsFeedTab filters by species and searches by text', (WidgetTester tester) async {
+  testWidgets('ReportsFeedTab filters by species exclusively via header button and searches by text', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -626,19 +618,31 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Filtrar por 'Gatos'
-    await tester.tap(find.text('Gatos'));
+    // Abrir modal de filtros exclusivamente desde el header
+    await tester.tap(find.byTooltip('Filtrar reportes'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Seleccionar filtro de Gatos
+    await tester.tap(find.text('🐱 Gatos'));
+    await tester.pump();
+
+    // Aplicar filtros
+    await tester.tap(find.text('Aplicar filtros'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Solo debe verse Milo el gato
     expect(find.text('Milo (Nombre asignado)'), findsOneWidget);
     expect(find.text('Thor'), findsNothing);
 
-    // Restablecer a 'Todos'
-    await tester.tap(find.text('Todos').last);
+    // Restablecer filtros desde el header
+    await tester.tap(find.byTooltip('Filtrar reportes'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Restablecer'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Activar buscador de raza / zona
     await tester.tap(find.byTooltip('Buscar por raza o zona'));
