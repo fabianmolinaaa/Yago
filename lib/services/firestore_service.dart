@@ -292,7 +292,14 @@ class FirestoreService {
     }
 
     return _postsRef!.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+      final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+      posts.sort((a, b) {
+        if (a.createdAt != null && b.createdAt != null) {
+          return b.createdAt!.compareTo(a.createdAt!);
+        }
+        return 0;
+      });
+      return posts;
     });
   }
 
@@ -305,7 +312,14 @@ class FirestoreService {
     try {
       final snapshot = await _postsRef!.get();
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+        final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+        posts.sort((a, b) {
+          if (a.createdAt != null && b.createdAt != null) {
+            return b.createdAt!.compareTo(a.createdAt!);
+          }
+          return 0;
+        });
+        return posts;
       }
     } catch (_) {}
     return List.from(existingCommunityPosts);

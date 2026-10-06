@@ -22,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (_) => CreateReportScreen(
           onReportCreated: () {
-            Navigator.of(context).pop();
             setState(() {
               _currentIndex = 0; // Volver al feed
             });

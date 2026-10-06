@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import '../models/feed_post.dart';
 import '../models/pet.dart';
 import 'firestore_service.dart';
 
-class MockDataService {
+class MockDataService extends ChangeNotifier {
   static final MockDataService _instance = MockDataService._internal();
   factory MockDataService() => _instance;
 
@@ -26,6 +27,7 @@ class MockDataService {
       if (pets.isNotEmpty) {
         _pets.clear();
         _pets.addAll(pets);
+        notifyListeners();
       }
     }, onError: (_) {});
 
@@ -33,6 +35,7 @@ class MockDataService {
       if (posts.isNotEmpty) {
         _communityPosts.clear();
         _communityPosts.addAll(posts);
+        notifyListeners();
       }
     }, onError: (_) {});
   }
@@ -51,6 +54,7 @@ class MockDataService {
         _communityPosts.clear();
         _communityPosts.addAll(freshPosts);
       }
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -93,9 +97,16 @@ class MockDataService {
   }
 
   /// Agrega un nuevo reporte y lo persiste en Firestore
-  void addPet(Pet pet) {
+  Future<void> addPet(Pet pet) async {
     _pets.insert(0, pet);
-    FirestoreService().addPet(pet).catchError((_) {});
+    notifyListeners();
+    try {
+      await FirestoreService().addPet(pet);
+    } catch (e) {
+      _pets.removeWhere((p) => p.id == pet.id);
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Marca una mascota como reunida / encontrada y actualiza Firestore
@@ -103,6 +114,7 @@ class MockDataService {
     final index = _pets.indexWhere((p) => p.id == petId);
     if (index != -1) {
       _pets[index] = _pets[index].copyWith(status: YagoPetStatus.reunited);
+      notifyListeners();
       FirestoreService().markAsReunited(petId).catchError((_) {});
     }
   }
@@ -116,6 +128,7 @@ class MockDataService {
     } else {
       _bookmarkedPetIds.add(petId);
     }
+    notifyListeners();
   }
 
   /// Posts comunitarios
@@ -136,9 +149,16 @@ class MockDataService {
   }
 
   /// Agrega una nueva publicación comunitaria y la persiste en Firestore
-  void addCommunityPost(FeedPost post) {
+  Future<void> addCommunityPost(FeedPost post) async {
     _communityPosts.insert(0, post);
-    FirestoreService().addFeedPost(post).catchError((_) {});
+    notifyListeners();
+    try {
+      await FirestoreService().addFeedPost(post);
+    } catch (e) {
+      _communityPosts.removeWhere((p) => p.id == post.id);
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Alterna 'me gusta' en una publicación comunitaria y sincroniza Firestore
@@ -152,6 +172,7 @@ class MockDataService {
         isLiked: newIsLiked,
         likesCount: newLikesCount,
       );
+      notifyListeners();
       FirestoreService().togglePostLike(postId, newIsLiked).catchError((_) {});
     }
   }
@@ -177,6 +198,7 @@ class MockDataService {
     if (location != null) _userLocation = location.trim();
     if (phone != null) _userPhone = phone.trim();
     if (photoUrl != null) _userCustomPhotoUrl = photoUrl.trim();
+    notifyListeners();
   }
 
   void clearUserProfileCache() {
@@ -184,5 +206,6 @@ class MockDataService {
     _userLocation = '';
     _userPhone = '';
     _userCustomPhotoUrl = null;
+    notifyListeners();
   }
 }

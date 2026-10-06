@@ -32,6 +32,7 @@ class Pet {
   final double longitude;
   final bool _explicitUserOwner;
   final String? storyText;
+  final bool isModerated;
 
   const Pet({
     required this.id,
@@ -54,6 +55,7 @@ class Pet {
     required this.longitude,
     bool isUserOwner = false,
     this.storyText,
+    this.isModerated = false,
   }) : _explicitUserOwner = isUserOwner;
 
   bool get isUserOwner {
@@ -63,6 +65,8 @@ class Pet {
     }
     return _explicitUserOwner;
   }
+
+  bool get isResolved => status == YagoPetStatus.reunited;
 
   /// Detalle resumido para PetCard (ej: "Golden Retriever · Macho · 2 años")
   String get detailsSummary => '$breed · $gender · $age';
@@ -114,6 +118,10 @@ class Pet {
       'longitude': longitude,
       'isUserOwner': isUserOwner,
       'storyText': storyText,
+      'isModerated': isModerated,
+      'isResolved': status == YagoPetStatus.reunited,
+      'createdAt': Timestamp.fromDate(date),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
@@ -146,6 +154,7 @@ class Pet {
       longitude: (map['longitude'] as num?)?.toDouble() ?? -58.4233,
       isUserOwner: map['isUserOwner'] as bool? ?? false,
       storyText: map['storyText'] as String?,
+      isModerated: map['isModerated'] as bool? ?? false,
     );
   }
 
@@ -175,6 +184,7 @@ class Pet {
     double? longitude,
     bool? isUserOwner,
     String? storyText,
+    bool? isModerated,
   }) {
     return Pet(
       id: id ?? this.id,
@@ -197,6 +207,7 @@ class Pet {
       longitude: longitude ?? this.longitude,
       isUserOwner: isUserOwner ?? this.isUserOwner,
       storyText: storyText ?? this.storyText,
+      isModerated: isModerated ?? this.isModerated,
     );
   }
 }

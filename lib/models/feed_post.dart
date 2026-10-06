@@ -11,6 +11,9 @@ class FeedPost {
   final int likesCount;
   final int commentsCount;
   final bool isLiked;
+  final bool isModerated;
+  final String postType; // 'general', 'tip', 'success_story', etc.
+  final DateTime? createdAt;
 
   const FeedPost({
     required this.id,
@@ -23,6 +26,9 @@ class FeedPost {
     this.likesCount = 0,
     this.commentsCount = 0,
     this.isLiked = false,
+    this.isModerated = false,
+    this.postType = 'general',
+    this.createdAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -37,10 +43,23 @@ class FeedPost {
       'likesCount': likesCount,
       'commentsCount': commentsCount,
       'isLiked': isLiked,
+      'isModerated': isModerated,
+      'postType': postType,
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
   factory FeedPost.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime? parsedCreatedAt;
+    if (map['createdAt'] is Timestamp) {
+      parsedCreatedAt = (map['createdAt'] as Timestamp).toDate();
+    } else if (map['createdAt'] is String) {
+      parsedCreatedAt = DateTime.tryParse(map['createdAt'] as String);
+    }
+
     return FeedPost(
       id: map['id'] ?? docId,
       authorId: map['authorId'] as String?,
@@ -52,6 +71,9 @@ class FeedPost {
       likesCount: (map['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (map['commentsCount'] as num?)?.toInt() ?? 0,
       isLiked: map['isLiked'] as bool? ?? false,
+      isModerated: map['isModerated'] as bool? ?? false,
+      postType: map['postType'] as String? ?? 'general',
+      createdAt: parsedCreatedAt,
     );
   }
 
@@ -71,6 +93,9 @@ class FeedPost {
     int? likesCount,
     int? commentsCount,
     bool? isLiked,
+    bool? isModerated,
+    String? postType,
+    DateTime? createdAt,
   }) {
     return FeedPost(
       id: id ?? this.id,
@@ -83,7 +108,9 @@ class FeedPost {
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
       isLiked: isLiked ?? this.isLiked,
+      isModerated: isModerated ?? this.isModerated,
+      postType: postType ?? this.postType,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
-

@@ -22,6 +22,12 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  @override
+  void initState() {
+    super.initState();
+    MockDataService().refreshFromFirestore().catchError((_) {});
+  }
+
   // Estado para likes interactivos dentro de las publicaciones del perfil
   final Set<String> _likedPostIds = {'user-post-1'};
   final Map<String, int> _postLikesCount = {
@@ -109,7 +115,10 @@ class _ProfileTabState extends State<ProfileTab> {
     final userEmail = user?.email ?? '';
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return StreamBuilder<UserModel?>(
+    return ListenableBuilder(
+      listenable: MockDataService(),
+      builder: (context, _) {
+        return StreamBuilder<UserModel?>(
       stream: user != null
           ? FirestoreService().streamUserProfile(user.uid)
           : Stream<UserModel?>.value(null),
@@ -303,6 +312,8 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
         );
+      },
+    );
       },
     );
   }
@@ -570,8 +581,9 @@ class _ProfileTabState extends State<ProfileTab> {
     required List<Pet> myReports,
     required double bottomInset,
   }) {
+    final Widget content;
     if (userPosts.isEmpty && myReports.isEmpty) {
-      return ListView(
+      content = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
         children: [
@@ -604,39 +616,46 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ],
       );
+    } else {
+      content = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
+        children: [
+          // Publicaciones comunitarias del usuario
+          for (final post in userPosts)
+            _buildPostCard(
+              context: context,
+              postId: post.id,
+              authorName: userName,
+              authorPhoto: userPhoto,
+              timeAgo: post.timeAgo,
+              content: post.content,
+              imageUrl: post.imageUrl,
+              commentsCount: post.commentsCount,
+            ),
+
+          // Reportes de mascotas publicados por el usuario
+          for (final pet in myReports)
+            _buildPostCard(
+              context: context,
+              postId: 'user-report-${pet.id}',
+              authorName: userName,
+              authorPhoto: userPhoto,
+              statusBadge: pet.status,
+              timeAgo: pet.timeAgo,
+              content: pet.description,
+              imageUrl: pet.imageUrl,
+              pet: pet,
+              commentsCount: 0,
+            ),
+        ],
+      );
     }
 
-    return ListView(
-      padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
-      children: [
-        // Publicaciones comunitarias del usuario
-        for (final post in userPosts)
-          _buildPostCard(
-            context: context,
-            postId: post.id,
-            authorName: userName,
-            authorPhoto: userPhoto,
-            timeAgo: post.timeAgo,
-            content: post.content,
-            imageUrl: post.imageUrl,
-            commentsCount: post.commentsCount,
-          ),
-
-        // Reportes de mascotas publicados por el usuario
-        for (final pet in myReports)
-          _buildPostCard(
-            context: context,
-            postId: 'user-report-${pet.id}',
-            authorName: userName,
-            authorPhoto: userPhoto,
-            statusBadge: pet.status,
-            timeAgo: pet.timeAgo,
-            content: pet.description,
-            imageUrl: pet.imageUrl,
-            pet: pet,
-            commentsCount: 0,
-          ),
-      ],
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => MockDataService().refreshFromFirestore(),
+      child: content,
     );
   }
 
@@ -646,8 +665,9 @@ class _ProfileTabState extends State<ProfileTab> {
     List<Pet> myReports,
     double bottomInset,
   ) {
+    final Widget content;
     if (myReports.isEmpty) {
-      return ListView(
+      content = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
         children: [
@@ -680,97 +700,108 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ],
       );
+    } else {
+      content = ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 96.0 + bottomInset),
+        itemCount: myReports.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final pet = myReports[index];
+          return Material(
+            color: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppRadius.mdBorder,
+              side: BorderSide(color: AppColors.border),
+            ),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              leading: ClipRRect(
+                borderRadius: AppRadius.smBorder,
+                child: YagoPetImage(
+                  imageUrl: pet.imageUrl,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              title: Text(
+                pet.name,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                '${pet.breed} · ${pet.location}',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              trailing: YagoStatusBadge(status: pet.status),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PetDetailScreen(pet: pet),
+                  ),
+                ).then((_) => setState(() {}));
+              },
+            ),
+          );
+        },
+      );
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 96.0 + bottomInset),
-      itemCount: myReports.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final pet = myReports[index];
-        return Material(
-          color: Colors.white,
-          shape: const RoundedRectangleBorder(
-            borderRadius: AppRadius.mdBorder,
-            side: BorderSide(color: AppColors.border),
-          ),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            leading: ClipRRect(
-              borderRadius: AppRadius.smBorder,
-              child: YagoPetImage(
-                imageUrl: pet.imageUrl,
-                width: 52,
-                height: 52,
-                fit: BoxFit.cover,
-              ),
-            ),
-            title: Text(
-              pet.name,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            subtitle: Text(
-              '${pet.breed} · ${pet.location}',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            trailing: YagoStatusBadge(status: pet.status),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PetDetailScreen(pet: pet),
-                ),
-              ).then((_) => setState(() {}));
-            },
-          ),
-        );
-      },
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => MockDataService().refreshFromFirestore(),
+      child: content,
     );
   }
 
   /// Pestaña 3: Publicaciones y reportes guardados
   Widget _buildSavedTab(BuildContext context, double bottomInset) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
-      children: [
-        const SizedBox(height: 16),
-        Icon(
-          Icons.bookmark_border_rounded,
-          size: 56,
-          color: AppColors.subtle.withValues(alpha: 0.6),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'No tienes elementos guardados',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => MockDataService().refreshFromFirestore(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
+        children: [
+          const SizedBox(height: 16),
+          Icon(
+            Icons.bookmark_border_rounded,
+            size: 56,
+            color: AppColors.subtle.withValues(alpha: 0.6),
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Las mascotas o avisos que guardes para hacerles seguimiento se almacenarán aquí.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            color: AppColors.textSecondary,
+          const SizedBox(height: 12),
+          const Text(
+            'No tienes elementos guardados',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            'Las mascotas o avisos que guardes para hacerles seguimiento se almacenarán aquí.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

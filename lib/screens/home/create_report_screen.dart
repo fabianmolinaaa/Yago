@@ -236,9 +236,23 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       isUserOwner: true,
     );
 
-    MockDataService().addPet(newPet);
+    try {
+      await MockDataService().addPet(newPet);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar el reporte: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -251,9 +265,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       ),
     );
 
-    if (widget.onReportCreated != null) {
-      widget.onReportCreated!();
-    } else if (Navigator.of(context).canPop()) {
+    widget.onReportCreated?.call();
+    if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
   }

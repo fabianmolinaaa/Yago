@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../home/home_screen.dart';
@@ -59,6 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
+
+      // Sincronizar datos de Firestore con la caché de la app
+      MockDataService().refreshFromFirestore().catchError((_) {});
 
       if (mounted) {
         Navigator.of(context).pushReplacement(

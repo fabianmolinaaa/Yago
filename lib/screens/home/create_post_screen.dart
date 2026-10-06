@@ -291,81 +291,95 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         : 'Comunidad Yago';
     final authorAvatar = currentUser?.photoURL;
 
-    if (isPetEntity) {
-      final isLost = _selectedCategory == 'Perdida';
-      final defaultName = isMating
-          ? 'Mascota'
-          : (isLost ? 'Mascota sin nombre' : 'Mascota encontrada');
-      final finalName = petName.isNotEmpty ? petName : defaultName;
-      final finalBreed = isMating && breed.isNotEmpty ? breed : 'Mestizo';
-      final finalGender = isMating ? _selectedGender : 'Sin especificar';
-      final finalLocation = location.isNotEmpty ? location : 'CABA';
-      final finalPhone = phone.isNotEmpty ? phone : '+54 9 11 0000-0000';
-      final finalDesc = content.isNotEmpty
-          ? content
-          : (isMating
-              ? 'Búsqueda de pareja para cruza responsable. Contactar por mensaje directo.'
-              : (isLost
-                  ? 'Se extravió recientemente. Si la ves, por favor avisa de inmediato.'
-                  : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.'));
+    try {
+      if (isPetEntity) {
+        final isLost = _selectedCategory == 'Perdida';
+        final defaultName = isMating
+            ? 'Mascota'
+            : (isLost ? 'Mascota sin nombre' : 'Mascota encontrada');
+        final finalName = petName.isNotEmpty ? petName : defaultName;
+        final finalBreed = isMating && breed.isNotEmpty ? breed : 'Mestizo';
+        final finalGender = isMating ? _selectedGender : 'Sin especificar';
+        final finalLocation = location.isNotEmpty ? location : 'CABA';
+        final finalPhone = phone.isNotEmpty ? phone : '+54 9 11 0000-0000';
+        final finalDesc = content.isNotEmpty
+            ? content
+            : (isMating
+                ? 'Búsqueda de pareja para cruza responsable. Contactar por mensaje directo.'
+                : (isLost
+                    ? 'Se extravió recientemente. Si la ves, por favor avisa de inmediato.'
+                    : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.'));
 
-      final YagoPetStatus status = isMating
-          ? YagoPetStatus.mating
-          : (isLost ? YagoPetStatus.lost : YagoPetStatus.found);
+        final YagoPetStatus status = isMating
+            ? YagoPetStatus.mating
+            : (isLost ? YagoPetStatus.lost : YagoPetStatus.found);
 
-      final List<String> tags = isMating
-          ? ['Apareamiento', 'Busca pareja', _selectedGender]
-          : (isLost ? ['Urgente', 'Se busca'] : ['Encontrada', 'Avistamiento']);
+        final List<String> tags = isMating
+            ? ['Apareamiento', 'Busca pareja', _selectedGender]
+            : (isLost ? ['Urgente', 'Se busca'] : ['Encontrada', 'Avistamiento']);
 
-      final newPet = Pet(
-        id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
-        ownerId: currentUser?.uid,
-        name: finalName,
-        breed: finalBreed,
-        species: 'Perro',
-        gender: finalGender,
-        age: 'Adulto',
-        status: status,
-        location: finalLocation,
-        timeAgo: 'Recién publicado',
-        date: DateTime.now(),
-        description: finalDesc,
-        imageUrl: uploadedImageUrl ??
-            (isMating
-                ? 'assets/images/IMG_5370.JPG'
-                : 'assets/images/IMG_3508.JPG'),
-        tags: tags,
-        contactName: authorName,
-        contactPhone: finalPhone,
-        latitude: -34.5900,
-        longitude: -58.4200,
-        isUserOwner: true,
+        final newPet = Pet(
+          id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
+          ownerId: currentUser?.uid,
+          name: finalName,
+          breed: finalBreed,
+          species: 'Perro',
+          gender: finalGender,
+          age: 'Adulto',
+          status: status,
+          location: finalLocation,
+          timeAgo: 'Recién publicado',
+          date: DateTime.now(),
+          description: finalDesc,
+          imageUrl: uploadedImageUrl ??
+              (isMating
+                  ? 'assets/images/IMG_5370.JPG'
+                  : 'assets/images/IMG_3508.JPG'),
+          tags: tags,
+          contactName: authorName,
+          contactPhone: finalPhone,
+          latitude: -34.5900,
+          longitude: -58.4200,
+          isUserOwner: true,
+        );
+
+        await MockDataService().addPet(newPet);
+      } else {
+        // Si seleccionó Consejo o Reencuentro, añade la etiqueta; si es libre, guarda el contenido limpio
+        final formattedContent = _selectedCategory != null
+            ? '[$_selectedCategory] $content'
+            : content;
+
+        final newPost = FeedPost(
+          id: 'post-${DateTime.now().millisecondsSinceEpoch}',
+          authorId: currentUser?.uid,
+          authorName: authorName,
+          authorAvatar: authorAvatar,
+          timeAgo: 'Recién publicado',
+          content: formattedContent,
+          imageUrl: uploadedImageUrl,
+          likesCount: 0,
+          commentsCount: 0,
+          isLiked: false,
+        );
+
+        await MockDataService().addCommunityPost(newPost);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPublishing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar la publicación: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
-
-      MockDataService().addPet(newPet);
-    } else {
-      // Si seleccionó Consejo o Reencuentro, añade la etiqueta; si es libre, guarda el contenido limpio
-      final formattedContent = _selectedCategory != null
-          ? '[$_selectedCategory] $content'
-          : content;
-
-      final newPost = FeedPost(
-        id: 'post-${DateTime.now().millisecondsSinceEpoch}',
-        authorId: currentUser?.uid,
-        authorName: authorName,
-        authorAvatar: authorAvatar,
-        timeAgo: 'Recién publicado',
-        content: formattedContent,
-        imageUrl: uploadedImageUrl,
-        likesCount: 0,
-        commentsCount: 0,
-        isLiked: false,
-      );
-
-      MockDataService().addCommunityPost(newPost);
+      return;
     }
 
     if (!mounted) return;
+
+    setState(() => _isPublishing = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -388,9 +402,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ),
     );
 
-    if (widget.onPostCreated != null) {
-      widget.onPostCreated!();
-    } else if (Navigator.of(context).canPop()) {
+    widget.onPostCreated?.call();
+    if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
   }

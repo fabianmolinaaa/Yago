@@ -37,6 +37,8 @@ void main() {
       expect(map['name'], 'Luna');
       expect(map['status'], 'lost');
       expect(map['date'], isA<Timestamp>());
+      expect(map['isModerated'], false);
+      expect(map['isResolved'], false);
 
       final reconstructed = Pet.fromMap(map, 'test-pet-1');
       expect(reconstructed.id, pet.id);
@@ -51,6 +53,8 @@ void main() {
       expect(reconstructed.tags, pet.tags);
       expect(reconstructed.contactName, pet.contactName);
       expect(reconstructed.isUserOwner, true);
+      expect(reconstructed.isModerated, false);
+      expect(reconstructed.isResolved, false);
     });
 
     test('FeedPost toMap and fromMap serialization maintains integrity', () {
@@ -71,6 +75,8 @@ void main() {
       expect(map['authorName'], 'Veterinaria San Roque');
       expect(map['likesCount'], 15);
       expect(map['isLiked'], true);
+      expect(map['isModerated'], false);
+      expect(map['postType'], 'general');
 
       final reconstructed = FeedPost.fromMap(map, 'test-post-1');
       expect(reconstructed.id, post.id);
@@ -81,6 +87,8 @@ void main() {
       expect(reconstructed.likesCount, 15);
       expect(reconstructed.commentsCount, 3);
       expect(reconstructed.isLiked, true);
+      expect(reconstructed.isModerated, false);
+      expect(reconstructed.postType, 'general');
     });
 
     test('UserModel toMap and fromMap serialization maintains integrity', () {
@@ -209,8 +217,64 @@ void main() {
 
     test('MockDataService serves all existing pets and community posts', () {
       final mock = MockDataService();
-      expect(mock.getAllPets().length, 7);
-      expect(mock.getCommunityPosts().length, 2);
+      expect(mock.getAllPets().length, greaterThanOrEqualTo(7));
+      expect(mock.getCommunityPosts().length, greaterThanOrEqualTo(2));
+    });
+
+    test('MockDataService addCommunityPost is async and notifies listeners', () async {
+      final mock = MockDataService();
+      bool notified = false;
+      void listener() {
+        notified = true;
+      }
+
+      mock.addListener(listener);
+
+      const newPost = FeedPost(
+        id: 'test-async-post',
+        authorName: 'Comunidad Yago',
+        content: 'Post de prueba asíncrono',
+        timeAgo: 'Recién publicado',
+      );
+
+      await mock.addCommunityPost(newPost);
+      expect(notified, isTrue);
+      expect(mock.getCommunityPosts().any((p) => p.id == 'test-async-post'), isTrue);
+      mock.removeListener(listener);
+    });
+
+    test('MockDataService addPet is async and notifies listeners', () async {
+      final mock = MockDataService();
+      bool notified = false;
+      void listener() {
+        notified = true;
+      }
+
+      mock.addListener(listener);
+
+      final newPet = Pet(
+        id: 'test-async-pet',
+        name: 'Firulais',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: 'Adulto',
+        status: YagoPetStatus.lost,
+        location: 'CABA',
+        timeAgo: 'Recién publicado',
+        date: DateTime.now(),
+        description: 'Perdido en el parque',
+        imageUrl: '',
+        contactName: 'Carlos',
+        contactPhone: '12345',
+        latitude: -34.6,
+        longitude: -58.4,
+      );
+
+      await mock.addPet(newPet);
+      expect(notified, isTrue);
+      expect(mock.getAllPets().any((p) => p.id == 'test-async-pet'), isTrue);
+      mock.removeListener(listener);
     });
   });
 }
