@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import '../models/feed_post.dart';
 import '../models/pet.dart';
 import '../models/user_model.dart';
+import '../utils/time_utils.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -299,10 +300,9 @@ class FirestoreService {
     return _postsRef!.snapshots().map((snapshot) {
       final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
       posts.sort((a, b) {
-        if (a.createdAt != null && b.createdAt != null) {
-          return b.createdAt!.compareTo(a.createdAt!);
-        }
-        return 0;
+        final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+        final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+        return bDate.compareTo(aDate);
       });
       return posts;
     });
@@ -311,7 +311,13 @@ class FirestoreService {
   /// Obtiene la lista puntual de publicaciones comunitarias
   Future<List<FeedPost>> getFeedPosts() async {
     if (!isFirebaseReady || _postsRef == null) {
-      return List.from(existingCommunityPosts);
+      final fallbackList = List<FeedPost>.from(existingCommunityPosts);
+      fallbackList.sort((a, b) {
+        final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+        final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+        return bDate.compareTo(aDate);
+      });
+      return fallbackList;
     }
 
     try {
@@ -319,15 +325,21 @@ class FirestoreService {
       if (snapshot.docs.isNotEmpty) {
         final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
         posts.sort((a, b) {
-          if (a.createdAt != null && b.createdAt != null) {
-            return b.createdAt!.compareTo(a.createdAt!);
-          }
-          return 0;
+          final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+          final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+          return bDate.compareTo(aDate);
         });
         return posts;
       }
     } catch (_) {}
-    return List.from(existingCommunityPosts);
+
+    final fallbackList = List<FeedPost>.from(existingCommunityPosts);
+    fallbackList.sort((a, b) {
+      final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+      final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+      return bDate.compareTo(aDate);
+    });
+    return fallbackList;
   }
 
   /// Guarda una nueva mascota/reporte en Cloud Firestore

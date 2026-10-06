@@ -6,6 +6,7 @@ import 'package:yago/screens/auth/register_screen.dart';
 import 'package:yago/screens/home/create_post_screen.dart';
 import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
+import 'package:yago/screens/home/feed_tab.dart';
 import 'package:yago/screens/home/profile_tab.dart';
 import 'package:yago/models/feed_post.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
@@ -498,5 +499,57 @@ void main() {
     expect(find.text('REENCUENTRO'), findsOneWidget);
     expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
   });
+
+  testWidgets('FeedTab displays options menu with report and hide for other users posts', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: FeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Comprobar que existen botones de opciones (...) en el feed
+    final optionsButtons = find.byIcon(Icons.more_horiz_rounded);
+    expect(optionsButtons, findsWidgets);
+
+    // Tocar el primer botón de opciones (publicación de un tercero)
+    await tester.tap(optionsButtons.first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Debe mostrar Opciones generales y de moderación
+    expect(find.text('Copiar texto'), findsOneWidget);
+    expect(find.text('Compartir'), findsOneWidget);
+    expect(find.text('Ocultar publicación'), findsOneWidget);
+    expect(find.text('Reportar publicación'), findsOneWidget);
+
+    // NUNCA debe mostrar 'Eliminar publicación' ni 'Eliminar reporte' para posts de otros usuarios
+    expect(find.text('Eliminar publicación'), findsNothing);
+    expect(find.text('Eliminar reporte'), findsNothing);
+  });
+
+  testWidgets('FeedTab pull to refresh triggers smoothly without error', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: FeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Ejecutar gesto de deslizar hacia abajo para activar RefreshIndicator
+    await tester.fling(find.byType(CustomScrollView), const Offset(0.0, 300.0), 1000.0);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // El feed debe mantenerse renderizado y estable
+    expect(find.byType(CustomScrollView), findsOneWidget);
+  });
 }
+
 

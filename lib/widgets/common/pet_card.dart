@@ -35,6 +35,7 @@ class PetCard extends StatefulWidget {
   final VoidCallback? onCommentTap;
   final VoidCallback? onContactTap;
   final VoidCallback? onPetInfoTap;
+  final Widget? optionsMenu;
 
   const PetCard({
     super.key,
@@ -63,6 +64,7 @@ class PetCard extends StatefulWidget {
     this.onCommentTap,
     this.onContactTap,
     this.onPetInfoTap,
+    this.optionsMenu,
   });
 
   @override
@@ -200,6 +202,10 @@ class _PetCardState extends State<PetCard> {
                     color: AppColors.twitterHandle,
                   ),
                 ),
+                if (widget.optionsMenu != null) ...[
+                  const SizedBox(width: 4),
+                  widget.optionsMenu!,
+                ],
               ],
             ),
           ),

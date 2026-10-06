@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/feed_post.dart';
 import '../../models/pet.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
@@ -23,6 +25,8 @@ class _FeedTabState extends State<FeedTab> {
   // Filtro activo: 0 = Todos, 1 = Perdidas, 2 = Encontradas, 3 = Reunidas, 4 = Apareamiento, 5 = Comunidad
   int _selectedFilterIndex = 0;
   bool _isFabVisible = true;
+  final Set<String> _hiddenPostIds = {};
+
   final List<String> _filters = [
     'Todos',
     'Perdidas',
@@ -32,46 +36,63 @@ class _FeedTabState extends State<FeedTab> {
     'Comunidad',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    MockDataService().refreshFromFirestore().catchError((_) {});
+  }
+
+  DateTime _getItemDate(dynamic item) {
+    if (item is Pet) {
+      return item.date;
+    } else if (item is FeedPost) {
+      return item.createdAt ?? extractDateFromId(item.id) ?? DateTime(2020);
+    }
+    return DateTime(2020);
+  }
+
   List<dynamic> _getFeedItems() {
     final allPets = MockDataService().getAllPets();
     final communityPosts = MockDataService().getCommunityPosts();
 
+    List<dynamic> items;
     switch (_selectedFilterIndex) {
       case 1:
-        return allPets.where((pet) => pet.status == YagoPetStatus.lost).toList();
+        items = allPets.where((pet) => pet.status == YagoPetStatus.lost).toList();
+        break;
       case 2:
-        return allPets.where((pet) => pet.status == YagoPetStatus.found).toList();
+        items = allPets.where((pet) => pet.status == YagoPetStatus.found).toList();
+        break;
       case 3:
-        return allPets.where((pet) => pet.status == YagoPetStatus.reunited).toList();
+        items = allPets.where((pet) => pet.status == YagoPetStatus.reunited).toList();
+        break;
       case 4:
-        return allPets.where((pet) => pet.status == YagoPetStatus.mating).toList();
+        items = allPets.where((pet) => pet.status == YagoPetStatus.mating).toList();
+        break;
       case 5:
-        // Filtrar por Comunidad: incluye tanto reportes con estado o etiqueta 'comunidad' (como Rocky)
-        // como publicaciones y consejos comunitarios
+        // Filtrar por Comunidad: incluye tanto reportes comunitarios como publicaciones y consejos
         final communityPets = allPets
             .where((pet) => pet.status == YagoPetStatus.community)
             .toList();
-        final List<dynamic> items = [];
-        items.addAll(communityPets);
-        items.addAll(communityPosts);
-        return items;
+        items = [...communityPets, ...communityPosts];
+        break;
       default:
-        // Feed principal (Todos): integra reportes de mascotas intercalados con
-        // las publicaciones comunitarias y consejos de seguridad
-        final List<dynamic> items = [];
-        int postIdx = 0;
-        for (int i = 0; i < allPets.length; i++) {
-          if (postIdx < communityPosts.length &&
-              (i == 1 || (i > 1 && i % 3 == 0))) {
-            items.add(communityPosts[postIdx++]);
-          }
-          items.add(allPets[i]);
-        }
-        while (postIdx < communityPosts.length) {
-          items.add(communityPosts[postIdx++]);
-        }
-        return items;
+        // Feed principal (Todos): integra todas las publicaciones y reportes
+        items = [...allPets, ...communityPosts];
+        break;
     }
+
+    // Filtrar publicaciones ocultadas temporalmente por el usuario
+    if (_hiddenPostIds.isNotEmpty) {
+      items.removeWhere((item) {
+        final id = item is Pet ? item.id : (item is FeedPost ? item.id : '');
+        return _hiddenPostIds.contains(id);
+      });
+    }
+
+    // Ordenamiento estrictamente cronológico (las más recientes arriba)
+    items.sort((a, b) => _getItemDate(b).compareTo(_getItemDate(a)));
+    return items;
   }
 
   void _openCreatePost() {
@@ -279,8 +300,6 @@ class _FeedTabState extends State<FeedTab> {
 
   @override
   Widget build(BuildContext context) {
-    final feedItems = _getFeedItems();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: Padding(
@@ -312,7 +331,11 @@ class _FeedTabState extends State<FeedTab> {
           ),
         ),
       ),
-      body: NotificationListener<UserScrollNotification>(
+      body: ListenableBuilder(
+        listenable: MockDataService(),
+        builder: (context, _) {
+          final feedItems = _getFeedItems();
+          return NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           if (notification.direction == ScrollDirection.reverse) {
             if (_isFabVisible) {
@@ -459,6 +482,7 @@ class _FeedTabState extends State<FeedTab> {
                       tags: pet.tags,
                       storyText: pet.storyText,
                       description: pet.description,
+                      optionsMenu: _buildPostOptionsMenu(context, pet: pet),
                       authorName: pet.status == YagoPetStatus.community
                           ? 'Equipo Yago'
                           : (pet.contactName.isNotEmpty
@@ -498,11 +522,13 @@ class _FeedTabState extends State<FeedTab> {
               child: SizedBox(height: 85),
             ),
           ],
+          ),
         ),
-      ),
-      ),
-    );
-  }
+      );
+    },
+  ),
+);
+}
 
   void _showContactModal(BuildContext context, Pet pet) {
     final isCommunity = pet.status == YagoPetStatus.community;
@@ -753,11 +779,7 @@ class _FeedTabState extends State<FeedTab> {
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
-                      Icons.more_horiz_rounded,
-                      size: 18,
-                      color: AppColors.twitterAction,
-                    ),
+                    _buildPostOptionsMenu(context, post: post),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -962,6 +984,305 @@ class _FeedTabState extends State<FeedTab> {
         fontSize: 13.5,
         height: 1.35,
         color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildPostOptionsMenu(BuildContext context, {FeedPost? post, Pet? pet}) {
+    final isReport = pet != null;
+    final postId = pet?.id ?? post?.id ?? '';
+    final content = pet?.description ?? post?.displayContent ?? post?.content ?? '';
+
+    final currentUser = AuthService().currentUser;
+    final currentUserId = currentUser?.uid;
+    final currentUserName = currentUser?.displayName?.trim().toLowerCase();
+
+    final isOwner = isReport
+        ? (pet.isUserOwner ||
+            (currentUserId != null && pet.ownerId == currentUserId) ||
+            (currentUserName != null &&
+                currentUserName.isNotEmpty &&
+                pet.contactName.trim().toLowerCase() == currentUserName))
+        : ((currentUserId != null && post?.authorId == currentUserId) ||
+            (currentUserName != null &&
+                currentUserName.isNotEmpty &&
+                post?.authorName.trim().toLowerCase() == currentUserName));
+
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: PopupMenuButton<String>(
+        icon: const Icon(
+          Icons.more_horiz_rounded,
+          size: 19,
+          color: AppColors.twitterAction,
+        ),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        splashRadius: 16,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+        onSelected: (value) async {
+          if (value == 'copy') {
+            await Clipboard.setData(ClipboardData(text: content));
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Texto copiado al portapapeles'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          } else if (value == 'share') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Enlace copiado al portapapeles'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          } else if (value == 'reunited' && pet != null) {
+            _confirmMarkReunited(context, pet);
+          } else if (value == 'delete') {
+            _confirmDeletePost(context, postId: postId, pet: pet);
+          } else if (value == 'report') {
+            _confirmReportPost(context, isReport: isReport);
+          } else if (value == 'hide') {
+            setState(() {
+              _hiddenPostIds.add(postId);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Publicación oculta'),
+                action: SnackBarAction(
+                  label: 'Deshacer',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    setState(() {
+                      _hiddenPostIds.remove(postId);
+                    });
+                  },
+                ),
+              ),
+            );
+          }
+        },
+        itemBuilder: (ctx) => [
+          const PopupMenuItem<String>(
+            value: 'copy',
+            child: Row(
+              children: [
+                Icon(Icons.copy_rounded, size: 18, color: AppColors.textPrimary),
+                SizedBox(width: 10),
+                Expanded(child: Text('Copiar texto')),
+              ],
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'share',
+            child: Row(
+              children: [
+                Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+                SizedBox(width: 10),
+                Expanded(child: Text('Compartir')),
+              ],
+            ),
+          ),
+          if (isOwner && isReport && pet.status != YagoPetStatus.reunited)
+            const PopupMenuItem<String>(
+              value: 'reunited',
+              child: Row(
+                children: [
+                  Icon(Icons.celebration_outlined, size: 18, color: AppColors.found),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Marcar como caso resuelto',
+                      style: TextStyle(color: AppColors.found, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (!isOwner) ...[
+            const PopupMenuDivider(),
+            const PopupMenuItem<String>(
+              value: 'hide',
+              child: Row(
+                children: [
+                  Icon(Icons.visibility_off_outlined, size: 18, color: AppColors.textSecondary),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('Ocultar publicación')),
+                ],
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'report',
+              child: Row(
+                children: [
+                  Icon(Icons.flag_outlined, size: 18, color: AppColors.error),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Reportar publicación',
+                      style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (isOwner) ...[
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: Row(
+                children: [
+                  const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isReport ? 'Eliminar reporte' : 'Eliminar publicación',
+                      style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmReportPost(BuildContext context, {required bool isReport}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        title: const Text('¿Reportar publicación?'),
+        content: const Text(
+          'Si consideras que esta publicación contiene información falsa, spam o lenguaje inapropiado, nuestro equipo de moderación la revisará.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Reporte enviado a moderación. Gracias por ayudar a cuidar la comunidad.'),
+                  backgroundColor: AppColors.primary,
+                ),
+              );
+            },
+            child: const Text('Reportar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletePost(BuildContext context, {required String postId, Pet? pet}) {
+    final isReport = pet != null;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        title: Text(isReport ? '¿Eliminar reporte?' : '¿Eliminar publicación?'),
+        content: Text(
+          isReport
+              ? '¿Estás seguro de que deseas eliminar este reporte? Se borrará definitivamente del feed comunitario.'
+              : '¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                if (pet != null) {
+                  await MockDataService().deletePet(pet.id);
+                } else {
+                  await MockDataService().deleteCommunityPost(postId);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isReport
+                            ? 'Reporte eliminado correctamente.'
+                            : 'Publicación eliminada correctamente.',
+                      ),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al eliminar: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmMarkReunited(BuildContext context, Pet pet) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        title: const Text('¿Marcar como caso resuelto?'),
+        content: Text(
+          'Se actualizará el estado de "${pet.name}" a reunida y se notificará a la comunidad.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.found,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              MockDataService().markAsReunited(pet.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('¡Caso marcado como reunido con éxito! 🎉'),
+                  backgroundColor: AppColors.found,
+                ),
+              );
+            },
+            child: const Text('Marcar reunida'),
+          ),
+        ],
       ),
     );
   }
