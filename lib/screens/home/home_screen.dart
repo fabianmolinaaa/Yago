@@ -5,6 +5,7 @@ import '../../widgets/common/widgets.dart';
 import 'create_report_screen.dart';
 import 'feed_tab.dart';
 import 'profile_tab.dart';
+import 'reports_feed_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,15 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onGoToSearch: () => setState(() => _currentIndex = 1),
         onGoToCreateReport: _openCreateReport,
       ),
-      const ComingSoonView(
-        title: 'Feed de Reportes',
-        description:
-            'Espacio dedicado exclusivamente a reportes de mascotas perdidas y encontradas, con alertas prioritarias y visualización de zona en mapa.',
-        icon: Icons.campaign_outlined,
-        badgeText: 'PRÓXIMAMENTE',
-        accentColor: AppColors.lost,
-        featureHighlight:
-            'Cada reporte incluirá una opción directa para ver en qué zona del mapa se pudo haber perdido o visto por última vez a la mascota.',
+      ReportsFeedTab(
+        onGoToCreateReport: _openCreateReport,
       ),
       const ComingSoonView(
         title: 'Cámara con IA',

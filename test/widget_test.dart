@@ -8,6 +8,7 @@ import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/feed_tab.dart';
 import 'package:yago/screens/home/profile_tab.dart';
+import 'package:yago/screens/home/reports_feed_tab.dart';
 import 'package:yago/models/feed_post.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
 import 'package:yago/services/mock_data_service.dart';
@@ -205,12 +206,11 @@ void main() {
     // Pestaña 0 activa inicialmente: Feed de publicaciones
     expect(find.text('Luna'), findsWidgets);
 
-    // Navegar a Pestaña 1: Feed de Reportes (En construcción / Próximamente)
+    // Navegar a Pestaña 1: Feed de Reportes (activo con vista mosaico de reportes)
     await tester.tap(find.byTooltip('Reportes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Feed de Reportes'), findsWidgets);
-    expect(find.text('PRÓXIMAMENTE'), findsOneWidget);
+    expect(find.text('Reportes'), findsWidgets);
 
     // Navegar a Pestaña 2: Cámara con IA (En construcción / Próximamente)
     await tester.tap(find.byTooltip('Cámara con IA'));
@@ -549,6 +549,138 @@ void main() {
 
     // El feed debe mantenerse renderizado y estable
     expect(find.byType(CustomScrollView), findsOneWidget);
+  });
+
+  testWidgets('ReportsFeedTab displays exclusively lost and found reports in panoramic grid view', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ReportsFeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar encabezado oficial y contador
+    expect(find.text('Reportes'), findsOneWidget);
+    expect(find.byIcon(Icons.campaign_rounded), findsWidgets);
+
+    // Debe mostrar tarjetas en mosaico rápido (ReportGridCard)
+    expect(find.byType(ReportGridCard), findsWidgets);
+
+    // Verificar presencia de reportes de pérdida y hallazgo existentes
+    expect(find.text('Luna'), findsWidgets); // Reporte perdido
+    expect(find.text('Thor'), findsWidgets); // Reporte encontrado
+    expect(find.text('PERDIDA'), findsWidgets);
+    expect(find.text('ENCONTRADA'), findsWidgets);
+
+    // NUNCA debe contener publicaciones comunitarias ni de apareamiento
+    expect(find.text('Paseando un rato...'), findsNothing);
+    expect(find.text('Buscamos compañera para cruza.'), findsNothing);
+  });
+
+  testWidgets('ReportsFeedTab toggles between grid and list views', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ReportsFeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Inicialmente está en mosaico rápido (ReportGridCard)
+    expect(find.byType(ReportGridCard), findsWidgets);
+    expect(find.byType(ReportListCard), findsNothing);
+
+    // Alternar a vista de lista tocando el botón de layout
+    final layoutToggle = find.byTooltip('Cambiar a vista de lista');
+    expect(layoutToggle, findsOneWidget);
+    await tester.tap(layoutToggle);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Ahora debe renderizar ReportListCard
+    expect(find.byType(ReportListCard), findsWidgets);
+    expect(find.byType(ReportGridCard), findsNothing);
+
+    // Volver a alternar a mosaico rápido
+    final gridToggle = find.byTooltip('Cambiar a mosaico rápido');
+    await tester.tap(gridToggle);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(ReportGridCard), findsWidgets);
+  });
+
+  testWidgets('ReportsFeedTab filters by species and searches by text', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ReportsFeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Filtrar por 'Gatos'
+    await tester.tap(find.text('Gatos'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Solo debe verse Milo el gato
+    expect(find.text('Milo (Nombre asignado)'), findsOneWidget);
+    expect(find.text('Thor'), findsNothing);
+
+    // Restablecer a 'Todos'
+    await tester.tap(find.text('Todos').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Activar buscador de raza / zona
+    await tester.tap(find.byTooltip('Buscar por raza o zona'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(TextField), findsOneWidget);
+
+    // Escribir 'Caniche'
+    await tester.enterText(find.byType(TextField), 'Caniche');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Solo debe verse Luna la Caniche
+    expect(find.text('Luna'), findsWidgets);
+    expect(find.text('Thor'), findsNothing);
+  });
+
+  testWidgets('ContextualZoneModal displays neighborhood approximate zone radius and safety note', (WidgetTester tester) async {
+    final testPet = MockDataService().getAllPets().firstWhere((p) => p.status == YagoPetStatus.lost);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => ElevatedButton(
+              onPressed: () => ContextualZoneModal.show(ctx, testPet),
+              child: const Text('Abrir Zona'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir Zona'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar radio aproximado y zona
+    expect(find.textContaining('Radio estimado de 500m'), findsOneWidget);
+    expect(find.textContaining('Por seguridad comunitaria, se muestra un radio contextual aproximado'), findsOneWidget);
+    expect(find.text('Ver ficha completa de Luna'), findsOneWidget);
   });
 }
 
