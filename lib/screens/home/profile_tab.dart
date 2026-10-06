@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/feed_post.dart';
 import '../../models/pet.dart';
@@ -572,7 +573,8 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  /// Pestaña 1 (Posts - Predeterminada): feed con publicaciones y reportes propios del usuario.
+  /// Pestaña 1 (Posts - Predeterminada): feed unificado con publicaciones y reportes propios del usuario,
+  /// ordenados cronológicamente (las más recientes arriba).
   Widget _buildPostsTab({
     required BuildContext context,
     required String userName,
@@ -581,8 +583,15 @@ class _ProfileTabState extends State<ProfileTab> {
     required List<Pet> myReports,
     required double bottomInset,
   }) {
+    // Unificación y ordenamiento cronológico descendente
+    final List<_ProfileFeedItem> feedItems = [
+      ...userPosts.map(_ProfileFeedItem.fromPost),
+      ...myReports.map(_ProfileFeedItem.fromPet),
+    ];
+    feedItems.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
     final Widget content;
-    if (userPosts.isEmpty && myReports.isEmpty) {
+    if (feedItems.isEmpty) {
       content = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
@@ -621,52 +630,59 @@ class _ProfileTabState extends State<ProfileTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
         children: [
-          // Publicaciones comunitarias del usuario
-          for (final post in userPosts)
-            _buildPostCard(
-              context: context,
-              postId: post.id,
-              authorName: userName,
-              authorPhoto: userPhoto,
-              timeAgo: post.timeAgo,
-              content: post.content,
-              imageUrl: post.imageUrl,
-              commentsCount: post.commentsCount,
-            ),
-
-          // Reportes de mascotas publicados por el usuario
-          for (final pet in myReports)
-            _buildPostCard(
-              context: context,
-              postId: 'user-report-${pet.id}',
-              authorName: userName,
-              authorPhoto: userPhoto,
-              statusBadge: pet.status,
-              timeAgo: pet.timeAgo,
-              content: pet.description,
-              imageUrl: pet.imageUrl,
-              pet: pet,
-              commentsCount: 0,
-            ),
+          for (final item in feedItems)
+            if (item.post != null)
+              _buildPostCard(
+                context: context,
+                postId: item.post!.id,
+                authorName: userName,
+                authorPhoto: userPhoto,
+                timeAgo: formatTimeAgo(item.dateTime, fallback: item.post!.timeAgo),
+                content: item.post!.content,
+                imageUrl: item.post!.imageUrl,
+                commentsCount: item.post!.commentsCount,
+                feedPost: item.post,
+              )
+            else if (item.pet != null)
+              _buildPostCard(
+                context: context,
+                postId: item.pet!.id,
+                authorName: userName,
+                authorPhoto: userPhoto,
+                statusBadge: item.pet!.status,
+                timeAgo: formatTimeAgo(item.dateTime, fallback: item.pet!.timeAgo),
+                content: item.pet!.description,
+                imageUrl: item.pet!.imageUrl,
+                pet: item.pet,
+                commentsCount: 0,
+              ),
         ],
       );
     }
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () => MockDataService().refreshFromFirestore(),
+      onRefresh: () async {
+        await MockDataService().refreshFromFirestore();
+        if (context.mounted) {
+          setState(() {});
+        }
+      },
       child: content,
     );
   }
 
-  /// Pestaña 2: Reportes de mascotas publicados por el usuario
+  /// Pestaña 2: Reportes de mascotas publicados por el usuario (más recientes primero)
   Widget _buildReportsTab(
     BuildContext context,
     List<Pet> myReports,
     double bottomInset,
   ) {
+    final sortedReports = List<Pet>.from(myReports)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
     final Widget content;
-    if (myReports.isEmpty) {
+    if (sortedReports.isEmpty) {
       content = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
@@ -704,10 +720,10 @@ class _ProfileTabState extends State<ProfileTab> {
       content = ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 12, 16, 96.0 + bottomInset),
-        itemCount: myReports.length,
+        itemCount: sortedReports.length,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          final pet = myReports[index];
+          final pet = sortedReports[index];
           return Material(
             color: Colors.white,
             shape: const RoundedRectangleBorder(
@@ -736,14 +752,25 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
               ),
               subtitle: Text(
-                '${pet.breed} · ${pet.location}',
+                '${pet.breed} · ${pet.location} · ${formatTimeAgo(pet.date, fallback: pet.timeAgo)}',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
-              trailing: YagoStatusBadge(status: pet.status),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  YagoStatusBadge(status: pet.status),
+                  _buildPostOptionsMenu(
+                    context: context,
+                    postId: pet.id,
+                    content: pet.description,
+                    pet: pet,
+                  ),
+                ],
+              ),
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -759,7 +786,12 @@ class _ProfileTabState extends State<ProfileTab> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () => MockDataService().refreshFromFirestore(),
+      onRefresh: () async {
+        await MockDataService().refreshFromFirestore();
+        if (context.mounted) {
+          setState(() {});
+        }
+      },
       child: content,
     );
   }
@@ -768,7 +800,12 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget _buildSavedTab(BuildContext context, double bottomInset) {
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () => MockDataService().refreshFromFirestore(),
+      onRefresh: () async {
+        await MockDataService().refreshFromFirestore();
+        if (context.mounted) {
+          setState(() {});
+        }
+      },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
@@ -805,6 +842,203 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  /// Botón de opciones para una publicación o reporte (tres puntos)
+  Widget _buildPostOptionsMenu({
+    required BuildContext context,
+    required String postId,
+    required String content,
+    Pet? pet,
+    FeedPost? feedPost,
+  }) {
+    final isReport = pet != null;
+
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_horiz_rounded,
+        size: 19,
+        color: AppColors.twitterAction,
+      ),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+      onSelected: (value) async {
+        if (value == 'copy') {
+          await Clipboard.setData(ClipboardData(text: content));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Texto copiado al portapapeles'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (value == 'share') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Enlace copiado al portapapeles'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else if (value == 'reunited' && pet != null) {
+          _confirmMarkReunited(context, pet);
+        } else if (value == 'delete') {
+          _confirmDeletePost(context, postId: postId, pet: pet);
+        }
+      },
+      itemBuilder: (ctx) => [
+        const PopupMenuItem<String>(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy_rounded, size: 18, color: AppColors.textPrimary),
+              SizedBox(width: 10),
+              Expanded(child: Text('Copiar texto')),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'share',
+          child: Row(
+            children: [
+              Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+              SizedBox(width: 10),
+              Expanded(child: Text('Compartir')),
+            ],
+          ),
+        ),
+        if (isReport && pet.status != YagoPetStatus.reunited)
+          const PopupMenuItem<String>(
+            value: 'reunited',
+            child: Row(
+              children: [
+                Icon(Icons.celebration_outlined, size: 18, color: AppColors.found),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Marcar como caso resuelto',
+                    style: TextStyle(color: AppColors.found, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isReport ? 'Eliminar reporte' : 'Eliminar publicación',
+                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _confirmMarkReunited(BuildContext context, Pet pet) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        title: const Text('¿Marcar como caso resuelto?'),
+        content: Text(
+          'Se actualizará el estado de "${pet.name}" a reunida y se notificará a la comunidad.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.found,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              MockDataService().markAsReunited(pet.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('¡Caso marcado como reunido con éxito! 🎉'),
+                  backgroundColor: AppColors.found,
+                ),
+              );
+            },
+            child: const Text('Marcar reunida'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletePost(BuildContext context, {required String postId, Pet? pet}) {
+    final isReport = pet != null;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
+        title: Text(isReport ? '¿Eliminar reporte?' : '¿Eliminar publicación?'),
+        content: Text(
+          isReport
+              ? '¿Estás seguro de que deseas eliminar este reporte? Se borrará definitivamente de tu perfil y del catálogo comunitario.'
+              : '¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                if (pet != null) {
+                  await MockDataService().deletePet(pet.id);
+                } else {
+                  await MockDataService().deleteCommunityPost(postId);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isReport
+                            ? 'Reporte eliminado correctamente.'
+                            : 'Publicación eliminada correctamente.',
+                      ),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al eliminar: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Tarjeta unificada de publicación:
   /// Utilizada de manera uniforme para publicaciones normales y publicaciones de reporte.
   /// Si es un reporte, simplemente añade la etiqueta (YagoStatusBadge) al lado del nombre.
@@ -818,6 +1052,7 @@ class _ProfileTabState extends State<ProfileTab> {
     required String content,
     String? imageUrl,
     Pet? pet,
+    FeedPost? feedPost,
     required int commentsCount,
   }) {
     final isLiked = _likedPostIds.contains(postId);
@@ -843,39 +1078,50 @@ class _ProfileTabState extends State<ProfileTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cabecera: Nombre + Etiqueta opcional (si es reporte) + Tiempo (sin @, sin correo, sin candado)
+                // Cabecera: Nombre + Etiqueta opcional (si es reporte) + Tiempo
                 Row(
                   children: [
-                    Flexible(
-                      child: Text(
-                        authorName,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14.5,
-                          color: AppColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              authorName,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (statusBadge != null) ...[
+                            const SizedBox(width: 6),
+                            YagoStatusBadge(status: statusBadge),
+                          ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              '· $timeAgo',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (statusBadge != null) ...[
-                      const SizedBox(width: 6),
-                      YagoStatusBadge(status: statusBadge),
-                    ],
-                    const SizedBox(width: 6),
-                    Text(
-                      '· $timeAgo',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      Icons.more_horiz_rounded,
-                      size: 18,
-                      color: AppColors.twitterAction,
+                    _buildPostOptionsMenu(
+                      context: context,
+                      postId: postId,
+                      content: content,
+                      pet: pet,
+                      feedPost: feedPost,
                     ),
                   ],
                 ),
@@ -1024,4 +1270,22 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
     return false;
   }
+}
+
+/// Elemento unificado del feed del perfil que encapsula un FeedPost o un Pet
+/// con una fecha normalizada para garantizar el ordenamiento cronológico.
+class _ProfileFeedItem {
+  final FeedPost? post;
+  final Pet? pet;
+  final DateTime dateTime;
+
+  _ProfileFeedItem.fromPost(FeedPost p)
+      : post = p,
+        pet = null,
+        dateTime = p.createdAt ?? extractDateFromId(p.id) ?? DateTime(2020);
+
+  _ProfileFeedItem.fromPet(Pet p)
+      : post = null,
+        pet = p,
+        dateTime = p.date;
 }

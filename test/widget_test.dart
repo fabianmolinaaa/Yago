@@ -7,7 +7,9 @@ import 'package:yago/screens/home/create_post_screen.dart';
 import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/profile_tab.dart';
+import 'package:yago/models/feed_post.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
+import 'package:yago/services/mock_data_service.dart';
 import 'package:yago/widgets/common/widgets.dart';
 
 void main() {
@@ -346,6 +348,59 @@ void main() {
     await tester.tap(find.text('Reportes'));
     await tester.pumpAndSettle();
     expect(find.text('Sin reportes activos'), findsOneWidget);
+  });
+
+  testWidgets('ProfileTab shows post options menu and triggers delete dialog', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ProfileTab(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    const ownPost = FeedPost(
+      id: 'my-test-post-1',
+      authorId: null,
+      authorName: 'Usuario',
+      content: 'Contenido de prueba para el menú de opciones',
+      timeAgo: 'Recién publicado',
+      createdAt: null,
+    );
+    await MockDataService().addCommunityPost(ownPost);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contenido de prueba para el menú de opciones'), findsOneWidget);
+
+    // Buscar el botón de opciones (tres puntos) en la tarjeta
+    final moreOptionsFinder = find.byIcon(Icons.more_horiz_rounded);
+    expect(moreOptionsFinder, findsWidgets);
+
+    // Tocar el botón de tres puntos de la tarjeta
+    await tester.tap(moreOptionsFinder.first);
+    await tester.pumpAndSettle();
+
+    // Comprobar que el menú popup se despliega con las opciones requeridas
+    expect(find.text('Copiar texto'), findsOneWidget);
+    expect(find.text('Compartir'), findsOneWidget);
+    expect(find.text('Eliminar publicación'), findsOneWidget);
+
+    // Tocar eliminar publicación
+    await tester.tap(find.text('Eliminar publicación'));
+    await tester.pumpAndSettle();
+
+    // Comprobar que se muestra el diálogo de confirmación
+    expect(find.text('¿Eliminar publicación?'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+    expect(find.text('Eliminar'), findsOneWidget);
+
+    // Confirmar eliminación
+    await tester.tap(find.text('Eliminar'));
+    await tester.pumpAndSettle();
+
+    // El post ya no debe estar
+    expect(find.text('Contenido de prueba para el menú de opciones'), findsNothing);
   });
 
   group('YagoPetImage asset resolution and rendering', () {

@@ -736,7 +736,10 @@ class _FeedTabState extends State<FeedTab> {
                       style: TextStyle(color: AppColors.twitterHandle),
                     ),
                     Text(
-                      post.timeAgo,
+                      formatTimeAgo(
+                        post.createdAt ?? extractDateFromId(post.id),
+                        fallback: post.timeAgo,
+                      ),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         color: AppColors.twitterHandle,

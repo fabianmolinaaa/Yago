@@ -276,13 +276,18 @@ class FirestoreService {
       }
       final snapshot = await query.get();
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.map((doc) => Pet.fromFirestore(doc)).toList();
+        final pets = snapshot.docs.map((doc) => Pet.fromFirestore(doc)).toList();
+        pets.sort((a, b) => b.date.compareTo(a.date));
+        return pets;
       }
     } catch (_) {}
 
     // Fallback a existentes si la base no responde
-    if (status == null) return List.from(existingPets);
-    return existingPets.where((p) => p.status == status).toList();
+    final fallbackList = status == null
+        ? List<Pet>.from(existingPets)
+        : existingPets.where((p) => p.status == status).toList();
+    fallbackList.sort((a, b) => b.date.compareTo(a.date));
+    return fallbackList;
   }
 
   /// Stream reactivo de publicaciones comunitarias
@@ -382,6 +387,26 @@ class FirestoreService {
         'isLiked': newIsLiked,
       });
     } catch (_) {}
+  }
+
+  /// Elimina una publicación comunitaria de Firestore
+  Future<void> deleteFeedPost(String postId) async {
+    if (!isFirebaseReady || _postsRef == null) return;
+    try {
+      await _postsRef!.doc(postId).delete();
+    } catch (e) {
+      throw Exception('No se pudo eliminar la publicación de Firestore: $e');
+    }
+  }
+
+  /// Elimina un reporte de mascota de Firestore
+  Future<void> deletePet(String petId) async {
+    if (!isFirebaseReady || _petsRef == null) return;
+    try {
+      await _petsRef!.doc(petId).delete();
+    } catch (e) {
+      throw Exception('No se pudo eliminar el reporte de Firestore: $e');
+    }
   }
 
   // ─── Gestión de Perfiles de Usuario (/users) ─────────────────────────────

@@ -60,6 +60,17 @@ class FeedPost {
       parsedCreatedAt = DateTime.tryParse(map['createdAt'] as String);
     }
 
+    if (parsedCreatedAt == null) {
+      final idStr = (map['id'] as String?) ?? docId;
+      final match = RegExp(r'\d{10,}').firstMatch(idStr);
+      if (match != null) {
+        final millis = int.tryParse(match.group(0)!);
+        if (millis != null) {
+          parsedCreatedAt = DateTime.fromMillisecondsSinceEpoch(millis);
+        }
+      }
+    }
+
     return FeedPost(
       id: map['id'] ?? docId,
       authorId: map['authorId'] as String?,

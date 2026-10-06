@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import '../utils/time_utils.dart';
 
 enum YagoPetStatus {
   lost,
@@ -72,7 +73,8 @@ class Pet {
   String get detailsSummary => '$breed · $gender · $age';
 
   /// Ubicación y tiempo para PetCard (ej: "Palermo, CABA · Hace 2 horas")
-  String get locationAndTime => '$location · $timeAgo';
+  String get locationAndTime =>
+      '$location · ${formatTimeAgo(date, fallback: timeAgo.isNotEmpty ? timeAgo : 'Reciente')}';
 
   static YagoPetStatus parseStatus(String? statusStr) {
     switch (statusStr) {
@@ -131,6 +133,15 @@ class Pet {
       parsedDate = (map['date'] as Timestamp).toDate();
     } else if (map['date'] is String) {
       parsedDate = DateTime.tryParse(map['date'] as String) ?? DateTime.now();
+    } else {
+      final idStr = (map['id'] as String?) ?? docId;
+      final match = RegExp(r'\d{10,}').firstMatch(idStr);
+      if (match != null) {
+        final millis = int.tryParse(match.group(0)!);
+        if (millis != null) {
+          parsedDate = DateTime.fromMillisecondsSinceEpoch(millis);
+        }
+      }
     }
 
     return Pet(

@@ -361,6 +361,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           likesCount: 0,
           commentsCount: 0,
           isLiked: false,
+          createdAt: DateTime.now(),
         );
 
         await MockDataService().addCommunityPost(newPost);

@@ -5,6 +5,7 @@ import 'package:yago/models/pet.dart';
 import 'package:yago/models/user_model.dart';
 import 'package:yago/services/firestore_service.dart';
 import 'package:yago/services/mock_data_service.dart';
+import 'package:yago/utils/time_utils.dart';
 
 void main() {
   group('Firestore Models Serialization', () {
@@ -275,6 +276,107 @@ void main() {
       expect(notified, isTrue);
       expect(mock.getAllPets().any((p) => p.id == 'test-async-pet'), isTrue);
       mock.removeListener(listener);
+    });
+
+    test('MockDataService deleteCommunityPost removes post and notifies listeners', () async {
+      final mock = MockDataService();
+      const testPost = FeedPost(
+        id: 'post-delete-test',
+        authorName: 'Test Author',
+        content: 'Post to delete',
+        timeAgo: 'Reciente',
+      );
+      await mock.addCommunityPost(testPost);
+      expect(mock.getCommunityPosts().any((p) => p.id == 'post-delete-test'), isTrue);
+
+      bool notified = false;
+      void listener() => notified = true;
+      mock.addListener(listener);
+
+      await mock.deleteCommunityPost('post-delete-test');
+      expect(mock.getCommunityPosts().any((p) => p.id == 'post-delete-test'), isFalse);
+      expect(notified, isTrue);
+      mock.removeListener(listener);
+    });
+
+    test('MockDataService deletePet removes pet and notifies listeners', () async {
+      final mock = MockDataService();
+      final testPet = Pet(
+        id: 'pet-delete-test',
+        name: 'Delete Me',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: 'Adulto',
+        status: YagoPetStatus.lost,
+        location: 'CABA',
+        timeAgo: 'Reciente',
+        date: DateTime.now(),
+        description: 'Report to delete',
+        imageUrl: '',
+        contactName: 'Carlos',
+        contactPhone: '123',
+        latitude: -34.6,
+        longitude: -58.4,
+      );
+      await mock.addPet(testPet);
+      expect(mock.getAllPets().any((p) => p.id == 'pet-delete-test'), isTrue);
+
+      bool notified = false;
+      void listener() => notified = true;
+      mock.addListener(listener);
+
+      await mock.deletePet('pet-delete-test');
+      expect(mock.getAllPets().any((p) => p.id == 'pet-delete-test'), isFalse);
+      expect(notified, isTrue);
+      mock.removeListener(listener);
+    });
+
+    test('MockDataService getMyPosts returns posts ordered chronologically (newest first)', () async {
+      final mock = MockDataService();
+      const olderPost = FeedPost(
+        id: 'post-older',
+        authorId: 'test-user-sort',
+        authorName: 'Sort User',
+        content: 'Older post',
+        timeAgo: 'Ayer',
+        createdAt: null,
+      );
+      final newerPost = FeedPost(
+        id: 'post-newer',
+        authorId: 'test-user-sort',
+        authorName: 'Sort User',
+        content: 'Newer post',
+        timeAgo: 'Hoy',
+        createdAt: DateTime.now(),
+      );
+
+      await mock.addCommunityPost(olderPost);
+      await mock.addCommunityPost(newerPost);
+
+      final myPosts = mock.getMyPosts(userId: 'test-user-sort');
+      expect(myPosts.length, greaterThanOrEqualTo(2));
+      final idxNewer = myPosts.indexWhere((p) => p.id == 'post-newer');
+      final idxOlder = myPosts.indexWhere((p) => p.id == 'post-older');
+      expect(idxNewer, lessThan(idxOlder));
+    });
+  });
+
+  group('Time Utils', () {
+    test('extractDateFromId extracts timestamp correctly', () {
+      const timestamp = 1728224567890;
+      final extracted = extractDateFromId('post-$timestamp');
+      expect(extracted, isNotNull);
+      expect(extracted!.millisecondsSinceEpoch, timestamp);
+    });
+
+    test('formatTimeAgo returns expected human readable values', () {
+      final now = DateTime.now();
+      expect(formatTimeAgo(now.subtract(const Duration(seconds: 10))), 'Recién publicado');
+      expect(formatTimeAgo(now.subtract(const Duration(minutes: 5))), 'Hace 5 min');
+      expect(formatTimeAgo(now.subtract(const Duration(hours: 3))), 'Hace 3 horas');
+      expect(formatTimeAgo(now.subtract(const Duration(days: 2))), 'Hace 2 días');
+      expect(formatTimeAgo(null, fallback: 'Desconocido'), 'Desconocido');
     });
   });
 }

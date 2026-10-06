@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/feed_post.dart';
 import '../models/pet.dart';
+import '../utils/time_utils.dart';
 import 'firestore_service.dart';
 
 class MockDataService extends ChangeNotifier {
@@ -91,9 +92,11 @@ class MockDataService extends ChangeNotifier {
     }).toList();
   }
 
-  /// Obtiene los reportes creados por el usuario
+  /// Obtiene los reportes creados por el usuario ordenados de más reciente a más antiguo
   List<Pet> getMyReports() {
-    return _pets.where((pet) => pet.isUserOwner).toList();
+    final reports = _pets.where((pet) => pet.isUserOwner).toList();
+    reports.sort((a, b) => b.date.compareTo(a.date));
+    return reports;
   }
 
   /// Agrega un nuevo reporte y lo persiste en Firestore
@@ -105,6 +108,18 @@ class MockDataService extends ChangeNotifier {
     } catch (e) {
       _pets.removeWhere((p) => p.id == pet.id);
       notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Elimina un reporte de mascota de la memoria y Firestore
+  Future<void> deletePet(String petId) async {
+    _pets.removeWhere((p) => p.id == petId);
+    notifyListeners();
+    try {
+      await FirestoreService().deletePet(petId);
+    } catch (e) {
+      await refreshFromFirestore();
       rethrow;
     }
   }
@@ -134,10 +149,10 @@ class MockDataService extends ChangeNotifier {
   /// Posts comunitarios
   List<FeedPost> getCommunityPosts() => List.unmodifiable(_communityPosts);
 
-  /// Obtiene los posts comunitarios del usuario autenticado
+  /// Obtiene los posts comunitarios del usuario autenticado ordenados de más reciente a más antiguo
   List<FeedPost> getMyPosts({String? userId, String? userName}) {
     if (userId == null && userName == null) return const [];
-    return _communityPosts.where((post) {
+    final posts = _communityPosts.where((post) {
       if (userId != null && post.authorId != null && post.authorId!.isNotEmpty) {
         return post.authorId == userId;
       }
@@ -146,6 +161,12 @@ class MockDataService extends ChangeNotifier {
       }
       return false;
     }).toList();
+    posts.sort((a, b) {
+      final dateA = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+      final dateB = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+      return dateB.compareTo(dateA);
+    });
+    return posts;
   }
 
   /// Agrega una nueva publicación comunitaria y la persiste en Firestore
@@ -157,6 +178,18 @@ class MockDataService extends ChangeNotifier {
     } catch (e) {
       _communityPosts.removeWhere((p) => p.id == post.id);
       notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Elimina una publicación comunitaria de la memoria y Firestore
+  Future<void> deleteCommunityPost(String postId) async {
+    _communityPosts.removeWhere((p) => p.id == postId);
+    notifyListeners();
+    try {
+      await FirestoreService().deleteFeedPost(postId);
+    } catch (e) {
+      await refreshFromFirestore();
       rethrow;
     }
   }
