@@ -572,8 +572,8 @@ void main() {
     // Verificar presencia de reportes de pérdida y hallazgo existentes
     expect(find.text('Luna'), findsWidgets); // Reporte perdido
     expect(find.text('Thor'), findsWidgets); // Reporte encontrado
-    expect(find.text('PERDIDA'), findsWidgets);
-    expect(find.text('ENCONTRADA'), findsWidgets);
+    expect(find.text('Perdida'), findsWidgets);
+    expect(find.text('Encontrada'), findsWidgets);
 
     // NUNCA debe contener publicaciones comunitarias ni de apareamiento
     expect(find.text('Paseando un rato...'), findsNothing);
@@ -681,10 +681,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verificar radio aproximado y zona
+    // Verificar radio aproximado y botón Abrir en Maps
     expect(find.textContaining('Radio estimado de 500m'), findsOneWidget);
     expect(find.textContaining('Por seguridad comunitaria, se muestra un radio contextual aproximado'), findsOneWidget);
-    expect(find.text('Ver ficha completa de Luna'), findsOneWidget);
+    expect(find.text('Abrir en Maps'), findsOneWidget);
   });
 }
 
