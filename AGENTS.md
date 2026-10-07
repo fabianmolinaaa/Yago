@@ -49,3 +49,10 @@ Este archivo establece las reglas operativas, convenciones de código y directiv
 1. Seguir estrictamente el sistema de diseño definido en [docs/DesignSystem.md](docs/DesignSystem.md) (paleta cromática, tipografías, componentes oficiales `PetCard`, `YagoBottomNavBar`, etc.).
 2. Mantener la arquitectura modular definida en [docs/Estructura.md](docs/Estructura.md).
 3. No generar comentarios públicos en las publicaciones ni mapas globales libres de acuerdo con las decisiones de seguridad de [docs/Alcance.md](docs/Alcance.md).
+
+---
+
+## 🐾 Regla 4: Diversidad de Especies y Neutralidad de Atributos
+1. **Yago admite múltiples especies animales:** Perros, gatos, aves, tortugas, conejos y otros animales comunitarios.
+2. **Neutralidad de edad y rasgos biológicos:** Nunca forzar categorías cerradas o terminologías exclusivas de perros/gatos (como "Cachorro", "Adulto canino") para todos los animales. La edad debe formularse de manera flexible y neutral (texto libre de edad estimada con opción explícita "No conozco la edad").
+

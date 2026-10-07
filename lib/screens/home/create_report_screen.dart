@@ -28,10 +28,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   final _descriptionController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _tagInputController = TextEditingController();
+  final _ageController = TextEditingController();
+
+  bool _unknownAge = false;
 
   String _selectedSpecies = 'Perro';
   String _selectedGender = 'Macho';
-  String _selectedAge = 'Adulto (3-6 años)';
   DateTime _reportDate = DateTime.now();
 
   double _latitude = -34.5889;
@@ -39,6 +41,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   bool _isDetectingLocation = false;
 
   final List<String> _tags = [];
+  final List<String> _contactPhones = [];
   bool _isSubmitting = false;
 
   // Foto de la mascota: archivo local seleccionado o muestra
@@ -53,21 +56,13 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     'assets/images/IMG_5560.JPG',
   ];
 
-  final List<String> _ageOptions = [
-    'Cachorro (< 1 año)',
-    'Joven (1-2 años)',
-    'Adulto (3-6 años)',
-    'Senior (7+ años)',
-    'Desconocida',
-  ];
-
-  final List<String> _suggestedTags = [
-    'Collar rojo',
-    'Con chip',
-    'Mancha blanca',
-    'Orejas caídas',
-    'Pelaje largo',
-    'Manso',
+  final List<String> _speciesOptions = [
+    'Perro',
+    'Gato',
+    'Ave',
+    'Conejo',
+    'Tortuga',
+    'Otro',
   ];
 
   @override
@@ -78,6 +73,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     _descriptionController.dispose();
     _contactPhoneController.dispose();
     _tagInputController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
@@ -91,10 +87,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     }
   }
 
-  void _addSuggestedTag(String tag) {
-    if (!_tags.contains(tag)) {
+  void _addContactPhone() {
+    final phone = _contactPhoneController.text.trim();
+    if (phone.isNotEmpty && !_contactPhones.contains(phone)) {
       setState(() {
-        _tags.add(tag);
+        _contactPhones.add(phone);
+        _contactPhoneController.clear();
       });
     }
   }
@@ -286,9 +284,19 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ? 'Se extravió recientemente. Por favor si alguien la ve, contactarse de inmediato.'
             : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.')
         : _descriptionController.text.trim();
-    final phone = _contactPhoneController.text.trim().isEmpty
-        ? '+54 9 11 0000-0000'
-        : _contactPhoneController.text.trim();
+
+    // Edad neutral según especie
+    final age = (_unknownAge || _ageController.text.trim().isEmpty)
+        ? 'Desconocida'
+        : _ageController.text.trim();
+
+    // Teléfonos consolidados (lista + entrada actual)
+    final allPhones = List<String>.from(_contactPhones);
+    final currentInputPhone = _contactPhoneController.text.trim();
+    if (currentInputPhone.isNotEmpty && !allPhones.contains(currentInputPhone)) {
+      allPhones.add(currentInputPhone);
+    }
+    final phone = allPhones.isEmpty ? '+54 9 11 0000-0000' : allPhones.join(' / ');
 
     setState(() => _isSubmitting = true);
 
@@ -324,7 +332,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       breed: breed,
       species: _selectedSpecies,
       gender: _selectedGender,
-      age: _selectedAge,
+      age: age,
       status: _isLostReport ? YagoPetStatus.lost : YagoPetStatus.found,
       location: location,
       timeAgo: 'Recién publicado',
@@ -658,7 +666,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                           border: OutlineInputBorder(borderRadius: AppRadius.mdBorder),
                         ),
-                        items: ['Perro', 'Gato', 'Otro']
+                        items: _speciesOptions
                             .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                             .toList(),
                         onChanged: (val) => setState(() => _selectedSpecies = val!),
@@ -691,29 +699,58 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 14),
 
+            // Campo de Edad neutral según la especie
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Edad aproximada',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                YagoTextField(
+                  label: 'Edad aproximada',
+                  hint: _unknownAge ? 'Edad desconocida' : 'Ej: 2 años, 6 meses, aprox. 10 años...',
+                  controller: _ageController,
+                  enabled: !_unknownAge,
                 ),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedAge,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.muted),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                    border: OutlineInputBorder(borderRadius: AppRadius.mdBorder),
-                  ),
-                  items: _ageOptions
-                      .map((age) => DropdownMenuItem(value: age, child: Text(age)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedAge = val);
-                    }
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _unknownAge = !_unknownAge;
+                      if (_unknownAge) _ageController.clear();
+                    });
                   },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: _unknownAge,
+                            activeColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            onChanged: (val) {
+                              setState(() {
+                                _unknownAge = val ?? false;
+                                if (_unknownAge) _ageController.clear();
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'No conozco la edad',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -835,118 +872,116 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
-            // ─── 5. Contacto ─────────────────────────────────────────────────
-            _buildSectionHeader('CONTACTO'),
-            YagoTextField(
-              label: 'Teléfono o WhatsApp',
-              hint: '+54 9 11 1234-5678',
-              controller: _contactPhoneController,
-              keyboardType: TextInputType.phone,
-              prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: AppColors.subtle),
-            ),
-            const SizedBox(height: 28),
-
-            // ─── 6. Señas Particulares ───────────────────────────────────────
-            _buildSectionHeader('SEÑAS PARTICULARES'),
-            YagoTextField(
-              label: 'Señas particulares (chips, collar, manchas)',
-              hint: 'Ej: Collar rojo, Con chip, Mancha blanca...',
-              controller: _tagInputController,
-              prefixIcon: const Icon(Icons.style_outlined, size: 20, color: AppColors.muted),
-              onFieldSubmitted: (_) => _addTag(),
-              suffixIcon: Padding(
-                padding: const EdgeInsets.all(7.0),
-                child: InkWell(
-                  onTap: _addTag,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 18,
+            // ─── 5. Teléfono(s) de Contacto con Botón para Agregar Otro ───────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                YagoTextField(
+                  label: 'Teléfono o WhatsApp de contacto',
+                  hint: '+54 9 11 1234-5678',
+                  controller: _contactPhoneController,
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: AppColors.subtle),
+                  onFieldSubmitted: (_) => _addContactPhone(),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.all(7.0),
+                    child: InkWell(
+                      onTap: _addContactPhone,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const Text(
-                    'Sugerencias:',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                if (_contactPhones.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _contactPhones.map((phone) {
+                      return Chip(
+                        avatar: const Icon(Icons.phone_outlined, size: 14, color: AppColors.primary),
+                        label: Text(phone, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                        backgroundColor: AppColors.surface,
+                        deleteIcon: const Icon(Icons.close_rounded, size: 14),
+                        onDeleted: () => setState(() => _contactPhones.remove(phone)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                  const SizedBox(width: 6),
-                  ..._suggestedTags.map((st) {
-                    final isAdded = _tags.contains(st);
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: InkWell(
-                        onTap: () => _addSuggestedTag(st),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                          decoration: BoxDecoration(
-                            color: isAdded ? AppColors.primaryTint : const Color(0xFFF1F3F5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isAdded ? AppColors.primary : AppColors.border,
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            '+ $st',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isAdded ? FontWeight.w700 : FontWeight.w500,
-                              color: isAdded ? AppColors.primary : AppColors.textSecondary,
-                            ),
-                          ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // ─── 6. Señas Particulares (Sin icono y sin sugerencias fijas) ────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                YagoTextField(
+                  label: 'Señas particulares (chips, collar, manchas)',
+                  hint: 'Ej: Collar rojo, mancha blanca en el lomo...',
+                  controller: _tagInputController,
+                  onFieldSubmitted: (_) => _addTag(),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.all(7.0),
+                    child: InkWell(
+                      onTap: _addTag,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-
-            if (_tags.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(tag, style: const TextStyle(fontSize: 12)),
-                    backgroundColor: AppColors.surface,
-                    deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                    onDeleted: () => setState(() => _tags.remove(tag)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: AppColors.border),
                     ),
-                  );
-                }).toList(),
-              ),
-            ],
-            const SizedBox(height: 28),
+                  ),
+                ),
+                if (_tags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _tags.map((tag) {
+                      return Chip(
+                        label: Text(tag, style: const TextStyle(fontSize: 12)),
+                        backgroundColor: AppColors.surface,
+                        deleteIcon: const Icon(Icons.close_rounded, size: 14),
+                        onDeleted: () => setState(() => _tags.remove(tag)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 20),
 
-            // ─── 7. Descripción ──────────────────────────────────────────────
-            _buildSectionHeader('DESCRIPCIÓN'),
+            // ─── 7. Descripción Directa (Sin título redundante) ──────────────
             YagoTextField(
               label: 'Descripción',
               hint: 'Cuéntanos qué ocurrió, cómo reacciona o cualquier dato útil...',

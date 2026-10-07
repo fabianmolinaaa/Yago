@@ -706,35 +706,36 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // 2. Verificar títulos de secciones limpias
+    // 2. Verificar secciones principales y ausencia de encabezados duplicados
     expect(find.text('INFORMACIÓN DE LA MASCOTA'), findsOneWidget);
     expect(find.text('DÓNDE Y CUÁNDO'), findsOneWidget);
+    // No deben existir encabezados redundantes en mayúsculas repetidos
+    expect(find.text('DESCRIPCIÓN'), findsNothing);
+    expect(find.text('CONTACTO'), findsNothing);
 
-    // 3. Verificar labels consistentes y unificados (no cambian con el switch)
+    // 3. Verificar labels consistentes y unificados
     expect(find.text('Nombre de la mascota'), findsOneWidget);
     expect(find.text('Ubicación'), findsOneWidget);
 
-    // 4. Verificar campo de Edad aproximada
+    // 4. Verificar campo de Edad neutral y opción "No conozco la edad"
     expect(find.text('Edad aproximada'), findsOneWidget);
-    expect(find.text('Adulto (3-6 años)'), findsOneWidget);
-
-    // 5. Verificar botón + de rasgos particulares integrado en sufijo del campo
-    expect(find.text('Señas particulares (chips, collar, manchas)'), findsOneWidget);
-    expect(find.byIcon(Icons.add_rounded), findsWidgets);
-
-    // Scroll hasta las sugerencias de tags
-    await tester.ensureVisible(find.text('+ Collar rojo'));
+    await tester.ensureVisible(find.text('No conozco la edad'));
     await tester.pumpAndSettle();
-
-    // Agregar un tag mediante las sugerencias rápidas
-    await tester.tap(find.text('+ Collar rojo'));
+    expect(find.text('No conozco la edad'), findsOneWidget);
+    await tester.tap(find.text('No conozco la edad'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Verificar que el chip de Collar rojo fue añadido al formulario
-    expect(find.text('Collar rojo'), findsWidgets);
+    // 5. Verificar teléfonos múltiples con botón +
+    expect(find.text('Teléfono o WhatsApp de contacto'), findsOneWidget);
+    final phoneField = find.widgetWithText(TextField, '');
+    expect(phoneField, findsWidgets);
 
-    // 6. Verificar detección de ubicación actual ("Usar mi ubicación")
+    // 6. Verificar señas particulares con botón + integrado y sin sugerencias fijas
+    expect(find.text('Señas particulares (chips, collar, manchas)'), findsOneWidget);
+    expect(find.text('Sugerencias:'), findsNothing);
+
+    // 7. Verificar detección de ubicación actual ("Usar mi ubicación")
     await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
     expect(find.text('Usar mi ubicación'), findsOneWidget);
@@ -743,7 +744,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // 7. Verificar botón unificado "Publicar reporte" y aclaración
+    // 8. Verificar botón unificado "Publicar reporte" y aclaración
     await tester.ensureVisible(find.byType(YagoButton));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Al publicar, otras personas podrán ver este reporte y contactarte.'), findsOneWidget);
