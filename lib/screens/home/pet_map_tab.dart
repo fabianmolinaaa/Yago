@@ -30,7 +30,7 @@ class _PetMapTabState extends State<PetMapTab> {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Centrado en tu ubicación actual (CABA).'),
+                  content: Text('Centrado en tu ubicación actual (Caleta Olivia).'),
                   duration: Duration(seconds: 1),
                 ),
               );
@@ -57,7 +57,7 @@ class _PetMapTabState extends State<PetMapTab> {
                   painter: _MapGridPainter(),
                   child: Stack(
                     children: [
-                      // Centro de referencia: Obelisco / CABA
+                      // Centro de referencia: El Gorosito / Caleta Olivia
                       Positioned(
                         top: 280,
                         left: 170,
@@ -73,7 +73,7 @@ class _PetMapTabState extends State<PetMapTab> {
                             children: [
                               Icon(Icons.location_city_rounded, size: 14, color: AppColors.muted),
                               SizedBox(width: 4),
-                              Text('CABA Centro', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                              Text('El Gorosito · Caleta Olivia', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
@@ -82,10 +82,10 @@ class _PetMapTabState extends State<PetMapTab> {
                       // Pines de las mascotas
                       ...pets.map((pet) {
                         // Mapeo proporcional de coordenadas para la visualización gráfica
-                        // Rango latitud: -34.54 a -34.62 -> Y de 100 a 460
-                        // Rango longitud: -58.48 a -58.39 -> X de 40 a 320
-                        final normY = (-pet.latitude - 34.54) / (34.63 - 34.54);
-                        final normX = (-pet.longitude - 58.39) / (58.49 - 58.39);
+                        // Rango latitud: -46.43 a -46.46 -> Y de 100 a 460
+                        // Rango longitud: -67.51 a -67.55 -> X de 40 a 320
+                        final normY = (-pet.latitude - 46.43) / (46.46 - 46.43);
+                        final normX = (-pet.longitude - 67.51) / (67.55 - 67.51);
 
                         final pinY = (normY * 360 + 80).clamp(60.0, 500.0);
                         final pinX = (normX * 280 + 30).clamp(20.0, 320.0);
