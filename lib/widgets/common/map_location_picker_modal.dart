@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../services/location_service.dart';
 import '../../utils/design_system.dart';
 import 'yago_button.dart';
 
-/// Modal interactivo para ubicar un punto en el mapa (HU-S2-03).
-/// Permite al usuario buscar plazas/barrios, arrastrar el mapa o tocar un punto
-/// para seleccionar la ubicación exacta cuando no se encuentra en el lugar del hecho.
+/// Modal interactivo con mapa real (OpenStreetMap) para ubicar un punto (HU-S2-03).
+/// Permite al usuario buscar direcciones/plazas, arrastrar el mapa, tocar cualquier
+/// punto para reubicar el pin y ver con nitidez los nombres reales de las calles.
 class MapLocationPickerModal extends StatefulWidget {
   final String initialLocation;
   final double initialLatitude;
@@ -49,14 +52,14 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
   late double _currentLatitude;
   late double _currentLongitude;
 
+  final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
+
   List<LocationResult> _searchResults = [];
   bool _isSearching = false;
   bool _isResolvingAddress = false;
-  Timer? _debounceTimer;
-
-  // Offset del mapa interactivo
-  Offset _mapOffset = Offset.zero;
+  Timer? _searchDebounceTimer;
+  Timer? _moveDebounceTimer;
 
   // Zonas de referencia rápida populares
   final List<Map<String, dynamic>> _quickZones = [
@@ -80,13 +83,15 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebounceTimer?.cancel();
+    _moveDebounceTimer?.cancel();
     _searchController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
-    _debounceTimer?.cancel();
+    _searchDebounceTimer?.cancel();
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -96,7 +101,7 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
     }
 
     setState(() => _isSearching = true);
-    _debounceTimer = Timer(const Duration(milliseconds: 400), () async {
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 350), () async {
       try {
         final results = await LocationService().searchPlaces(query);
         if (!mounted) return;
@@ -118,39 +123,71 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
       _currentLongitude = place.longitude;
       _searchResults = [];
       _searchController.clear();
-      _mapOffset = Offset.zero;
+    });
+
+    _mapController.move(LatLng(place.latitude, place.longitude), 16.0);
+  }
+
+  void _onMapTapped(LatLng point) {
+    setState(() {
+      _currentLatitude = point.latitude;
+      _currentLongitude = point.longitude;
+      _isResolvingAddress = true;
+    });
+
+    _mapController.move(point, _mapController.camera.zoom);
+    _reverseGeocodeDebounced(point.latitude, point.longitude);
+  }
+
+  void _onPositionChanged(MapCamera camera, bool hasGesture) {
+    if (hasGesture) {
+      setState(() {
+        _currentLatitude = camera.center.latitude;
+        _currentLongitude = camera.center.longitude;
+        _isResolvingAddress = true;
+      });
+      _reverseGeocodeDebounced(camera.center.latitude, camera.center.longitude);
+    }
+  }
+
+  void _reverseGeocodeDebounced(double lat, double lng) {
+    _moveDebounceTimer?.cancel();
+    _moveDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final resolved = await LocationService().reverseGeocode(lat, lng);
+        if (!mounted) return;
+        setState(() {
+          _currentLocationName = resolved;
+          _isResolvingAddress = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _isResolvingAddress = false);
+      }
     });
   }
 
-  Future<void> _onMapPanEnd() async {
-    setState(() => _isResolvingAddress = true);
+  Future<void> _centerOnCurrentGps() async {
     try {
-      // Desplazamiento aproximado en grados según offset
-      final deltaLat = -_mapOffset.dy * 0.00005;
-      final deltaLng = _mapOffset.dx * 0.00005;
-
-      final newLat = _currentLatitude + deltaLat;
-      final newLng = _currentLongitude + deltaLng;
-
-      final resolvedName = await LocationService().reverseGeocode(newLat, newLng);
+      final gpsResult = await LocationService().getCurrentLocation();
+      _selectPlace(gpsResult);
+    } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _currentLatitude = newLat;
-        _currentLongitude = newLng;
-        _currentLocationName = resolvedName;
-        _mapOffset = Offset.zero;
-        _isResolvingAddress = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isResolvingAddress = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo centrar en GPS: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTest = Platform.environment.containsKey('FLUTTER_TEST');
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
+      height: MediaQuery.of(context).size.height * 0.90,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -239,35 +276,48 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
           ),
           const SizedBox(height: 8),
 
-          // Resultados de búsqueda flotantes (si hay)
+          // Resultados de búsqueda flotantes
           if (_searchResults.isNotEmpty)
-            Container(
-              constraints: const BoxConstraints(maxHeight: 160),
-              decoration: BoxDecoration(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Material(
                 color: Colors.white,
+                elevation: 4,
+                shadowColor: Colors.black.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
                   ),
-                ],
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _searchResults.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (ctx, index) {
-                  final place = _searchResults[index];
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.location_on_rounded, size: 18, color: AppColors.primary),
-                    title: Text(place.locationName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                    onTap: () => _selectPlace(place),
-                  );
-                },
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _searchResults.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (ctx, index) {
+                      final place = _searchResults[index];
+                      return ListTile(
+                        dense: true,
+                        leading: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryTint,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.location_on_rounded, size: 16, color: AppColors.primary),
+                        ),
+                        title: Text(
+                          place.locationName,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        onTap: () => _selectPlace(place),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
 
@@ -314,128 +364,170 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
-          // ─── Lienzo interactivo de mapa con pin central ─────────────────
+          // ─── MAPA REAL CON OPENSTREETMAP (CALLES NÍTIDAS Y NOMBRES REALES) ───
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8ECEF),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: GestureDetector(
-                  onPanUpdate: (details) {
-                    setState(() {
-                      _mapOffset += details.delta;
-                    });
-                  },
-                  onPanEnd: (_) => _onMapPanEnd(),
-                  child: Stack(
-                    children: [
-                      // Fondo de mapa con calles y manzanas
-                      Transform.translate(
-                        offset: _mapOffset,
-                        child: CustomPaint(
-                          size: const Size(double.infinity, double.infinity),
-                          painter: _MapCanvasPainter(),
-                        ),
+                child: Stack(
+                  children: [
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: LatLng(_currentLatitude, _currentLongitude),
+                        initialZoom: 15.5,
+                        minZoom: 4.0,
+                        maxZoom: 18.5,
+                        onPositionChanged: _onPositionChanged,
+                        onTap: (_, point) => _onMapTapped(point),
                       ),
-
-                      // Círculo de radar contextual
-                      Center(
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.5),
-                              width: 1.5,
-                            ),
+                      children: [
+                        // Capa de mosaicos reales con nombres de calles en alta resolución
+                        if (!isTest)
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.yago.app',
+                            maxZoom: 19,
                           ),
-                        ),
-                      ),
 
-                      // Pin central flotante
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(9),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.4),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.location_on_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                        // Círculo de radio contextual de 300 metros
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: LatLng(_currentLatitude, _currentLongitude),
+                              radius: 300,
+                              useRadiusInMeter: true,
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderColor: AppColors.primary.withValues(alpha: 0.55),
+                              borderStrokeWidth: 1.5,
                             ),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: Colors.black26,
-                                shape: BoxShape.circle,
+                          ],
+                        ),
+
+                        // Marcador con pin central nítido
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(_currentLatitude, _currentLongitude),
+                              width: 44,
+                              height: 44,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.location_on_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
+                    ),
 
-                      // Indicador superior de arrastre
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.pan_tool_rounded, size: 13, color: AppColors.muted),
-                              const SizedBox(width: 6),
-                              Text(
-                                _isResolvingAddress
-                                    ? 'Actualizando dirección...'
-                                    : 'Arrastra el mapa para ubicar el punto',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
+                    // Chip superior de ayuda interactiva
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.94),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.touch_app_rounded, size: 14, color: AppColors.primary),
+                            const SizedBox(width: 5),
+                            Text(
+                              _isResolvingAddress
+                                  ? 'Identificando calle...'
+                                  : 'Toca o arrastra para mover el pin',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Controles flotantes de Zoom y GPS
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FloatingActionButton.small(
+                            heroTag: 'map_zoom_in',
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.textPrimary,
+                            onPressed: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                (_mapController.camera.zoom + 1).clamp(4.0, 18.5),
+                              );
+                            },
+                            child: const Icon(Icons.add_rounded, size: 20),
+                          ),
+                          const SizedBox(height: 6),
+                          FloatingActionButton.small(
+                            heroTag: 'map_zoom_out',
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.textPrimary,
+                            onPressed: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                (_mapController.camera.zoom - 1).clamp(4.0, 18.5),
+                              );
+                            },
+                            child: const Icon(Icons.remove_rounded, size: 20),
+                          ),
+                          const SizedBox(height: 6),
+                          FloatingActionButton.small(
+                            heroTag: 'map_my_gps',
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.primary,
+                            tooltip: 'Mi ubicación GPS',
+                            onPressed: _centerOnCurrentGps,
+                            child: const Icon(Icons.my_location_rounded, size: 18),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // Tarjeta de ubicación seleccionada
+          // Tarjeta informativa de la ubicación seleccionada
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -459,7 +551,7 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'PUNTO SELECCIONADO',
+                        'PUNTO SELECCIONADO EN EL MAPA',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -480,7 +572,7 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        '(${_currentLatitude.toStringAsFixed(4)}, ${_currentLongitude.toStringAsFixed(4)})',
+                        'Lat: ${_currentLatitude.toStringAsFixed(4)}, Lng: ${_currentLongitude.toStringAsFixed(4)}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.muted,
@@ -492,7 +584,7 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // Botón de confirmación
           YagoButton(
@@ -513,60 +605,4 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
       ),
     );
   }
-}
-
-class _MapCanvasPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final blockPaint = Paint()
-      ..color = const Color(0xFFDEE3E8)
-      ..style = PaintingStyle.fill;
-
-    final parkPaint = Paint()
-      ..color = const Color(0xFFD3E7D7)
-      ..style = PaintingStyle.fill;
-
-    final streetPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 6
-      ..style = PaintingStyle.stroke;
-
-    final avenuePaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 10
-      ..style = PaintingStyle.stroke;
-
-    // Dibujar manzanas (grid urbano simulado)
-    const step = 80.0;
-    for (double x = -step * 2; x < size.width + step * 2; x += step) {
-      for (double y = -step * 2; y < size.height + step * 2; y += step) {
-        final isPark = (x.toInt() % 160 == 0 && y.toInt() % 160 == 0);
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(x + 6, y + 6, step - 12, step - 12),
-            const Radius.circular(8),
-          ),
-          isPark ? parkPaint : blockPaint,
-        );
-      }
-    }
-
-    // Calles horizontales y verticales
-    for (double y = -step * 2; y < size.height + step * 2; y += step) {
-      canvas.drawLine(Offset(-step * 2, y), Offset(size.width + step * 2, y), streetPaint);
-    }
-    for (double x = -step * 2; x < size.width + step * 2; x += step) {
-      canvas.drawLine(Offset(x, -step * 2), Offset(x, size.height + step * 2), streetPaint);
-    }
-
-    // Avenida diagonal principal
-    canvas.drawLine(
-      const Offset(-100, 50),
-      Offset(size.width + 100, size.height + 150),
-      avenuePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

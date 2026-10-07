@@ -788,7 +788,51 @@ void main() {
     // Verificar que el campo Ubicación se actualizó con la zona elegida
     expect(find.text('Plaza Armenia, Palermo'), findsWidgets);
   });
+
+  testWidgets('MapLocationPickerModal searches address, selects result, and updates map position', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreateReportScreen(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Abrir modal de mapa
+    await tester.ensureVisible(find.text('Ubicar en el mapa').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ubicar en el mapa').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Buscar dirección en el buscador
+    final searchInput = find.widgetWithText(TextField, 'Buscar plaza, barrio o calle...');
+    expect(searchInput, findsOneWidget);
+    await tester.enterText(searchInput, 'Santa Fe');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Verificar que aparece el resultado de búsqueda
+    expect(find.text('Santa Fe, CABA'), findsOneWidget);
+
+    // Tocar el resultado de búsqueda
+    await tester.tap(find.text('Santa Fe, CABA'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verificar que el punto seleccionado en el mapa se actualizó a la dirección buscada
+    expect(find.text('Santa Fe, CABA'), findsWidgets);
+
+    // Confirmar
+    await tester.tap(find.text('Confirmar esta ubicación'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // El campo Ubicación del reporte ahora contiene la dirección buscada
+    expect(find.text('Santa Fe, CABA'), findsWidgets);
+  });
 }
+
 
 
 
