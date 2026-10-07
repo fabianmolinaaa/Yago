@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/pet.dart';
 import '../../services/auth_service.dart';
+import '../../services/location_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/design_system.dart';
@@ -30,7 +31,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
   String _selectedSpecies = 'Perro';
   String _selectedGender = 'Macho';
-  final String _selectedAge = 'Adulto';
+  String _selectedAge = 'Adulto (3-6 años)';
+  DateTime _reportDate = DateTime.now();
+
+  double _latitude = -34.5889;
+  double _longitude = -58.4233;
+  bool _isDetectingLocation = false;
 
   final List<String> _tags = [];
   bool _isSubmitting = false;
@@ -45,6 +51,23 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     'assets/images/IMG_2935.JPG',
     'assets/images/IMG_5370.JPG',
     'assets/images/IMG_5560.JPG',
+  ];
+
+  final List<String> _ageOptions = [
+    'Cachorro (< 1 año)',
+    'Joven (1-2 años)',
+    'Adulto (3-6 años)',
+    'Senior (7+ años)',
+    'Desconocida',
+  ];
+
+  final List<String> _suggestedTags = [
+    'Collar rojo',
+    'Con chip',
+    'Mancha blanca',
+    'Orejas caídas',
+    'Pelaje largo',
+    'Manso',
   ];
 
   @override
@@ -64,6 +87,86 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       setState(() {
         _tags.add(tag);
         _tagInputController.clear();
+      });
+    }
+  }
+
+  void _addSuggestedTag(String tag) {
+    if (!_tags.contains(tag)) {
+      setState(() {
+        _tags.add(tag);
+      });
+    }
+  }
+
+  Future<void> _detectCurrentLocation() async {
+    setState(() => _isDetectingLocation = true);
+
+    try {
+      final result = await LocationService().getCurrentLocation();
+      if (!mounted) return;
+
+      if (result != null) {
+        setState(() {
+          _locationController.text = result.locationName;
+          _latitude = result.latitude;
+          _longitude = result.longitude;
+          _isDetectingLocation = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Ubicación detectada: ${result.locationName}'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        setState(() => _isDetectingLocation = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isDetectingLocation = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo detectar la ubicación automáticamente.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectReportDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _reportDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: _isLostReport ? AppColors.lost : AppColors.found,
+              onPrimary: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _reportDate = picked;
       });
     }
   }
@@ -225,14 +328,14 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       status: _isLostReport ? YagoPetStatus.lost : YagoPetStatus.found,
       location: location,
       timeAgo: 'Recién publicado',
-      date: DateTime.now(),
+      date: _reportDate,
       description: description,
       imageUrl: finalImageUrl,
       tags: _tags.isEmpty ? ['Se busca ayuda'] : List.from(_tags),
       contactName: contactName,
       contactPhone: phone,
-      latitude: -34.5900,
-      longitude: -58.4200,
+      latitude: _latitude,
+      longitude: _longitude,
       isUserOwner: true,
     );
 
@@ -273,6 +376,21 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isToday = DateUtils.isSameDay(_reportDate, DateTime.now());
+    final isYesterday = DateUtils.isSameDay(
+      _reportDate,
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
+
+    String formattedDateText;
+    if (isToday) {
+      formattedDateText = 'Hoy (${_reportDate.day}/${_reportDate.month})';
+    } else if (isYesterday) {
+      formattedDateText = 'Ayer (${_reportDate.day}/${_reportDate.month})';
+    } else {
+      formattedDateText = '${_reportDate.day}/${_reportDate.month}/${_reportDate.year}';
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -289,40 +407,61 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Selector: ¿Perdiste o Encontraste?
+            // ─── 1. Selector Elegante de Tipo de Reporte (Segmented Control) ──
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.lgBorder,
-                border: Border.all(color: AppColors.border),
+                color: const Color(0xFFEFF2F5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _isLostReport = true),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: _isLostReport ? AppColors.lost : Colors.transparent,
-                          borderRadius: AppRadius.mdBorder,
+                          color: _isLostReport ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: _isLostReport
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _isLostReport ? AppColors.lost : AppColors.muted,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Icon(
                               Icons.search_rounded,
-                              size: 18,
-                              color: _isLostReport ? Colors.white : AppColors.textSecondary,
+                              size: 17,
+                              color: _isLostReport ? AppColors.lost : AppColors.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'Perdí mi mascota',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: _isLostReport ? Colors.white : AppColors.textSecondary,
+                                fontFamily: 'Inter',
+                                fontSize: 13.5,
+                                fontWeight: _isLostReport ? FontWeight.w700 : FontWeight.w500,
+                                color: _isLostReport ? AppColors.textPrimary : AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -333,27 +472,48 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _isLostReport = false),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: !_isLostReport ? AppColors.found : Colors.transparent,
-                          borderRadius: AppRadius.mdBorder,
+                          color: !_isLostReport ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: !_isLostReport
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: !_isLostReport ? AppColors.found : AppColors.muted,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Icon(
                               Icons.pets_rounded,
-                              size: 18,
-                              color: !_isLostReport ? Colors.white : AppColors.textSecondary,
+                              size: 17,
+                              color: !_isLostReport ? AppColors.found : AppColors.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               'Encontré una mascota',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: !_isLostReport ? Colors.white : AppColors.textSecondary,
+                                fontFamily: 'Inter',
+                                fontSize: 13.5,
+                                fontWeight: !_isLostReport ? FontWeight.w700 : FontWeight.w500,
+                                color: !_isLostReport ? AppColors.textPrimary : AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -366,7 +526,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Selector de foto de la mascota
+            // ─── 2. Fotografía de la Mascota ─────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -401,7 +561,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Contenedor principal de la foto interactivo
             GestureDetector(
               onTap: _showImageSourceModal,
               child: Container(
@@ -469,7 +628,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Miniaturas de fotos de muestra alternativas
             Row(
               children: [
                 const Text(
@@ -533,7 +691,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Nombre de la mascota
+            // ─── 3. Nombre y Raza ────────────────────────────────────────────
             YagoTextField(
               label: _isLostReport ? 'Nombre de tu mascota' : 'Nombre asignado o conocido',
               hint: _isLostReport ? 'Ej: Milo, Luna...' : 'Ej: Sin nombre / "Negrito"',
@@ -542,7 +700,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Especie, Sexo y Edad
+            // ─── 4. Especie, Sexo y Edad Estimada ────────────────────────────
             Row(
               children: [
                 Expanded(
@@ -554,7 +712,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                       DropdownButtonFormField<String>(
                         initialValue: _selectedSpecies,
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                           border: OutlineInputBorder(borderRadius: AppRadius.mdBorder),
                         ),
                         items: ['Perro', 'Gato', 'Otro']
@@ -575,7 +733,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                       DropdownButtonFormField<String>(
                         initialValue: _selectedGender,
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                           border: OutlineInputBorder(borderRadius: AppRadius.mdBorder),
                         ),
                         items: ['Macho', 'Hembra', 'Desconocido']
@@ -590,24 +748,155 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Campo de Edad (incorporado para paridad completa con la ficha)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Edad aproximada',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedAge,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.muted),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                    border: OutlineInputBorder(borderRadius: AppRadius.mdBorder),
+                  ),
+                  items: _ageOptions
+                      .map((age) => DropdownMenuItem(value: age, child: Text(age)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedAge = val);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Raza
             YagoTextField(
-              label: 'Raza o apariencia',
-              hint: 'Ej: Mestizo, Caniche, Siamés...',
+              label: 'Raza o apariencia física',
+              hint: 'Ej: Mestizo, Caniche, Siamés, Golden...',
               controller: _breedController,
             ),
             const SizedBox(height: 16),
 
-            // Ubicación del hecho
-            YagoTextField(
-              label: _isLostReport ? 'Lugar donde se extravió' : 'Lugar donde fue vista o encontrada',
-              hint: 'Ej: Palermo, Plaza Armenia / Av. Santa Fe al 3200',
-              controller: _locationController,
-              prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
+            // ─── 5. Lugar con Detección Automática de Ubicación ───────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                YagoTextField(
+                  label: _isLostReport ? 'Lugar donde se extravió' : 'Lugar donde fue vista o encontrada',
+                  hint: 'Ej: Palermo, Plaza Armenia / Av. Santa Fe al 3200',
+                  controller: _locationController,
+                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
+                  suffixIcon: _isDetectingLocation
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(
+                            Icons.my_location_rounded,
+                            color: AppColors.primary,
+                            size: 21,
+                          ),
+                          tooltip: 'Detectar mi ubicación actual',
+                          onPressed: _detectCurrentLocation,
+                        ),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: _isDetectingLocation ? null : _detectCurrentLocation,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.my_location_rounded,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _isDetectingLocation ? 'Detectando GPS...' : 'Detectar mi ubicación actual',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
-            // Teléfono de contacto
+            // ─── 6. Fecha del Extravío o Hallazgo ─────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isLostReport ? 'Fecha del extravío' : 'Fecha en que fue vista o encontrada',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: _selectReportDate,
+                  borderRadius: AppRadius.mdBorder,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: AppRadius.mdBorder,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.event_note_rounded,
+                          size: 19,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            formattedDateText,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_drop_down_rounded,
+                          color: AppColors.textSecondary,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ─── 7. Teléfono de Contacto ─────────────────────────────────────
             YagoTextField(
               label: 'Teléfono o WhatsApp de contacto',
               hint: '+54 9 11 1234-5678',
@@ -617,34 +906,82 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Señas particulares / tags
-            const Text(
-              'Señas particulares (chips, collar, manchas)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: YagoTextField(
-                    label: '',
-                    hint: 'Ej: Collar rojo, Con chip...',
-                    controller: _tagInputController,
+            // ─── 8. Señas Particulares con Botón "+" Perfectamente Centrado ───
+            YagoTextField(
+              label: 'Señas particulares (chips, collar, manchas)',
+              hint: 'Ej: Collar rojo, Con chip, Mancha blanca...',
+              controller: _tagInputController,
+              prefixIcon: const Icon(Icons.style_outlined, size: 20, color: AppColors.muted),
+              onFieldSubmitted: (_) => _addTag(),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.all(7.0),
+                child: InkWell(
+                  onTap: _addTag,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                  onPressed: _addTag,
-                  child: const Icon(Icons.add, size: 20),
-                ),
-              ],
+              ),
             ),
+            const SizedBox(height: 8),
+
+            // Sugerencias rápidas para añadir en 1 tap
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  const Text(
+                    'Sugerencias:',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  ..._suggestedTags.map((st) {
+                    final isAdded = _tags.contains(st);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: InkWell(
+                        onTap: () => _addSuggestedTag(st),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: isAdded ? AppColors.primaryTint : const Color(0xFFF1F3F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isAdded ? AppColors.primary : AppColors.border,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            '+ $st',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isAdded ? FontWeight.w700 : FontWeight.w500,
+                              color: isAdded ? AppColors.primary : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
             if (_tags.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
@@ -654,7 +991,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   return Chip(
                     label: Text(tag, style: const TextStyle(fontSize: 12)),
                     backgroundColor: AppColors.surface,
-                    deleteIcon: const Icon(Icons.close, size: 14),
+                    deleteIcon: const Icon(Icons.close_rounded, size: 14),
                     onDeleted: () => setState(() => _tags.remove(tag)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -666,7 +1003,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ],
             const SizedBox(height: 16),
 
-            // Descripción detallada
+            // ─── 9. Descripción Detallada ────────────────────────────────────
             YagoTextField(
               label: 'Descripción de lo sucedido',
               hint: 'Cuéntanos cómo ocurrió, cómo reacciona con desconocidos o cualquier dato útil...',
@@ -675,7 +1012,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 28),
 
-            // Botón de publicación
+            // ─── 10. Botón de Publicación ────────────────────────────────────
             YagoButton(
               text: _isLostReport ? 'Publicar búsqueda urgente' : 'Publicar mascota encontrada',
               size: YagoButtonSize.large,

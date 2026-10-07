@@ -14,6 +14,7 @@ class YagoTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
   final bool enabled;
 
   const YagoTextField({
@@ -29,6 +30,7 @@ class YagoTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.onChanged,
+    this.onFieldSubmitted,
     this.enabled = true,
   });
 
@@ -57,6 +59,7 @@ class YagoTextField extends StatelessWidget {
           maxLines: maxLines,
           enabled: enabled,
           onChanged: onChanged,
+          onFieldSubmitted: onFieldSubmitted,
           style: AppTypography.body.copyWith(
             color: enabled ? AppColors.textPrimary : AppColors.subtle,
             fontSize: maxLines > 1 ? 15 : 16,

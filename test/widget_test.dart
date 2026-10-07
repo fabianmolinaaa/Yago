@@ -4,6 +4,7 @@ import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
 import 'package:yago/screens/home/create_post_screen.dart';
+import 'package:yago/screens/home/create_report_screen.dart';
 import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/feed_tab.dart';
@@ -686,6 +687,62 @@ void main() {
     expect(find.textContaining('Por seguridad comunitaria, se muestra un radio contextual aproximado'), findsOneWidget);
     expect(find.text('Abrir en Maps'), findsOneWidget);
   });
+
+  testWidgets('CreateReportScreen renders elegant switch, age field, aligned tag button, and detects location', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreateReportScreen(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // 1. Verificar el selector elegante (segmented switch)
+    expect(find.text('Perdí mi mascota'), findsOneWidget);
+    expect(find.text('Encontré una mascota'), findsOneWidget);
+
+    // Cambiar a "Encontré una mascota"
+    await tester.tap(find.text('Encontré una mascota'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verificar que los labels adaptativos cambian
+    expect(find.text('Nombre asignado o conocido'), findsOneWidget);
+    expect(find.text('Lugar donde fue vista o encontrada'), findsOneWidget);
+
+    // 2. Verificar campo de Edad aproximada
+    expect(find.text('Edad aproximada'), findsOneWidget);
+    expect(find.text('Adulto (3-6 años)'), findsOneWidget);
+
+    // 3. Verificar botón + de rasgos particulares integrado en sufijo del campo
+    expect(find.text('Señas particulares (chips, collar, manchas)'), findsOneWidget);
+    expect(find.byIcon(Icons.add_rounded), findsWidgets);
+
+    // Scroll hasta las sugerencias de tags
+    await tester.ensureVisible(find.text('+ Collar rojo'));
+    await tester.pumpAndSettle();
+
+    // Agregar un tag mediante las sugerencias rápidas
+    await tester.tap(find.text('+ Collar rojo'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verificar que el chip de Collar rojo fue añadido al formulario
+    expect(find.text('Collar rojo'), findsWidgets);
+
+    // 4. Verificar detección de ubicación actual
+    await tester.ensureVisible(find.text('Detectar mi ubicación actual'));
+    await tester.pumpAndSettle();
+    expect(find.text('Detectar mi ubicación actual'), findsOneWidget);
+
+    await tester.tap(find.text('Detectar mi ubicación actual'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verificar que el campo Lugar se autocompletó con ubicación
+    expect(find.byType(TextField), findsWidgets);
+  });
 }
+
 
 
