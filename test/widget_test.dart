@@ -532,6 +532,29 @@ void main() {
     expect(find.text('Eliminar reporte'), findsNothing);
   });
 
+  testWidgets('FeedTab community post header renders without horizontal overflow', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: FeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.scrollUntilVisible(
+      find.text('Veterinaria San Roque'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Veterinaria San Roque'), findsOneWidget);
+    expect(find.text('CONSEJO'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FeedTab pull to refresh triggers smoothly without error', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(

@@ -727,58 +727,51 @@ class _FeedTabState extends State<FeedTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Flexible(
-                      child: Text(
-                        post.authorName,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              post.authorName,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isYagoOfficial) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                          if (category != null) ...[
+                            const SizedBox(width: 6),
+                            YagoPostCategoryBadge(category: category),
+                          ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              '· ${formatTimeAgo(post.createdAt ?? extractDateFromId(post.id), fallback: post.timeAgo)}',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                color: AppColors.twitterHandle,
+                                fontSize: 12.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (isYagoOfficial) ...[
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.verified_rounded,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                    ],
                     const SizedBox(width: 4),
-                    Text(
-                      isYagoOfficial
-                          ? '@yago.app'
-                          : '@${post.authorName.toLowerCase().replaceAll(' ', '')}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        color: AppColors.twitterHandle,
-                        fontSize: 13,
-                      ),
-                    ),
-                    if (category != null) ...[
-                      const SizedBox(width: 6),
-                      YagoPostCategoryBadge(category: category),
-                    ],
-                    const Text(
-                      ' · ',
-                      style: TextStyle(color: AppColors.twitterHandle),
-                    ),
-                    Text(
-                      formatTimeAgo(
-                        post.createdAt ?? extractDateFromId(post.id),
-                        fallback: post.timeAgo,
-                      ),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        color: AppColors.twitterHandle,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const Spacer(),
                     _buildPostOptionsMenu(context, post: post),
                   ],
                 ),
