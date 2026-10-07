@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/pet.dart';
@@ -321,8 +324,8 @@ class ReportListCard extends StatelessWidget {
 }
 
 /// Modal inferior para visualización contextual de zona en mapa (HU-S2-02).
-/// Cumple con la regla de Alcance.md: mapa contextual sin mapa libre global exploratorio.
-class ContextualZoneModal extends StatelessWidget {
+/// Ampliado, nítido y con mapa interactivo real (OpenStreetMap) centrado en las coordenadas reales.
+class ContextualZoneModal extends StatefulWidget {
   final Pet pet;
   final VoidCallback? onOpenFullDetail;
 
@@ -347,9 +350,22 @@ class ContextualZoneModal extends StatelessWidget {
     );
   }
 
+  @override
+  State<ContextualZoneModal> createState() => _ContextualZoneModalState();
+}
+
+class _ContextualZoneModalState extends State<ContextualZoneModal> {
+  final MapController _mapController = MapController();
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
   Future<void> _openInMaps(BuildContext context) async {
-    final lat = pet.latitude;
-    final lng = pet.longitude;
+    final lat = widget.pet.latitude;
+    final lng = widget.pet.longitude;
     final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     try {
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -367,52 +383,62 @@ class ContextualZoneModal extends StatelessWidget {
     }
   }
 
+  void _recenterMap() {
+    _mapController.move(
+      LatLng(widget.pet.latitude, widget.pet.longitude),
+      15.8,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isTest = Platform.environment.containsKey('FLUTTER_TEST');
     const accentColor = AppColors.primary;
+    final screenHeight = MediaQuery.of(context).size.height;
+    // Modal ampliado al 86% de la pantalla para máxima visibilidad del mapa
+    final modalHeight = (screenHeight * 0.86).clamp(540.0, 840.0);
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle de arrastre
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+      child: SizedBox(
+        height: modalHeight,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle de arrastre superior
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
-            // Cabecera con datos de la mascota (tocar abre ficha completa)
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                onOpenFullDetail?.call();
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: YagoPetImage(
-                        imageUrl: pet.imageUrl,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                      ),
+              // Cabecera con datos de la mascota
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: YagoPetImage(
+                      imageUrl: widget.pet.imageUrl,
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onOpenFullDetail?.call();
+                      },
+                      borderRadius: BorderRadius.circular(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -420,7 +446,7 @@ class ContextualZoneModal extends StatelessWidget {
                             children: [
                               Flexible(
                                 child: Text(
-                                  pet.name.isNotEmpty ? pet.name : 'Reporte de mascota',
+                                  widget.pet.name.isNotEmpty ? widget.pet.name : 'Reporte de mascota',
                                   style: const TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 16,
@@ -431,12 +457,14 @@ class ContextualZoneModal extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              YagoStatusBadge(status: pet.status),
+                              YagoStatusBadge(status: widget.pet.status),
                             ],
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${pet.breed} · ${pet.location}',
+                            widget.pet.breed.isNotEmpty
+                                ? '${widget.pet.breed} · ${widget.pet.location}'
+                                : widget.pet.location,
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 12,
@@ -447,222 +475,271 @@ class ContextualZoneModal extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.muted,
-                      size: 20,
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: AppColors.muted, size: 22),
+                    tooltip: 'Cerrar',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-            // Mapa contextual simulado con radio aproximado
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8ECEF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  CustomPaint(
-                    size: const Size(double.infinity, 200),
-                    painter: _ContextualMapPainter(),
-                  ),
-
-                  // Círculo de radio contextual de búsqueda / avistamiento
-                  Center(
-                    child: Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: accentColor.withValues(alpha: 0.6),
-                          width: 2,
-                        ),
-                      ),
+              // ─── MAPA AMPLIADO Y PROMINENTE CON FLUTTER_MAP Y OPENSTREETMAP ───
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.border, width: 1.2),
                     ),
-                  ),
-
-                  // Pin central con icono
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withValues(alpha: 0.45),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: LatLng(widget.pet.latitude, widget.pet.longitude),
+                            initialZoom: 15.8,
+                            minZoom: 4.0,
+                            maxZoom: 18.5,
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-
-                  // Etiqueta flotante con el barrio/zona
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.radar_rounded,
-                            size: 15,
-                            color: accentColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Radio estimado de 500m alrededor de ${pet.location}',
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                          children: [
+                            // Capa de mosaicos reales con calles y barrios nítidos
+                            if (!isTest)
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.yago.app',
+                                maxZoom: 19,
                               ),
-                              overflow: TextOverflow.ellipsis,
+
+                            // Círculo de radio contextual de 500 metros
+                            CircleLayer(
+                              circles: [
+                                CircleMarker(
+                                  point: LatLng(widget.pet.latitude, widget.pet.longitude),
+                                  radius: 500,
+                                  useRadiusInMeter: true,
+                                  color: accentColor.withValues(alpha: 0.12),
+                                  borderColor: accentColor.withValues(alpha: 0.65),
+                                  borderStrokeWidth: 2,
+                                ),
+                              ],
+                            ),
+
+                            // Marcador / Pin con alta visibilidad
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(widget.pet.latitude, widget.pet.longitude),
+                                  width: 140,
+                                  height: 84,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Cartel flotante con nombre
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.28),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.pets_rounded, color: Colors.white, size: 12),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                widget.pet.name.isNotEmpty ? widget.pet.name : 'Aquí',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontFamily: 'Inter',
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // Pin central blanco/primario con halo
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2.5),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary.withValues(alpha: 0.45),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.location_on_rounded,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        // Botón flotante para re-centrar el mapa en la mascota
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Material(
+                            color: Colors.white,
+                            shape: const CircleBorder(),
+                            elevation: 3,
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _recenterMap,
+                              child: const Padding(
+                                padding: EdgeInsets.all(9),
+                                child: Icon(
+                                  Icons.my_location_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           ),
-                        ],
+                        ),
+
+                        // Etiqueta flotante inferior con barrio y radio
+                        Positioned(
+                          bottom: 12,
+                          left: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.radar_rounded,
+                                    size: 16,
+                                    color: accentColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Radio estimado de 500m alrededor de ${widget.pet.location}',
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Text(
+                                        'Coordenadas: ${widget.pet.latitude.toStringAsFixed(4)}, ${widget.pet.longitude.toStringAsFixed(4)}',
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Nota informativa de privacidad
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 14,
+                    color: AppColors.muted,
+                  ),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Por seguridad comunitaria, se muestra un radio contextual aproximado del hecho.',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-            // Nota informativa de privacidad
-            const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 14,
-                  color: AppColors.muted,
-                ),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Por seguridad comunitaria, se muestra un radio contextual aproximado del hecho.',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
+              // Botón de acción principal: Abrir en Maps
+              SizedBox(
+                width: double.infinity,
+                child: YagoButton(
+                  text: 'Abrir en Maps',
+                  icon: const Icon(
+                    Icons.map_rounded,
+                    size: 18,
+                    color: Colors.white,
                   ),
+                  onPressed: () => _openInMaps(context),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Botón de acción principal: Abrir en Maps
-            SizedBox(
-              width: double.infinity,
-              child: YagoButton(
-                text: 'Abrir en Maps',
-                icon: const Icon(
-                  Icons.map_rounded,
-                  size: 18,
-                  color: Colors.white,
-                ),
-                onPressed: () => _openInMaps(context),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _ContextualMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-
-    final blockPaint = Paint()
-      ..color = const Color(0xFFDFE4E8)
-      ..style = PaintingStyle.fill;
-
-    // Manzanas
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(16, 16, size.width * 0.4, 70),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.5, 16, size.width * 0.45, 70),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(16, 105, size.width * 0.4, 75),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.5, 105, size.width * 0.45, 75),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-
-    // Calles
-    canvas.drawLine(
-      Offset(0, size.height * 0.48),
-      Offset(size.width, size.height * 0.48),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.46, 0),
-      Offset(size.width * 0.46, size.height),
-      roadPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
@@ -707,7 +708,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verificar radio aproximado y botón Abrir en Maps
+    // Verificar mapa real, controles de mapa, radio aproximado y botón Abrir en Maps
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
     expect(find.textContaining('Radio estimado de 500m'), findsOneWidget);
     expect(find.textContaining('Por seguridad comunitaria, se muestra un radio contextual aproximado'), findsOneWidget);
     expect(find.text('Abrir en Maps'), findsOneWidget);
