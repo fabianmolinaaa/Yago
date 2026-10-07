@@ -145,6 +145,41 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     }
   }
 
+  Future<void> _openMapPicker() async {
+    final result = await MapLocationPickerModal.show(
+      context,
+      initialLocation: _locationController.text.trim().isNotEmpty
+          ? _locationController.text.trim()
+          : 'Palermo, CABA',
+      initialLatitude: _latitude,
+      initialLongitude: _longitude,
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _locationController.text = result.locationName;
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.map_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Ubicación fijada en el mapa: ${result.locationName}'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Future<void> _selectReportDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -792,8 +827,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   hint: 'Ej: Plaza Armenia, Palermo',
                   controller: _locationController,
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
-                  suffixIcon: _isDetectingLocation
-                      ? const Padding(
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isDetectingLocation)
+                        const Padding(
                           padding: EdgeInsets.all(12),
                           child: SizedBox(
                             width: 18,
@@ -801,43 +839,93 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                           ),
                         )
-                      : IconButton(
+                      else
+                        IconButton(
                           icon: const Icon(
                             Icons.my_location_rounded,
                             color: AppColors.primary,
-                            size: 21,
+                            size: 20,
                           ),
                           tooltip: 'Usar mi ubicación',
                           onPressed: _detectCurrentLocation,
                         ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.map_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        tooltip: 'Ubicar en el mapa',
+                        onPressed: _openMapPicker,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 6),
-                InkWell(
-                  onTap: _isDetectingLocation ? null : _detectCurrentLocation,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.my_location_rounded,
-                          size: 14,
-                          color: AppColors.primary,
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: _isDetectingLocation ? null : _detectCurrentLocation,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.my_location_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isDetectingLocation ? 'Detectando GPS...' : 'Usar mi ubicación',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _isDetectingLocation ? 'Detectando GPS...' : 'Usar mi ubicación',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 1,
+                      height: 12,
+                      color: AppColors.border,
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: _openMapPicker,
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.map_outlined,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Ubicar en el mapa',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

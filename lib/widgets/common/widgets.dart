@@ -11,5 +11,7 @@ export 'yago_logo.dart';
 export 'yago_pet_image.dart';
 export 'report_card.dart';
 export 'yago_text_field.dart';
+export 'map_location_picker_modal.dart';
+
 
 

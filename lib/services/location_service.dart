@@ -77,7 +77,7 @@ class LocationService {
     // 4. Geocodificación inversa real consultando OpenStreetMap Nominatim
     String resolvedName;
     try {
-      resolvedName = await _reverseGeocode(
+      resolvedName = await reverseGeocode(
         position.latitude,
         position.longitude,
       );
@@ -93,8 +93,65 @@ class LocationService {
     );
   }
 
+  /// Busca lugares, plazas o barrios por texto usando Nominatim (OSM)
+  Future<List<LocationResult>> searchPlaces(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return [
+        LocationResult(
+          locationName: '$cleanQuery, CABA',
+          latitude: -34.5889,
+          longitude: -58.4233,
+        ),
+      ];
+    }
+
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 4);
+
+    try {
+      final encodedQuery = Uri.encodeComponent(cleanQuery);
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?format=jsonv2&q=$encodedQuery&limit=5&addressdetails=1',
+      );
+
+      final request = await client.getUrl(uri);
+      request.headers.set('User-Agent', 'YagoPetApp/1.0 (contacto@yagoapp.com)');
+      final response = await request.close().timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final list = jsonDecode(responseBody) as List<dynamic>;
+
+        return list.map((item) {
+          final lat = double.tryParse(item['lat'].toString()) ?? -34.5889;
+          final lon = double.tryParse(item['lon'].toString()) ?? -58.4233;
+          final displayName = item['display_name'] as String? ?? cleanQuery;
+
+          // Simplificar nombres muy largos para mostrarlos de forma elegante
+          final parts = displayName.split(',');
+          final shortName = parts.take(3).join(',').trim();
+
+          return LocationResult(
+            locationName: shortName,
+            latitude: lat,
+            longitude: lon,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('LocationService: error en searchPlaces: $e');
+    } finally {
+      client.close();
+    }
+
+    return [];
+  }
+
   /// Geocodificación inversa real mediante la API oficial de Nominatim (OSM)
-  Future<String> _reverseGeocode(double lat, double lng) async {
+  Future<String> reverseGeocode(double lat, double lng) async {
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 5);
 

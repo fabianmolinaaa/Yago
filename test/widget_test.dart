@@ -750,7 +750,46 @@ void main() {
     expect(find.text('Al publicar, otras personas podrán ver este reporte y contactarte.'), findsOneWidget);
     expect(find.widgetWithText(YagoButton, 'Publicar reporte'), findsOneWidget);
   });
+
+  testWidgets('CreateReportScreen opens MapLocationPickerModal and picks a location on the map', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreateReportScreen(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Desplazarse hasta el campo de ubicación
+    await tester.ensureVisible(find.text('Ubicar en el mapa').first);
+    await tester.pumpAndSettle();
+
+    // Tocar "Ubicar en el mapa"
+    await tester.tap(find.text('Ubicar en el mapa').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar que el modal de selección de mapa se abre correctamente
+    expect(find.text('Ubicar en el mapa'), findsWidgets);
+    expect(find.text('Elige la zona donde ocurrió el extravío o hallazgo'), findsOneWidget);
+    expect(find.text('Confirmar esta ubicación'), findsOneWidget);
+
+    // Seleccionar una zona rápida de referencia en el mapa
+    expect(find.text('Plaza Armenia, Palermo'), findsOneWidget);
+    await tester.tap(find.text('Plaza Armenia, Palermo'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Confirmar la ubicación seleccionada
+    await tester.tap(find.text('Confirmar esta ubicación'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar que el campo Ubicación se actualizó con la zona elegida
+    expect(find.text('Plaza Armenia, Palermo'), findsWidgets);
+  });
 }
+
 
 
 
