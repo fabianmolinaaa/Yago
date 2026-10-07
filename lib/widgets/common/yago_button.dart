@@ -76,7 +76,14 @@ class YagoButton extends StatelessWidget {
           icon!,
           AppSpacing.gap8,
         ],
-        Text(text, style: textStyle),
+        Flexible(
+          child: Text(
+            text,
+            style: textStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
 

@@ -77,8 +77,9 @@ class _FeedTabState extends State<FeedTab> {
         items = [...communityPets, ...communityPosts];
         break;
       default:
-        // Feed principal (Todos): integra todas las publicaciones y reportes
-        items = [...allPets, ...communityPosts];
+        // Feed principal (Todos): integra publicaciones y reportes activos (excluyendo mascotas ya recuperadas/resueltas)
+        final activePets = allPets.where((pet) => pet.status != YagoPetStatus.reunited).toList();
+        items = [...activePets, ...communityPosts];
         break;
     }
 

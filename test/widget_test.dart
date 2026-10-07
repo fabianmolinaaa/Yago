@@ -11,9 +11,11 @@ import 'package:yago/screens/home/feed_tab.dart';
 import 'package:yago/screens/home/profile_tab.dart';
 import 'package:yago/screens/home/reports_feed_tab.dart';
 import 'package:yago/models/feed_post.dart';
+import 'package:yago/models/pet.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
 import 'package:yago/services/mock_data_service.dart';
 import 'package:yago/widgets/common/widgets.dart';
+import 'package:yago/screens/pet_detail/pet_detail_screen.dart';
 
 void main() {
   testWidgets('OnboardingScreen renders minimalist screen with map tip, motto, and CTA buttons', (WidgetTester tester) async {
@@ -853,6 +855,199 @@ void main() {
 
     // El campo Ubicación del reporte ahora contiene la dirección buscada
     expect(find.text('Santa Fe, CABA'), findsWidgets);
+  });
+
+  testWidgets('PetDetailScreen renders header with name on left and badge+time on right, adaptive icons, and no sighting button', (WidgetTester tester) async {
+    final pet = Pet(
+      id: 'test-pet-dog',
+      name: 'Luna',
+      breed: 'Caniche',
+      species: 'Perro',
+      gender: 'Hembra',
+      age: '3 años',
+      status: YagoPetStatus.lost,
+      location: 'Palermo, CABA',
+      timeAgo: 'Hace 2 horas',
+      date: DateTime.now().subtract(const Duration(hours: 2)),
+      description: 'Se extravió en Plaza Armenia.',
+      imageUrl: 'assets/images/IMG_3508.JPG',
+      tags: const ['Collar rosa', 'Con chip'],
+      contactName: 'Camila Rodriguez',
+      contactPhone: '+54 9 11 1234-5678',
+      latitude: -34.5889,
+      longitude: -58.4233,
+      isUserOwner: false,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PetDetailScreen(pet: pet),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Nombre y raza a la izquierda, estado y horario
+    expect(find.text('Luna'), findsOneWidget);
+    expect(find.text('PERDIDA'), findsOneWidget);
+    expect(find.text('Hace 2 horas'), findsOneWidget);
+
+    // Atributos con iconos adaptados (Hembra -> female, Edad -> cake, Perro -> pets)
+    expect(find.byIcon(Icons.female_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.cake_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
+
+    // Título Descripción coincide con crear reporte
+    expect(find.text('Descripción'), findsOneWidget);
+
+    // Botón Aportar dato e Historia con final feliz NO deben estar presentes
+    expect(find.text('Aportar dato'), findsNothing);
+    expect(find.text('Historia con final feliz'), findsNothing);
+
+    // Botón Contactar está presente
+    expect(find.text('Contactar'), findsOneWidget);
+  });
+
+  testWidgets('PetDetailScreen renders cat with CatIcon and Macho icon', (WidgetTester tester) async {
+    final pet = Pet(
+      id: 'test-pet-cat',
+      name: 'Milo',
+      breed: 'Siamés',
+      species: 'Gato',
+      gender: 'Macho',
+      age: '1 año',
+      status: YagoPetStatus.found,
+      location: 'Recoleta, CABA',
+      timeAgo: 'Hace 1 hora',
+      date: DateTime.now().subtract(const Duration(hours: 1)),
+      description: 'Encontrado en un balcón.',
+      imageUrl: 'assets/images/IMG_2935.JPG',
+      tags: const ['Ojos azules'],
+      contactName: 'Lucas Paz',
+      contactPhone: '+54 9 11 9876-5432',
+      latitude: -34.5889,
+      longitude: -58.4233,
+      isUserOwner: false,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PetDetailScreen(pet: pet),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Icono de gato específico y macho
+    expect(find.byType(CatIcon), findsOneWidget);
+    expect(find.byIcon(Icons.male_rounded), findsOneWidget);
+  });
+
+  testWidgets('PetDetailScreen opens ContextualZoneModal when tapping ultima ubicacion registrada', (WidgetTester tester) async {
+    final pet = Pet(
+      id: 'test-pet-map',
+      name: 'Simba',
+      breed: 'Golden Retriever',
+      species: 'Perro',
+      gender: 'Macho',
+      age: '2 años',
+      status: YagoPetStatus.lost,
+      location: 'Belgrano, CABA',
+      timeAgo: 'Hace 30 min',
+      date: DateTime.now().subtract(const Duration(minutes: 30)),
+      description: 'Visto cerca de Barrancas de Belgrano.',
+      imageUrl: 'assets/images/IMG_4178.JPG',
+      tags: const ['Collar azul'],
+      contactName: 'Martina Gomez',
+      contactPhone: '+54 9 11 5555-4444',
+      latitude: -34.5614,
+      longitude: -58.4563,
+      isUserOwner: false,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PetDetailScreen(pet: pet),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Desplazar hasta la sección de ubicación y tocar el botón de mapa
+    await tester.scrollUntilVisible(find.byIcon(Icons.map_outlined), 100);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.byIcon(Icons.map_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Se debe abrir el modal de zona en mapa ContextualZoneModal
+    expect(find.byType(ContextualZoneModal), findsOneWidget);
+    expect(find.textContaining('Radio estimado'), findsOneWidget);
+    expect(find.text('Abrir en Maps'), findsOneWidget);
+  });
+
+  testWidgets('PetDetailScreen owner can mark as recovered with confirmation dialog and resolve case', (WidgetTester tester) async {
+    final pet = Pet(
+      id: 'test-pet-owner-recovered',
+      name: 'Toby',
+      breed: 'Beagle',
+      species: 'Perro',
+      gender: 'Macho',
+      age: '4 años',
+      status: YagoPetStatus.lost,
+      location: 'Caballito, CABA',
+      timeAgo: 'Hace 4 horas',
+      date: DateTime.now().subtract(const Duration(hours: 4)),
+      description: 'Extraviado en Parque Rivadavia.',
+      imageUrl: 'assets/images/IMG_5370.JPG',
+      tags: const ['Orejas largas'],
+      contactName: 'Usuario Yago',
+      contactPhone: '+54 9 11 2222-3333',
+      latitude: -34.6180,
+      longitude: -58.4350,
+      isUserOwner: true,
+    );
+
+    // Agregar a MockDataService para verificar resolución
+    await MockDataService().addPet(pet);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PetDetailScreen(pet: pet),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Desplazar hasta el botón de marcar como recuperada
+    await tester.scrollUntilVisible(find.text('Marcar como recuperada'), 100);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Debe mostrar el botón de marcar como recuperada
+    expect(find.text('Marcar como recuperada'), findsOneWidget);
+
+    // Tocar botón
+    await tester.tap(find.text('Marcar como recuperada'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar que pregunta por seguridad si está seguro
+    expect(find.text('¿Marcar como recuperada?'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+    expect(find.text('Sí, marcar como recuperada'), findsOneWidget);
+
+    // Confirmar
+    await tester.tap(find.text('Sí, marcar como recuperada'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Caso resuelto: feedback mostrado
+    expect(find.textContaining('¡Caso resuelto!'), findsOneWidget);
+
+    // Verificar que el estado en MockDataService ahora es reunited
+    final updated = MockDataService().getAllPets().firstWhere((p) => p.id == 'test-pet-owner-recovered');
+    expect(updated.status, equals(YagoPetStatus.reunited));
   });
 }
 

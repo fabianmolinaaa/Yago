@@ -17,7 +17,7 @@ class _PetMapTabState extends State<PetMapTab> {
 
   @override
   Widget build(BuildContext context) {
-    final pets = MockDataService().getAllPets();
+    final pets = MockDataService().getAllPets().where((p) => p.status != YagoPetStatus.reunited).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8ECEF),
