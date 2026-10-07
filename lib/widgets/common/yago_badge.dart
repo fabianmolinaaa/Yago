@@ -28,34 +28,36 @@ extension YagoPetStatusUI on YagoPetStatus {
   Color get color {
     switch (this) {
       case YagoPetStatus.lost:
-      case YagoPetStatus.urgent:
-        return AppColors.lost;
+        return AppColors.lostText;
       case YagoPetStatus.found:
-        return AppColors.found;
+        return AppColors.foundText;
+      case YagoPetStatus.urgent:
+        return AppColors.errorText;
       case YagoPetStatus.reunited:
-        return AppColors.reunited;
+        return AppColors.reunitedText;
       case YagoPetStatus.community:
-        return AppColors.community;
+        return AppColors.communityText;
       case YagoPetStatus.isNew:
-        return AppColors.statusNew;
+        return AppColors.lostText;
       case YagoPetStatus.mating:
-        return AppColors.mating;
+        return AppColors.matingText;
     }
   }
 
   Color get backgroundColor {
     switch (this) {
       case YagoPetStatus.lost:
-      case YagoPetStatus.urgent:
         return AppColors.lostBg;
       case YagoPetStatus.found:
         return AppColors.foundBg;
+      case YagoPetStatus.urgent:
+        return AppColors.errorBg;
       case YagoPetStatus.reunited:
         return AppColors.reunitedBg;
       case YagoPetStatus.community:
         return AppColors.communityBg;
       case YagoPetStatus.isNew:
-        return AppColors.statusNewBg;
+        return AppColors.lostBg;
       case YagoPetStatus.mating:
         return AppColors.matingBg;
     }

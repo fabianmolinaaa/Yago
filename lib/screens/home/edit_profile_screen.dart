@@ -72,7 +72,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('No se pudo seleccionar la imagen: $e'),
-            backgroundColor: AppColors.lost,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -129,10 +129,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               if (_selectedImageFile != null || widget.currentPhotoUrl != null)
                 ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded, color: AppColors.lost),
+                  leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
                   title: const Text(
                     'Eliminar foto actual',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, color: AppColors.lost),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500, color: AppColors.error),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -230,7 +230,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al guardar: $e'),
-            backgroundColor: AppColors.lost,
+            backgroundColor: AppColors.error,
           ),
         );
       }

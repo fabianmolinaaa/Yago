@@ -19,10 +19,9 @@
 | :--- | :--- | :---: |
 | HU-S2-01 | Como usuario, quiero ver un feed dedicado exclusivamente a reportes de mascotas perdidas y encontradas con tarjetas visuales priorizadas y badges de estado. | Alta |
 | HU-S2-02 | Como usuario, quiero pulsar en cada reporte una opción de "Ver zona en mapa" para visualizar en un mapa contextual el barrio o zona donde se extravió o fue vista. | Alta |
-| HU-S2-03 | Como usuario, quiero publicar una alerta de mascota perdida con foto, especie, raza, características, fecha y zona de extravío para iniciar su búsqueda activa. | Alta |
-| HU-S2-04 | Como usuario, quiero publicar un reporte de mascota encontrada cuando retengo o veo a un animal en la vía pública para que su familia pueda ubicarlo. | Alta |
+| HU-S2-03 | Como usuario, quiero publicar una alerta de mascota perdida o un reporte de mascota encontrada (con foto, especie, raza, características y fecha) para difundir la situación en la comunidad y facilitar su localización. | Alta |
+| HU-S2-04 | Como usuario al crear un reporte, quiero marcar un lugar en el mapa interactivo o utilizar mi ubicación actual por GPS para indicar con precisión la zona donde se perdió o fue vista la mascota. | Alta |
 | HU-S2-05 | Como usuario autor de un reporte, quiero marcar mi reporte como "Caso resuelto" indicando el motivo de cierre (reencuentro con su familia, adopción / hogar definitivo, o fallecimiento) para mantener actualizada a la comunidad y finalizar la búsqueda activa. | Alta |
-| HU-S2-06 | Como usuario, quiero filtrar los reportes activos exclusivamente entre mascotas perdidas y encontradas (sin mostrar casos resueltos) para enfocarme únicamente en las alertas vigentes que requieren ayuda comunitaria. | Media |
 
 ---
 

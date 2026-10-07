@@ -185,9 +185,9 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                 ),
                 const SizedBox(height: 12),
                 ListTile(
-                  leading: Icon(
+                  leading: const Icon(
                     Icons.map_outlined,
-                    color: isLost ? AppColors.lost : AppColors.found,
+                    color: AppColors.primary,
                   ),
                   title: const Text(
                     'Ver zona en mapa',
@@ -367,14 +367,11 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                             spacing: 8,
                             children: List.generate(_statusFilters.length, (idx) {
                               final isSelected = tempStatus == idx;
-                              Color activeColor = AppColors.textPrimary;
-                              if (idx == 1) activeColor = AppColors.lost;
-                              if (idx == 2) activeColor = AppColors.found;
 
                               return ChoiceChip(
                                 label: Text(_statusFilters[idx]),
                                 selected: isSelected,
-                                selectedColor: activeColor,
+                                selectedColor: AppColors.primary,
                                 backgroundColor: const Color(0xFFEFF3F4),
                                 labelStyle: TextStyle(
                                   fontFamily: 'Inter',
@@ -499,7 +496,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
               child: FloatingActionButton(
                 heroTag: 'createReportFab',
                 onPressed: _isFabVisible ? _openCreateReport : null,
-                backgroundColor: AppColors.lost,
+                backgroundColor: AppColors.primary,
                 elevation: 4,
                 shape: const CircleBorder(),
                 tooltip: 'Publicar reporte',
@@ -554,13 +551,13 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: AppColors.lost.withValues(alpha: 0.12),
+                            color: AppColors.primaryTint,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
                             Icons.campaign_rounded,
                             size: 20,
-                            color: AppColors.lost,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(width: 8),

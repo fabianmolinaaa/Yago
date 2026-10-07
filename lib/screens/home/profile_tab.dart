@@ -50,7 +50,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.lost,
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
             ),
@@ -216,10 +216,10 @@ class _ProfileTabState extends State<ProfileTab> {
                       child: Row(
                         children: [
                           Icon(Icons.logout_rounded,
-                              size: 18, color: AppColors.lost),
+                              size: 18, color: AppColors.error),
                           SizedBox(width: 10),
                           Text('Cerrar sesión',
-                              style: TextStyle(color: AppColors.lost)),
+                              style: TextStyle(color: AppColors.error)),
                         ],
                       ),
                     ),
@@ -914,12 +914,12 @@ class _ProfileTabState extends State<ProfileTab> {
             value: 'reunited',
             child: Row(
               children: [
-                Icon(Icons.celebration_outlined, size: 18, color: AppColors.found),
+                Icon(Icons.celebration_outlined, size: 18, color: AppColors.reunited),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Marcar como caso resuelto',
-                    style: TextStyle(color: AppColors.found, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: AppColors.reunited, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -962,7 +962,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.found,
+              backgroundColor: AppColors.reunited,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
             ),
@@ -972,7 +972,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('¡Caso marcado como reunido con éxito! 🎉'),
-                  backgroundColor: AppColors.found,
+                  backgroundColor: AppColors.reunited,
                 ),
               );
             },

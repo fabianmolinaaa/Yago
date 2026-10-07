@@ -23,10 +23,9 @@ Todos los usuarios tendrán el mismo tipo de cuenta y podrán utilizar las funci
 
 Un usuario podrá:
 * Registrar sus mascotas.
-* Publicar una mascota perdida.
-* Publicar una mascota encontrada.
-* Consultar publicaciones.
-* Aportar información o pistas sobre una publicación exclusivamente mediante mensaje privado (chat directo).
+* Publicar una alerta de mascota perdida o reporte de mascota encontrada.
+* Consultar publicaciones y reportes.
+* Aportar información o pistas sobre una publicación o reporte exclusivamente mediante mensaje privado (chat directo).
 * Contactar con otros usuarios.
 * Crear publicaciones para el feed.
 * Reaccionar a las publicaciones ("me gusta").
@@ -50,7 +49,7 @@ El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **
 * **Visualización optimizada de pérdidas y hallazgos activos:** Pantalla especialmente dispuesta y priorizada para la difusión y consulta de reportes de mascotas perdidas (con alertas urgentes) y animales encontrados en estado activo (excluyendo casos ya resueltos para concentrar la atención en emergencias vigentes).
 * **Fichas claras de reporte:** Fotografía del animal, estado semántico (*Perdida*, *Encontrada*), señas particulares (raza, edad, sexo, chips, collar), fecha y datos de contacto del reportante.
 * **Visualización contextual de zona en mapa:** Cada publicación incluye una **opción directa para ver en qué zona del mapa se pudo haber perdido o visto por última vez**, desplegando un mapa contextual con el barrio, punto de referencia y radio aproximado del hecho (eliminando la necesidad de navegar por un mapa exploratorio global independiente).
-* **Gestión y resolución de reportes:** Formularios dedicados para dar de alta reportes de pérdidas y hallazgos, editar información y marcar casos como resueltos especificando la causa (reencuentro con su familia, adopción/hogar definitivo, o fallecimiento).
+* **Gestión y resolución de reportes:** Formulario de alta para alertas de mascotas perdidas o reportes de hallazgo, con opción de indicar la zona marcando un punto en el mapa interactivo o usando la ubicación actual por GPS. Incluye edición de información y marcado de casos como resueltos especificando la causa (reencuentro con su familia, adopción/hogar definitivo, o fallecimiento).
 
 ### 4.3 Cámara para análisis con Inteligencia Artificial (Tercera pantalla)
 * **Identificación inteligente en la vía pública:** Herramienta diseñada para el momento en que una persona se encuentra un animal en la calle o busca cotejar a su mascota perdida.
@@ -80,7 +79,7 @@ El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **
 ## 5. Fuera del alcance
 
 Inicialmente, Yago no contemplará:
-* **Mapa interactivo exploratorio global independiente:** Se descarta la pantalla independiente de mapa general de la ciudad donde se navega explorando casos dispersos. La visualización geográfica queda integrada exclusivamente como una opción contextual de zona dentro de cada publicación de reporte.
+* **Mapa interactivo exploratorio global independiente:** Se descarta la pantalla independiente de mapa general de la ciudad donde se navega explorando casos dispersos. La visualización geográfica queda integrada exclusivamente como una opción contextual de zona dentro de cada publicación de reporte y como selector puntual de ubicación (marcador en mapa o GPS) al crear un reporte.
 * Seguimiento GPS en tiempo real de una mascota mediante collares satelitales.
 * Sistema de pagos o recompensas económicas.
 * Tienda de productos para mascotas o marketplace.

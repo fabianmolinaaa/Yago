@@ -108,12 +108,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: 64,
               height: 64,
               decoration: const BoxDecoration(
-                color: AppColors.foundBg,
+                color: AppColors.reunitedBg,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle_rounded,
-                color: AppColors.found,
+                color: AppColors.reunited,
                 size: 38,
               ),
             ),
@@ -232,10 +232,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.lost.withValues(alpha: 0.1),
+                      color: AppColors.errorBg,
                       borderRadius: AppRadius.mdBorder,
                       border: Border.all(
-                        color: AppColors.lost.withValues(alpha: 0.3),
+                        color: AppColors.error.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -243,14 +243,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const Icon(
                           Icons.error_outline_rounded,
                           size: 20,
-                          color: AppColors.lost,
+                          color: AppColors.error,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             _errorMessage!,
                             style: AppTypography.caption.copyWith(
-                              color: AppColors.lost,
+                              color: AppColors.errorText,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

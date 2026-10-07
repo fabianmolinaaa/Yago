@@ -1091,12 +1091,12 @@ class _FeedTabState extends State<FeedTab> {
               value: 'reunited',
               child: Row(
                 children: [
-                  Icon(Icons.celebration_outlined, size: 18, color: AppColors.found),
+                  Icon(Icons.celebration_outlined, size: 18, color: AppColors.reunited),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Marcar como caso resuelto',
-                      style: TextStyle(color: AppColors.found, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: AppColors.reunited, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -1266,7 +1266,7 @@ class _FeedTabState extends State<FeedTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.found,
+              backgroundColor: AppColors.reunited,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
             ),
@@ -1276,7 +1276,7 @@ class _FeedTabState extends State<FeedTab> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('¡Caso marcado como reunido con éxito! 🎉'),
-                  backgroundColor: AppColors.found,
+                  backgroundColor: AppColors.reunited,
                 ),
               );
             },

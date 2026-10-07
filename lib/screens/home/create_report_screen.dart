@@ -275,11 +275,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.found.withValues(alpha: 0.1),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryTint,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.photo_library_rounded, color: AppColors.found),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
                   ),
                   title: const Text('Elegir de la galería', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Selecciona una foto de tu dispositivo'),

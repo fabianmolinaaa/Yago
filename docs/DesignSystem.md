@@ -36,15 +36,15 @@ Este documento define el **Design System oficial de Yago**, extraído y formaliz
 | `distanceBadgeBg` | `#FFFFFF` | Frosted White | Fondo del pill de distancia en fotos (opacidad ~88% o sólido) |
 | `distanceBadgeText` | `#454E5B` | Graphite Pill | Texto e icono pin de distancia sobre fotografía |
 
-### 2.2 Estados Semánticos de Publicación (Pasteles Terrosos)
+### 2.2 Estados Semánticos de Publicación (Minimalist Slate & Reencuentro Exitoso)
 
-| Estado | Badge Sólido (Sobre Foto) | Fondo Suave (Filtros/Chips) | Texto Chip / Acento | Aplicación |
+| Estado | Badge Sólido (Sobre Foto) | Fondo Suave (Chips) | Texto Chip / Acento | Aplicación |
 | :--- | :--- | :--- | :--- | :--- |
-| **Perdida** | `#D46761` *(Dusty Coral)* | `#FCECEB` | `#C45953` | Mascota reportada como perdida (Urgencia) |
-| **Encontrada** | `#4FA175` *(Sage Green)* | `#EAF5EE` | `#428C63` | Mascota reportada como hallada |
-| **Reunida** | `#4D88C5` *(Slate Sky Blue)*| `#EBF3FB` | `#3D76B1` | Mascota que regresó con su familia |
+| **Perdida** | `#232E3A` *(Slate Profundo)* | `#F1F4F8` | `#232E3A` | Búsqueda activa: Mascota extraviada |
+| **Encontrada** | `#4B5563` *(Slate Neutro)* | `#F3F4F6` | `#374151` | Búsqueda activa: Mascota hallada/en custodia |
+| **Reunida** | `#4FA175` *(Sage Green)* | `#EAF5EE` | `#428C63` | Caso resuelto: Mascota de regreso con su familia |
 | **Comunidad** | `#6E7B8E` *(Muted Indigo)* | `#F2ECF7` | `#70628E` | Avisos comunitarios, tips y social |
-| **Nueva / Urgente**| `#D46761` | `#FCECEB` | `#C45953` | Alertas de publicaciones recientes |
+| **Error / Alerta**| `#D46761` *(Dusty Coral)* | `#FCECEB` | `#C45953` | Validaciones y acciones destructivas del sistema |
 
 ---
 

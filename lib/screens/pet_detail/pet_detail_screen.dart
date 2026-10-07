@@ -117,7 +117,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                 borderRadius: AppRadius.mdBorder,
                 side: const BorderSide(color: AppColors.border),
               ),
-              leading: const Icon(Icons.phone_rounded, color: AppColors.found),
+              leading: const Icon(Icons.phone_rounded, color: AppColors.primary),
               title: const Text('Llamar por teléfono', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(_pet.contactPhone),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
@@ -199,7 +199,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('¡Gracias! Tu aviso fue notificado a la familia.'),
-                    backgroundColor: AppColors.found,
+                    backgroundColor: AppColors.primary,
                   ),
                 );
               }

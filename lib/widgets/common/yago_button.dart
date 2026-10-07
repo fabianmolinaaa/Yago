@@ -147,7 +147,7 @@ class YagoButton extends StatelessWidget {
         buttonWidget = Container(
           height: height,
           decoration: BoxDecoration(
-            color: isEnabled ? AppColors.lost : AppColors.subtle,
+            color: isEnabled ? AppColors.error : AppColors.subtle,
             borderRadius: buttonBorderRadius,
           ),
           child: Material(

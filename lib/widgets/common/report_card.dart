@@ -82,21 +82,21 @@ class ReportGridCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isLost ? AppColors.lost : AppColors.found,
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: AppColors.subtle,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 4.5),
                           Text(
                             isLost ? 'Perdida' : 'Encontrada',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: isLost ? AppColors.lost : AppColors.found,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           if (neighborhood.isNotEmpty) ...[
@@ -241,21 +241,21 @@ class ReportListCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isLost ? AppColors.lost : AppColors.found,
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.subtle,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 4.5),
                         Text(
                           isLost ? 'Perdida' : 'Encontrada',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: isLost ? AppColors.lost : AppColors.found,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         if (neighborhood.isNotEmpty) ...[
@@ -369,8 +369,7 @@ class ContextualZoneModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLost = pet.status == YagoPetStatus.lost;
-    final accentColor = isLost ? AppColors.lost : AppColors.found;
+    const accentColor = AppColors.primary;
 
     return SafeArea(
       child: Padding(

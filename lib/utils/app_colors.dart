@@ -52,24 +52,26 @@ class AppColors {
   /// Acento general
   static const Color accent = Color(0xFF5E6672);
 
-  // ─── Estados Semánticos (Pasteles Terrosos Desaturados) ─────────────────────
-  /// Error o alerta crítica (#D46761)
+  // ─── Estados Semánticos (Minimalist Slate & Reencuentro Exitoso) ───────────
+  /// Error o alerta crítica del sistema (#D46761)
   static const Color error = Color(0xFFD46761);
+  static const Color errorBg = Color(0xFFFCECEB);
+  static const Color errorText = Color(0xFFC45953);
 
-  /// Mascota Perdida (Dusty Coral / Terracota #D46761)
-  static const Color lost = Color(0xFFD46761);
-  static const Color lostBg = Color(0xFFFCECEB);
-  static const Color lostText = Color(0xFFC45953);
+  /// Mascota Perdida (Búsqueda activa: Slate oscuro neutro #232E3A)
+  static const Color lost = Color(0xFF232E3A);
+  static const Color lostBg = Color(0xFFF1F4F8);
+  static const Color lostText = Color(0xFF232E3A);
 
-  /// Mascota Encontrada (Sage Green / Eucalipto #4FA175)
-  static const Color found = Color(0xFF4FA175);
-  static const Color foundBg = Color(0xFFEAF5EE);
-  static const Color foundText = Color(0xFF428C63);
+  /// Mascota Encontrada (Búsqueda activa / En custodia: Slate medio neutro #4B5563)
+  static const Color found = Color(0xFF4B5563);
+  static const Color foundBg = Color(0xFFF3F4F6);
+  static const Color foundText = Color(0xFF374151);
 
-  /// Mascota Reunida (Slate Sky Blue / Celeste Pizarra #4D88C5)
-  static const Color reunited = Color(0xFF4D88C5);
-  static const Color reunitedBg = Color(0xFFEBF3FB);
-  static const Color reunitedText = Color(0xFF3D76B1);
+  /// Mascota Reunida (Éxito / Caso resuelto / Regresó con su familia: Sage Green #4FA175)
+  static const Color reunited = Color(0xFF4FA175);
+  static const Color reunitedBg = Color(0xFFEAF5EE);
+  static const Color reunitedText = Color(0xFF428C63);
 
   /// Publicación de Comunidad (Muted Slate / Indigo #6E7B8E)
   static const Color community = Color(0xFF6E7B8E);

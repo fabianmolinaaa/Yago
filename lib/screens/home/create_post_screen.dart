@@ -202,11 +202,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.found.withValues(alpha: 0.1),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryTint,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.photo_library_rounded, color: AppColors.found),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
                   ),
                   title: const Text('Elegir de la galería', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Selecciona una imagen de tu dispositivo'),
@@ -397,13 +397,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       : '¡Reporte de mascota encontrada publicado con éxito!')
                   : '¡Publicación compartida con éxito en el feed!'),
         ),
-        backgroundColor: isMating
-            ? AppColors.mating
-            : (isPetAlert
-                ? (_selectedCategory == 'Perdida'
-                    ? AppColors.lost
-                    : AppColors.found)
-                : AppColors.primary),
+        backgroundColor: isMating ? AppColors.mating : AppColors.primary,
       ),
     );
 

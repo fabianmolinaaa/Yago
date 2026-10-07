@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Canal de mensajería instantánea 1 a 1 para aportar pistas de avistamientos o coordinar el reencuentro de las mascotas de forma privada y segura.',
         icon: Icons.chat_bubble_outline_rounded,
         badgeText: 'PRÓXIMAMENTE',
-        accentColor: AppColors.found,
+        accentColor: AppColors.primary,
         featureHighlight:
             'Bandeja de conversaciones vinculadas directamente al reporte de la mascota para actuar con rapidez.',
       ),

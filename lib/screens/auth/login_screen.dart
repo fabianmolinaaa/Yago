@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (dialogError != null) ...[
                   Text(
                     dialogError!,
-                    style: const TextStyle(fontSize: 12, color: AppColors.lost),
+                    style: const TextStyle(fontSize: 12, color: AppColors.error),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -215,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 content: Text(
                                   'Enlace enviado. Revisá tu bandeja de entrada.',
                                 ),
-                                backgroundColor: AppColors.found,
+                                backgroundColor: AppColors.primary,
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -322,10 +322,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: AppColors.lostBg,
+                          color: AppColors.errorBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.lost.withValues(alpha: 0.3),
+                            color: AppColors.error.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -333,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Icon(
                               Icons.error_outline_rounded,
                               size: 18,
-                              color: AppColors.lost,
+                              color: AppColors.error,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -341,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _errorMessage!,
                                 style: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.lostText,
+                                  color: AppColors.errorText,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

@@ -19,7 +19,7 @@ class AppTheme {
         onPrimary: Colors.white,
         secondary: AppColors.surfaceSecondary,
         onSecondary: AppColors.textPrimary,
-        error: AppColors.lost,
+        error: AppColors.error,
         onError: Colors.white,
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
@@ -79,11 +79,11 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.lost, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.lost, width: 2),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
       ),
 

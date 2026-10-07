@@ -70,7 +70,7 @@ class YagoTextField extends StatelessWidget {
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: hasError ? AppColors.lostBg : Colors.white,
+            fillColor: hasError ? AppColors.errorBg : Colors.white,
             contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: maxLines > 1 ? 14 : 14,
@@ -78,21 +78,21 @@ class YagoTextField extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: hasError ? AppColors.lost : AppColors.border,
+                color: hasError ? AppColors.error : AppColors.border,
                 width: 1.1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: hasError ? AppColors.lost : AppColors.border,
+                color: hasError ? AppColors.error : AppColors.border,
                 width: 1.1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: hasError ? AppColors.lost : AppColors.primary,
+                color: hasError ? AppColors.error : AppColors.primary,
                 width: 1.5,
               ),
             ),
@@ -104,7 +104,7 @@ class YagoTextField extends StatelessWidget {
           Text(
             errorText!,
             style: AppTypography.caption.copyWith(
-              color: AppColors.lost,
+              color: AppColors.error,
               fontWeight: FontWeight.w500,
             ),
           ),
