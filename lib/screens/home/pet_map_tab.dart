@@ -243,7 +243,9 @@ class _PetMapTabState extends State<PetMapTab> {
                                 MaterialPageRoute(
                                   builder: (_) => PetDetailScreen(pet: _selectedPet!),
                                 ),
-                              );
+                              ).then((_) {
+                                if (mounted) setState(() {});
+                              });
                             },
                             child: const Text(
                               'Ver ficha completa →',

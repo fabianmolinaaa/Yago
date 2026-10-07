@@ -1017,11 +1017,23 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: PetDetailScreen(pet: pet),
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(ctx).push(
+                  MaterialPageRoute(builder: (_) => PetDetailScreen(pet: pet)),
+                ),
+                child: const Text('Abrir ficha'),
+              ),
+            ),
+          ),
+        ),
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Abrir ficha'));
+    await tester.pumpAndSettle();
 
     // Desplazar hasta el botón de marcar como recuperada
     await tester.scrollUntilVisible(find.text('Marcar como recuperada'), 100);
@@ -1043,7 +1055,11 @@ void main() {
     // Confirmar
     await tester.tap(find.text('Sí, marcar como recuperada'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // Debe cerrar la ficha y devolver a la pantalla anterior
+    expect(find.byType(PetDetailScreen), findsNothing);
+    expect(find.text('Abrir ficha'), findsOneWidget);
 
     // Caso resuelto: feedback mostrado
     expect(find.textContaining('¡Caso resuelto!'), findsOneWidget);

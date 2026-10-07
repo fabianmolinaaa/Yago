@@ -261,9 +261,6 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
 
   void _markAsResolved() {
     MockDataService().markAsReunited(_pet.id);
-    setState(() {
-      _pet = _pet.copyWith(status: YagoPetStatus.reunited);
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('¡Caso resuelto! La mascota fue marcada como recuperada y retirada de los feeds.'),
@@ -271,6 +268,13 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
         duration: Duration(seconds: 4),
       ),
     );
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(true);
+    } else if (mounted) {
+      setState(() {
+        _pet = _pet.copyWith(status: YagoPetStatus.reunited);
+      });
+    }
   }
 
   Widget _getSpeciesIcon(String species) {

@@ -145,7 +145,9 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
       MaterialPageRoute(
         builder: (_) => PetDetailScreen(pet: pet),
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _openZoneModal(Pet pet) {
