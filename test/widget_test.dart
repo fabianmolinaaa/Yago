@@ -697,7 +697,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // 1. Verificar el selector elegante (segmented switch)
+    // 1. Verificar el selector compacto y limpio (Perdí mi mascota / Encontré una mascota)
     expect(find.text('Perdí mi mascota'), findsOneWidget);
     expect(find.text('Encontré una mascota'), findsOneWidget);
 
@@ -706,15 +706,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Verificar que los labels adaptativos cambian
-    expect(find.text('Nombre asignado o conocido'), findsOneWidget);
-    expect(find.text('Lugar donde fue vista o encontrada'), findsOneWidget);
+    // 2. Verificar títulos de secciones limpias
+    expect(find.text('INFORMACIÓN DE LA MASCOTA'), findsOneWidget);
+    expect(find.text('DÓNDE Y CUÁNDO'), findsOneWidget);
 
-    // 2. Verificar campo de Edad aproximada
+    // 3. Verificar labels consistentes y unificados (no cambian con el switch)
+    expect(find.text('Nombre de la mascota'), findsOneWidget);
+    expect(find.text('Ubicación'), findsOneWidget);
+
+    // 4. Verificar campo de Edad aproximada
     expect(find.text('Edad aproximada'), findsOneWidget);
     expect(find.text('Adulto (3-6 años)'), findsOneWidget);
 
-    // 3. Verificar botón + de rasgos particulares integrado en sufijo del campo
+    // 5. Verificar botón + de rasgos particulares integrado en sufijo del campo
     expect(find.text('Señas particulares (chips, collar, manchas)'), findsOneWidget);
     expect(find.byIcon(Icons.add_rounded), findsWidgets);
 
@@ -730,17 +734,20 @@ void main() {
     // Verificar que el chip de Collar rojo fue añadido al formulario
     expect(find.text('Collar rojo'), findsWidgets);
 
-    // 4. Verificar detección de ubicación actual
-    await tester.ensureVisible(find.text('Detectar mi ubicación actual'));
+    // 6. Verificar detección de ubicación actual ("Usar mi ubicación")
+    await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
-    expect(find.text('Detectar mi ubicación actual'), findsOneWidget);
+    expect(find.text('Usar mi ubicación'), findsOneWidget);
 
-    await tester.tap(find.text('Detectar mi ubicación actual'));
+    await tester.tap(find.text('Usar mi ubicación'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verificar que el campo Lugar se autocompletó con ubicación
-    expect(find.byType(TextField), findsWidgets);
+    // 7. Verificar botón unificado "Publicar reporte" y aclaración
+    await tester.ensureVisible(find.byType(YagoButton));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Al publicar, otras personas podrán ver este reporte y contactarte.'), findsOneWidget);
+    expect(find.widgetWithText(YagoButton, 'Publicar reporte'), findsOneWidget);
   });
 }
 
