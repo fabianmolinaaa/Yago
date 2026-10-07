@@ -22,6 +22,7 @@
 | HU-S2-03 | Como usuario, quiero publicar una alerta de mascota perdida o un reporte de mascota encontrada (con foto, especie, raza, características y fecha) para difundir la situación en la comunidad y facilitar su localización. | Alta |
 | HU-S2-04 | Como usuario al crear un reporte, quiero marcar un lugar en el mapa interactivo o utilizar mi ubicación actual por GPS para indicar con precisión la zona donde se perdió o fue vista la mascota. | Alta |
 | HU-S2-05 | Como usuario autor de un reporte, quiero marcar mi reporte como "Caso resuelto" indicando el motivo de cierre (reencuentro con su familia, adopción / hogar definitivo, o fallecimiento) para mantener actualizada a la comunidad y finalizar la búsqueda activa. | Alta |
+| HU-S2-06 | Como usuario, quiero filtrar los reportes listados en el feed según una ciudad o localidad para consultar únicamente las alertas de mascotas de mi zona geográfica de interés. | Media |
 
 ---
 

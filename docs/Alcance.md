@@ -50,6 +50,7 @@ El alcance oficial de la aplicación móvil **Yago** se estructura en torno a **
 * **Fichas claras de reporte:** Fotografía del animal, estado semántico (*Perdida*, *Encontrada*), señas particulares (raza, edad, sexo, chips, collar), fecha y datos de contacto del reportante.
 * **Visualización contextual de zona en mapa:** Cada publicación incluye una **opción directa para ver en qué zona del mapa se pudo haber perdido o visto por última vez**, desplegando un mapa contextual con el barrio, punto de referencia y radio aproximado del hecho (eliminando la necesidad de navegar por un mapa exploratorio global independiente).
 * **Gestión y resolución de reportes:** Formulario de alta para alertas de mascotas perdidas o reportes de hallazgo, con opción de indicar la zona marcando un punto en el mapa interactivo o usando la ubicación actual por GPS. Incluye edición de información y marcado de casos como resueltos especificando la causa (reencuentro con su familia, adopción/hogar definitivo, o fallecimiento).
+* **Filtrado por ciudad o localidad:** Capacidad de filtrar los reportes listados según una ciudad o zona geográfica determinada para enfocar la búsqueda en el entorno local del usuario.
 
 ### 4.3 Cámara para análisis con Inteligencia Artificial (Tercera pantalla)
 * **Identificación inteligente en la vía pública:** Herramienta diseñada para el momento en que una persona se encuentra un animal en la calle o busca cotejar a su mascota perdida.
