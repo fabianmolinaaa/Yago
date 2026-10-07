@@ -141,7 +141,7 @@ void main() {
           body: PetCard(
             name: 'Luna',
             details: 'Lhasa Apso · Hembra · 3 años',
-            locationAndTime: 'Palermo, CABA · Hace 2 horas',
+            locationAndTime: 'Costanera, Caleta Olivia · Hace 2 horas',
             imageUrl: 'https://example.com/pet.jpg',
             status: YagoPetStatus.lost,
             tags: const ['Collar rojo', 'Con chip'],
@@ -152,11 +152,11 @@ void main() {
 
     expect(find.text('Luna'), findsOneWidget);
     expect(find.text('Lhasa Apso · Hembra · 3 años'), findsOneWidget);
-    expect(find.text('Palermo, CABA'), findsOneWidget);
+    expect(find.text('Costanera, Caleta Olivia'), findsOneWidget);
     expect(find.text('Hace 2 horas'), findsOneWidget);
     expect(find.text('PERDIDA'), findsOneWidget);
     expect(find.byIcon(Icons.mail_outline_rounded), findsOneWidget);
-    expect(find.byType(AnimatedPawIcon), findsOneWidget);
+    expect(find.byType(AnimatedPawIcon), findsNothing);
   });
 
   testWidgets('PetCard renders community post with Yago logo and Equipo Yago branding', (WidgetTester tester) async {
@@ -803,8 +803,8 @@ void main() {
     expect(find.text('Confirmar esta ubicación'), findsOneWidget);
 
     // Seleccionar una zona rápida de referencia en el mapa
-    expect(find.text('Plaza Armenia, Palermo'), findsOneWidget);
-    await tester.tap(find.text('Plaza Armenia, Palermo'));
+    expect(find.text('El Gorosito (Centro)'), findsOneWidget);
+    await tester.tap(find.text('El Gorosito (Centro)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -814,7 +814,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // Verificar que el campo Ubicación se actualizó con la zona elegida
-    expect(find.text('Plaza Armenia, Palermo'), findsWidgets);
+    expect(find.text('El Gorosito (Centro)'), findsWidgets);
   });
 
   testWidgets('MapLocationPickerModal searches address, selects result, and updates map position', (WidgetTester tester) async {
@@ -841,15 +841,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // Verificar que aparece el resultado de búsqueda
-    expect(find.text('Santa Fe, CABA'), findsOneWidget);
+    expect(find.text('Santa Fe, Caleta Olivia'), findsOneWidget);
 
     // Tocar el resultado de búsqueda
-    await tester.tap(find.text('Santa Fe, CABA'));
+    await tester.tap(find.text('Santa Fe, Caleta Olivia'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
     // Verificar que el punto seleccionado en el mapa se actualizó a la dirección buscada
-    expect(find.text('Santa Fe, CABA'), findsWidgets);
+    expect(find.text('Santa Fe, Caleta Olivia'), findsWidgets);
 
     // Confirmar
     await tester.tap(find.text('Confirmar esta ubicación'));
@@ -857,7 +857,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // El campo Ubicación del reporte ahora contiene la dirección buscada
-    expect(find.text('Santa Fe, CABA'), findsWidgets);
+    expect(find.text('Santa Fe, Caleta Olivia'), findsWidgets);
   });
 
   testWidgets('PetDetailScreen renders header with name on left and badge+time on right, adaptive icons, and no sighting button', (WidgetTester tester) async {
@@ -869,16 +869,16 @@ void main() {
       gender: 'Hembra',
       age: '3 años',
       status: YagoPetStatus.lost,
-      location: 'Palermo, CABA',
+      location: 'Centro, El Gorosito, Caleta Olivia',
       timeAgo: 'Hace 2 horas',
       date: DateTime.now().subtract(const Duration(hours: 2)),
-      description: 'Se extravió en Plaza Armenia.',
+      description: 'Se extravió cerca de El Gorosito.',
       imageUrl: 'assets/images/IMG_3508.JPG',
       tags: const ['Collar rosa', 'Con chip'],
       contactName: 'Camila Rodriguez',
-      contactPhone: '+54 9 11 1234-5678',
-      latitude: -34.5889,
-      longitude: -58.4233,
+      contactPhone: '+54 9 297 1234-5678',
+      latitude: -46.4385,
+      longitude: -67.5278,
       isUserOwner: false,
     );
 
@@ -920,16 +920,16 @@ void main() {
       gender: 'Macho',
       age: '1 año',
       status: YagoPetStatus.found,
-      location: 'Recoleta, CABA',
+      location: 'Barrio Miramar, Caleta Olivia',
       timeAgo: 'Hace 1 hora',
       date: DateTime.now().subtract(const Duration(hours: 1)),
       description: 'Encontrado en un balcón.',
       imageUrl: 'assets/images/IMG_2935.JPG',
       tags: const ['Ojos azules'],
       contactName: 'Lucas Paz',
-      contactPhone: '+54 9 11 9876-5432',
-      latitude: -34.5889,
-      longitude: -58.4233,
+      contactPhone: '+54 9 297 9876-5432',
+      latitude: -46.4478,
+      longitude: -67.5150,
       isUserOwner: false,
     );
 
@@ -955,16 +955,16 @@ void main() {
       gender: 'Macho',
       age: '2 años',
       status: YagoPetStatus.lost,
-      location: 'Belgrano, CABA',
+      location: 'Barrio Parque, Caleta Olivia',
       timeAgo: 'Hace 30 min',
       date: DateTime.now().subtract(const Duration(minutes: 30)),
-      description: 'Visto cerca de Barrancas de Belgrano.',
+      description: 'Visto cerca de Barrio Parque.',
       imageUrl: 'assets/images/IMG_4178.JPG',
       tags: const ['Collar azul'],
       contactName: 'Martina Gomez',
-      contactPhone: '+54 9 11 5555-4444',
-      latitude: -34.5614,
-      longitude: -58.4563,
+      contactPhone: '+54 9 297 5555-4444',
+      latitude: -46.4425,
+      longitude: -67.5245,
       isUserOwner: false,
     );
 
@@ -999,16 +999,16 @@ void main() {
       gender: 'Macho',
       age: '4 años',
       status: YagoPetStatus.lost,
-      location: 'Caballito, CABA',
+      location: 'Barrio Gregores, Caleta Olivia',
       timeAgo: 'Hace 4 horas',
       date: DateTime.now().subtract(const Duration(hours: 4)),
-      description: 'Extraviado en Parque Rivadavia.',
+      description: 'Extraviado en Barrio Gregores.',
       imageUrl: 'assets/images/IMG_5370.JPG',
       tags: const ['Orejas largas'],
       contactName: 'Usuario Yago',
-      contactPhone: '+54 9 11 2222-3333',
-      latitude: -34.6180,
-      longitude: -58.4350,
+      contactPhone: '+54 9 297 2222-3333',
+      latitude: -46.4452,
+      longitude: -67.5348,
       isUserOwner: true,
     );
 

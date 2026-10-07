@@ -24,9 +24,9 @@ class MapLocationPickerModal extends StatefulWidget {
 
   static Future<LocationResult?> show(
     BuildContext context, {
-    String initialLocation = 'Palermo, CABA',
-    double initialLatitude = -34.5889,
-    double initialLongitude = -58.4233,
+    String initialLocation = 'Costanera, Caleta Olivia',
+    double initialLatitude = -46.4348,
+    double initialLongitude = -67.5182,
   }) {
     return showModalBottomSheet<LocationResult>(
       context: context,
@@ -61,14 +61,14 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
   Timer? _searchDebounceTimer;
   Timer? _moveDebounceTimer;
 
-  // Zonas de referencia rápida populares
+  // Zonas de referencia rápida populares en Caleta Olivia
   final List<Map<String, dynamic>> _quickZones = [
-    {'name': 'Plaza Armenia, Palermo', 'lat': -34.5891, 'lng': -58.4255},
-    {'name': 'Parque Las Heras, Palermo', 'lat': -34.5841, 'lng': -58.4068},
-    {'name': 'Parque Centenario, Caballito', 'lat': -34.6063, 'lng': -58.4355},
-    {'name': 'Barrancas de Belgrano', 'lat': -34.5602, 'lng': -58.4501},
-    {'name': 'Plaza Serrano, Palermo', 'lat': -34.5883, 'lng': -58.4308},
-    {'name': 'Recoleta, CABA', 'lat': -34.5878, 'lng': -58.3934},
+    {'name': 'El Gorosito (Centro)', 'lat': -46.4385, 'lng': -67.5278},
+    {'name': 'Costanera, Caleta Olivia', 'lat': -46.4348, 'lng': -67.5182},
+    {'name': 'Barrio Parque, Caleta Olivia', 'lat': -46.4425, 'lng': -67.5245},
+    {'name': 'Barrio Miramar, Caleta Olivia', 'lat': -46.4478, 'lng': -67.5150},
+    {'name': 'Barrio Gregores, Caleta Olivia', 'lat': -46.4452, 'lng': -67.5348},
+    {'name': 'Barrio Patagonia, Caleta Olivia', 'lat': -46.4415, 'lng': -67.5410},
   ];
 
   @override
@@ -76,7 +76,7 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
     super.initState();
     _currentLocationName = widget.initialLocation.isNotEmpty
         ? widget.initialLocation
-        : 'Palermo, CABA';
+        : 'Costanera, Caleta Olivia';
     _currentLatitude = widget.initialLatitude;
     _currentLongitude = widget.initialLongitude;
   }

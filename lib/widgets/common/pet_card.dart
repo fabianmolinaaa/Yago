@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../utils/design_system.dart';
-import 'animated_paw_icon.dart';
 import 'yago_badge.dart';
-import 'yago_button.dart';
 import 'yago_logo.dart';
 import 'yago_pet_image.dart';
 
@@ -34,7 +32,6 @@ class PetCard extends StatefulWidget {
   final VoidCallback? onShareTap;
   final VoidCallback? onCommentTap;
   final VoidCallback? onContactTap;
-  final VoidCallback? onPetInfoTap;
   final Widget? optionsMenu;
 
   const PetCard({
@@ -63,7 +60,6 @@ class PetCard extends StatefulWidget {
     this.onShareTap,
     this.onCommentTap,
     this.onContactTap,
-    this.onPetInfoTap,
     this.optionsMenu,
   });
 
@@ -307,51 +303,6 @@ class _PetCardState extends State<PetCard> {
                   fit: BoxFit.fitWidth,
                   placeholderHeight: 220,
                 ),
-                // Botón de mascota interactivo superpuesto en la esquina superior derecha
-                // Monocromático, patita estática con dedos apareciendo en secuencia apuntando a la esquina superior derecha
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Tooltip(
-                    message: 'Ver características de la mascota',
-                    child: Material(
-                      color: Colors.transparent,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        onTap: () {
-                          if (widget.onPetInfoTap != null) {
-                            widget.onPetInfoTap!();
-                          } else {
-                            _showPetInfoModal(context);
-                          }
-                        },
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          padding: const EdgeInsets.all(7.5),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const AnimatedPawIcon(
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 // Contador de cuántas imágenes superpuesto abajo en el centro
                 Positioned(
                   bottom: 10,
@@ -477,194 +428,5 @@ class _PetCardState extends State<PetCard> {
       ),
     );
   }
-
-  void _showPetInfoModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.35,
-          maxChildSize: 0.85,
-          expand: false,
-          builder: (_, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.pets_rounded,
-                          size: 24,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.name,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.details,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      YagoStatusBadge(status: widget.status),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.locationAndTime,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (widget.description != null &&
-                      widget.description!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Descripción y situación',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      widget.description!,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                  if (widget.tags.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Señas particulares',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: widget.tags.map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Text(
-                            tag,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: YagoButton(
-                      text: 'Enviar mensaje al dueño',
-                      icon: const Icon(
-                        Icons.mail_outline_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        widget.onContactTap?.call();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 }
+

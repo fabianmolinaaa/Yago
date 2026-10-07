@@ -35,9 +35,9 @@ class LocationService {
     // En entorno de tests automáticos (donde no hay sensor GPS ni permisos de hardware):
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       return const LocationResult(
-        locationName: 'Palermo, CABA',
-        latitude: -34.5889,
-        longitude: -58.4233,
+        locationName: 'Costanera, Caleta Olivia',
+        latitude: -46.4348,
+        longitude: -67.5182,
       );
     }
 
@@ -101,9 +101,9 @@ class LocationService {
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       return [
         LocationResult(
-          locationName: '$cleanQuery, CABA',
-          latitude: -34.5889,
-          longitude: -58.4233,
+          locationName: '$cleanQuery, Caleta Olivia',
+          latitude: -46.4348,
+          longitude: -67.5182,
         ),
       ];
     }

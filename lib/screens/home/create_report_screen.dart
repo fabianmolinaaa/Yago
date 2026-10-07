@@ -150,7 +150,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       context,
       initialLocation: _locationController.text.trim().isNotEmpty
           ? _locationController.text.trim()
-          : 'Palermo, CABA',
+          : 'Costanera, Caleta Olivia',
       initialLatitude: _latitude,
       initialLongitude: _longitude,
     );
@@ -316,7 +316,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         ? 'Sin nombre'
         : _nameController.text.trim();
     final breed = _breedController.text.trim().isEmpty ? 'Mestizo' : _breedController.text.trim();
-    final location = _locationController.text.trim().isEmpty ? 'CABA' : _locationController.text.trim();
+    final location = _locationController.text.trim().isEmpty ? 'Caleta Olivia' : _locationController.text.trim();
     final description = _descriptionController.text.trim().isEmpty
         ? (_isLostReport
             ? 'Se extravió recientemente. Por favor si alguien la ve, contactarse de inmediato.'
@@ -824,7 +824,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               children: [
                 YagoTextField(
                   label: 'Ubicación',
-                  hint: 'Ej: Plaza Armenia, Palermo',
+                  hint: 'Ej: Costanera, Caleta Olivia',
                   controller: _locationController,
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
                   suffixIcon: Row(

@@ -221,28 +221,66 @@ class FirestoreService {
     }
 
     try {
-      final petsSnapshot = await _petsRef!.limit(1).get();
-      if (petsSnapshot.docs.isEmpty || force) {
-        final batch = _db!.batch();
-        for (final pet in existingPets) {
-          final docRef = _petsRef!.doc(pet.id);
-          batch.set(docRef, pet.toMap(), SetOptions(merge: true));
-        }
-        await batch.commit();
+      final batch = _db!.batch();
+      for (final pet in existingPets) {
+        final docRef = _petsRef!.doc(pet.id);
+        batch.set(docRef, pet.toMap(), SetOptions(merge: true));
       }
 
       final postsSnapshot = await _postsRef!.limit(1).get();
       if (postsSnapshot.docs.isEmpty || force) {
-        final batch = _db!.batch();
         for (final post in existingCommunityPosts) {
           final docRef = _postsRef!.doc(post.id);
           batch.set(docRef, post.toMap(), SetOptions(merge: true));
         }
-        await batch.commit();
       }
+      await batch.commit();
     } catch (_) {
       // Tolera desconexión o fallo de permisos
     }
+  }
+
+  Pet _ensureCaletaOlivia(Pet pet) {
+    final loc = pet.location.toLowerCase();
+    if (loc.contains('caba') ||
+        loc.contains('palermo') ||
+        loc.contains('recoleta') ||
+        loc.contains('belgrano') ||
+        loc.contains('caballito') ||
+        loc.contains('núñez') ||
+        loc.contains('nunez') ||
+        loc.contains('buenos aires')) {
+      String newLoc = 'Caleta Olivia, Santa Cruz';
+      double newLat = -46.4348;
+      double newLng = -67.5182;
+      if (loc.contains('palermo')) {
+        newLoc = 'Centro, El Gorosito, Caleta Olivia';
+        newLat = -46.4385;
+        newLng = -67.5278;
+      } else if (loc.contains('recoleta')) {
+        newLoc = 'Barrio Miramar, Caleta Olivia';
+        newLat = -46.4478;
+        newLng = -67.5150;
+      } else if (loc.contains('belgrano')) {
+        newLoc = 'Barrio Parque, Caleta Olivia';
+        newLat = -46.4425;
+        newLng = -67.5245;
+      } else if (loc.contains('caballito')) {
+        newLoc = 'Barrio Gregores, Caleta Olivia';
+        newLat = -46.4452;
+        newLng = -67.5348;
+      } else if (loc.contains('n')) {
+        newLoc = 'Barrio 26 de Junio, Caleta Olivia';
+        newLat = -46.4405;
+        newLng = -67.5215;
+      }
+      return pet.copyWith(
+        location: newLoc,
+        latitude: newLat,
+        longitude: newLng,
+      );
+    }
+    return pet;
   }
 
   /// Stream reactivo de mascotas
@@ -259,7 +297,7 @@ class FirestoreService {
           .orderBy('date', descending: true);
     }
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Pet.fromFirestore(doc)).toList();
+      return snapshot.docs.map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc))).toList();
     });
   }
 
@@ -277,7 +315,7 @@ class FirestoreService {
       }
       final snapshot = await query.get();
       if (snapshot.docs.isNotEmpty) {
-        final pets = snapshot.docs.map((doc) => Pet.fromFirestore(doc)).toList();
+        final pets = snapshot.docs.map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc))).toList();
         pets.sort((a, b) => b.date.compareTo(a.date));
         return pets;
       }

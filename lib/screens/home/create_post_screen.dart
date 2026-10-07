@@ -300,8 +300,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final finalName = petName.isNotEmpty ? petName : defaultName;
         final finalBreed = isMating && breed.isNotEmpty ? breed : 'Mestizo';
         final finalGender = isMating ? _selectedGender : 'Sin especificar';
-        final finalLocation = location.isNotEmpty ? location : 'CABA';
-        final finalPhone = phone.isNotEmpty ? phone : '+54 9 11 0000-0000';
+        final finalLocation = location.isNotEmpty ? location : 'Caleta Olivia';
+        final finalPhone = phone.isNotEmpty ? phone : '+54 9 297 000-0000';
         final finalDesc = content.isNotEmpty
             ? content
             : (isMating
@@ -603,7 +603,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   Expanded(
                     child: YagoTextField(
                       label: 'Zona / Barrio',
-                      hint: 'Ej: Palermo, CABA',
+                      hint: 'Ej: Costanera, Caleta Olivia',
                       controller: _locationController,
                       prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.subtle),
                     ),
@@ -613,7 +613,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               const SizedBox(height: 14),
               YagoTextField(
                 label: 'Teléfono de contacto (Opcional)',
-                hint: 'Ej: +54 9 11 5566-7788',
+                hint: 'Ej: +54 9 297 556-7788',
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),
@@ -650,7 +650,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   Expanded(
                     child: YagoTextField(
                       label: 'Zona / Barrio',
-                      hint: 'Ej: Belgrano, CABA',
+                      hint: 'Ej: Barrio Parque, Caleta Olivia',
                       controller: _locationController,
                       prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.subtle),
                     ),
@@ -659,7 +659,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   Expanded(
                     child: YagoTextField(
                       label: 'Teléfono (Opcional)',
-                      hint: 'Ej: +54 9 11 3456-7890',
+                      hint: 'Ej: +54 9 297 345-6789',
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.subtle),

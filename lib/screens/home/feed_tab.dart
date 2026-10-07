@@ -1043,13 +1043,17 @@ class _FeedTabState extends State<FeedTab> {
             setState(() {
               _hiddenPostIds.add(postId);
             });
+            ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Publicación oculta'),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(milliseconds: 2500),
                 action: SnackBarAction(
                   label: 'Deshacer',
                   textColor: Colors.white,
                   onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     setState(() {
                       _hiddenPostIds.remove(postId);
                     });
