@@ -59,9 +59,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   final List<String> _speciesOptions = [
     'Perro',
     'Gato',
-    'Ave',
-    'Conejo',
-    'Tortuga',
     'Otro',
   ];
 
@@ -104,39 +101,45 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       final result = await LocationService().getCurrentLocation();
       if (!mounted) return;
 
-      if (result != null) {
-        setState(() {
-          _locationController.text = result.locationName;
-          _latitude = result.latitude;
-          _longitude = result.longitude;
-          _isDetectingLocation = false;
-        });
+      setState(() {
+        _locationController.text = result.locationName;
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+        _isDetectingLocation = false;
+      });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Ubicación detectada: ${result.locationName}'),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.primary,
-            duration: const Duration(seconds: 2),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Ubicación detectada: ${result.locationName}'),
+              ),
+            ],
           ),
-        );
-      } else {
-        setState(() => _isDetectingLocation = false);
-      }
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDetectingLocation = false);
+      final errorMsg = e is LocationServiceException
+          ? e.message
+          : 'No se pudo obtener la ubicación: $e';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo detectar la ubicación automáticamente.'),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(errorMsg)),
+            ],
+          ),
           backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -151,8 +154,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: _isLostReport ? AppColors.lost : AppColors.found,
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
               onPrimary: Colors.white,
               onSurface: AppColors.textPrimary,
             ),
@@ -367,12 +370,22 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          _isLostReport
-              ? '¡Reporte de búsqueda publicado con éxito!'
-              : '¡Reporte de mascota encontrada publicado con éxito!',
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _isLostReport
+                    ? 'Reporte de búsqueda publicado con éxito'
+                    : 'Reporte de mascota encontrada publicado con éxito',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: _isLostReport ? AppColors.lost : AppColors.found,
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
       ),
     );
 
@@ -431,80 +444,86 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ─── 1. Selector Compacto "Perdí mi mascota" | "Encontré una mascota" ─
+            // ─── 1. Selector Segmentado Deslizante (Sin colores rojo/verde) ─
             Container(
-              height: 46,
+              height: 44,
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF2F5),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
-              child: Row(
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isLostReport = true),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeInOut,
-                        alignment: Alignment.center,
+                  // Pastilla blanca deslizante con animación suave
+                  AnimatedAlign(
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.fastOutSlowIn,
+                    alignment: _isLostReport ? Alignment.centerLeft : Alignment.centerRight,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.5,
+                      heightFactor: 1.0,
+                      child: Container(
                         decoration: BoxDecoration(
-                          color: _isLostReport ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(11),
-                          boxShadow: _isLostReport
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Perdí mi mascota',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            fontWeight: _isLostReport ? FontWeight.w600 : FontWeight.w500,
-                            color: _isLostReport ? AppColors.lost : AppColors.textSecondary,
-                          ),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(9),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1.5),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isLostReport = false),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeInOut,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: !_isLostReport ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(11),
-                          boxShadow: !_isLostReport
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Encontré una mascota',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            fontWeight: !_isLostReport ? FontWeight.w600 : FontWeight.w500,
-                            color: !_isLostReport ? AppColors.found : AppColors.textSecondary,
+                  // Botones de selección de texto neutro
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (!_isLostReport) setState(() => _isLostReport = true);
+                          },
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                fontWeight: _isLostReport ? FontWeight.w600 : FontWeight.w500,
+                                color: _isLostReport ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                              child: const Text('Perdí mi mascota'),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (_isLostReport) setState(() => _isLostReport = false);
+                          },
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                fontWeight: !_isLostReport ? FontWeight.w600 : FontWeight.w500,
+                                color: !_isLostReport ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                              child: const Text('Encontré una mascota'),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
