@@ -22,15 +22,22 @@ Este archivo establece las reglas operativas, convenciones de código y directiv
    * *Ejemplos:* 
      * `HU-S1-01: feat(feed): implementa visualización del feed comunitario`
      * `HU-S1-02: crea pantalla de creación de publicaciones comunitarias`
-2. **Entrega de Commits para Trello:**
-   * Al finalizar la implementación de una historia o tarea, el agente **debe proporcionar explícitamente el hash y el enlace directo al commit** (`https://github.com/fabianmolinaaa/Yago/commit/[hash]`) para que el usuario pueda pegarlo en el checklist *"Evidencias"* de la tarjeta en Trello.
-3. **Cierre de Sprint y Tags:**
+2. **Momento y Frecuencia de Commits (Sin Micro-Commits):**
+   * **PROHIBIDO** hacer commits tras cada modificación menor u orden individual del usuario.
+   * Los commits se realizarán **únicamente**:
+     - Al finalizar una sesión de trabajo.
+     - Al completar un hito relevante o una Historia de Usuario (DoD cumplida).
+     - Al cerrar un Sprint.
+     - Cuando el usuario lo solicite explícitamente en el chat.
+3. **Entrega de Commits para Trello:**
+   * Al realizar un commit que concluya una historia, hito o sesión, el agente **debe proporcionar explícitamente el hash y el enlace directo al commit** (`https://github.com/fabianmolinaaa/Yago/commit/[hash]`) para que el usuario pueda pegarlo en el checklist *"Evidencias"* de la tarjeta en Trello.
+4. **Cierre de Sprint y Tags:**
    * Al cerrar un sprint, el comando de congelamiento es estrictamente:
      ```bash
      git tag sprint-N-entrega
      git push origin sprint-N-entrega
      ```
-4. **Referencia completa:** Consulta siempre [docs/PoliticasGitHub.md](docs/PoliticasGitHub.md).
+5. **Referencia completa:** Consulta siempre [docs/PoliticasGitHub.md](docs/PoliticasGitHub.md).
 
 ---
 
