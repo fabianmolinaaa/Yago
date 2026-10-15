@@ -415,4 +415,200 @@ void main() {
       expect(reunionPost.displayContent, '¡Encontramos a Toby gracias a un vecino!');
     });
   });
+
+  group('Real User Likes Interaction', () {
+    test('FeedPost accurately computes isLiked and likesCount based on likedBy', () {
+      const post = FeedPost(
+        id: 'post-likes-test',
+        authorName: 'Ana',
+        content: 'Post de prueba',
+        timeAgo: 'Reciente',
+        likedBy: ['user-alpha', 'user-beta'],
+      );
+
+      expect(post.likesCount, 2);
+      expect(post.likedBy, containsAll(['user-alpha', 'user-beta']));
+
+      final map = post.toMap();
+      expect(map['likesCount'], 2);
+      expect(map['likedBy'], containsAll(['user-alpha', 'user-beta']));
+
+      final restored = FeedPost.fromMap(map, 'post-likes-test');
+      expect(restored.likesCount, 2);
+      expect(restored.likedBy, containsAll(['user-alpha', 'user-beta']));
+    });
+
+    test('Pet accurately computes isLiked and likesCount based on likedBy', () {
+      final pet = Pet(
+        id: 'pet-likes-test',
+        name: 'Milo',
+        breed: 'Caniche',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '1 año',
+        status: YagoPetStatus.lost,
+        location: 'Caleta Olivia',
+        timeAgo: 'Reciente',
+        date: DateTime.now(),
+        description: 'Perro perdido',
+        imageUrl: '',
+        contactName: 'Carlos',
+        contactPhone: '1234',
+        latitude: -34.5,
+        longitude: -58.4,
+        likedBy: ['user-gamma'],
+      );
+
+      expect(pet.likesCount, 1);
+      expect(pet.likedBy, contains('user-gamma'));
+
+      final map = pet.toMap();
+      expect(map['likesCount'], 1);
+      expect(map['likedBy'], contains('user-gamma'));
+
+      final restored = Pet.fromMap(map, 'pet-likes-test');
+      expect(restored.likesCount, 1);
+      expect(restored.likedBy, contains('user-gamma'));
+    });
+
+    test('MockDataService togglePostLike adds and removes user from likedBy and updates count', () {
+      final mock = MockDataService();
+      const testPost = FeedPost(
+        id: 'post-toggle-likes',
+        authorName: 'María',
+        content: 'Probando likes reales',
+        timeAgo: 'Reciente',
+        likedBy: [],
+      );
+
+      mock.addCommunityPost(testPost);
+      expect(mock.getFeedPostById('post-toggle-likes')?.likesCount, 0);
+
+      // Usuario real A da me gusta
+      mock.togglePostLike('post-toggle-likes', userId: 'user-real-A');
+      final postLiked = mock.getFeedPostById('post-toggle-likes');
+      expect(postLiked?.likesCount, 1);
+      expect(postLiked?.likedBy, contains('user-real-A'));
+
+      // Usuario real B da me gusta
+      mock.togglePostLike('post-toggle-likes', userId: 'user-real-B');
+      final postLiked2 = mock.getFeedPostById('post-toggle-likes');
+      expect(postLiked2?.likesCount, 2);
+      expect(postLiked2?.likedBy, containsAll(['user-real-A', 'user-real-B']));
+
+      // Usuario real A quita su me gusta
+      mock.togglePostLike('post-toggle-likes', userId: 'user-real-A');
+      final postUnliked = mock.getFeedPostById('post-toggle-likes');
+      expect(postUnliked?.likesCount, 1);
+      expect(postUnliked?.likedBy.contains('user-real-A'), isFalse);
+      expect(postUnliked?.likedBy, contains('user-real-B'));
+    });
+
+    test('MockDataService togglePetLike adds and removes user from likedBy and updates count', () {
+      final mock = MockDataService();
+      final testPet = Pet(
+        id: 'pet-toggle-likes',
+        name: 'Simba',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '2 años',
+        status: YagoPetStatus.found,
+        location: 'Caleta Olivia',
+        timeAgo: 'Reciente',
+        date: DateTime.now(),
+        description: 'Encontrado en plaza',
+        imageUrl: '',
+        contactName: 'Lucía',
+        contactPhone: '555',
+        latitude: -46.4,
+        longitude: -67.5,
+        likedBy: [],
+      );
+
+      mock.addPet(testPet);
+      expect(mock.getPetById('pet-toggle-likes')?.likesCount, 0);
+
+      // Usuario real A da me gusta
+      mock.togglePetLike('pet-toggle-likes', userId: 'user-real-A');
+      final petLiked = mock.getPetById('pet-toggle-likes');
+      expect(petLiked?.likesCount, 1);
+      expect(petLiked?.likedBy, contains('user-real-A'));
+
+      // Usuario real A retira me gusta
+      mock.togglePetLike('pet-toggle-likes', userId: 'user-real-A');
+      final petUnliked = mock.getPetById('pet-toggle-likes');
+      expect(petUnliked?.likesCount, 0);
+      expect(petUnliked?.likedBy.contains('user-real-A'), isFalse);
+    });
+  });
+
+  group('Saved Items and Bookmarks Interaction', () {
+    test('MockDataService toggleBookmark adds and removes itemId and notifies', () {
+      final mock = MockDataService();
+      const testId = 'test-bookmark-item';
+
+      expect(mock.isBookmarked(testId), isFalse);
+
+      mock.toggleBookmark(testId);
+      expect(mock.isBookmarked(testId), isTrue);
+
+      mock.toggleBookmark(testId);
+      expect(mock.isBookmarked(testId), isFalse);
+    });
+
+    test('MockDataService getSavedPets and getSavedPosts filter correctly', () {
+      final mock = MockDataService();
+
+      // Guardar Luna (pet-1) y una publicación
+      mock.toggleBookmark('pet-1');
+      final savedPets = mock.getSavedPets();
+      expect(savedPets.any((p) => p.id == 'pet-1'), isTrue);
+
+      final posts = mock.getCommunityPosts();
+      if (posts.isNotEmpty) {
+        final firstPostId = posts.first.id;
+        mock.toggleBookmark(firstPostId);
+        final savedPosts = mock.getSavedPosts();
+        expect(savedPosts.any((p) => p.id == firstPostId), isTrue);
+
+        // Remover de guardados
+        mock.toggleBookmark(firstPostId);
+        expect(mock.getSavedPosts().any((p) => p.id == firstPostId), isFalse);
+      }
+
+      // Limpiar Luna
+      mock.toggleBookmark('pet-1');
+      expect(mock.isBookmarked('pet-1'), isFalse);
+    });
+
+    test('Pet isUserOwner checks ownerId strictly when currentUid is provided', () {
+      final pet = Pet(
+        id: 'pet-owner-test',
+        name: 'Toby',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '3 años',
+        status: YagoPetStatus.lost,
+        location: 'Caleta Olivia',
+        timeAgo: 'Reciente',
+        date: DateTime.now(),
+        description: 'Perro perdido',
+        imageUrl: '',
+        contactName: 'Carlos',
+        contactPhone: '1234',
+        latitude: -34.5,
+        longitude: -58.4,
+        isUserOwner: true,
+        ownerId: 'owner-123',
+      );
+
+      // Con usuario autenticado diferente, isUserOwner debe ser falso
+      expect(pet.isUserOwnerFor('other-user'), isFalse);
+      // Con el dueño real autenticado, isUserOwner debe ser verdadero
+      expect(pet.isUserOwnerFor('owner-123'), isTrue);
+    });
+  });
 }
+

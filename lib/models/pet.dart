@@ -34,6 +34,9 @@ class Pet {
   final bool _explicitUserOwner;
   final String? storyText;
   final bool isModerated;
+  final int _explicitLikesCount;
+  final List<String> likedBy;
+  final bool _explicitIsLiked;
 
   const Pet({
     required this.id,
@@ -57,14 +60,32 @@ class Pet {
     bool isUserOwner = false,
     this.storyText,
     this.isModerated = false,
-  }) : _explicitUserOwner = isUserOwner;
+    int likesCount = 0,
+    this.likedBy = const [],
+    bool isLiked = false,
+  })  : _explicitUserOwner = isUserOwner,
+        _explicitLikesCount = likesCount,
+        _explicitIsLiked = isLiked;
 
-  bool get isUserOwner {
-    final currentUid = AuthService().currentUser?.uid;
-    if (currentUid != null && ownerId != null && ownerId!.isNotEmpty) {
-      return ownerId == currentUid;
+  int get likesCount =>
+      likedBy.isNotEmpty ? likedBy.length : _explicitLikesCount;
+
+  bool isUserOwnerFor(String? userId) {
+    if (userId != null) {
+      return ownerId != null && ownerId == userId;
     }
     return _explicitUserOwner;
+  }
+
+  bool get isUserOwner => isUserOwnerFor(AuthService().currentUser?.uid);
+
+
+  bool get isLiked {
+    final currentUid = AuthService().currentUser?.uid;
+    if (currentUid != null) {
+      return likedBy.contains(currentUid);
+    }
+    return _explicitIsLiked;
   }
 
   bool get isResolved => status == YagoPetStatus.reunited;
@@ -122,6 +143,9 @@ class Pet {
       'storyText': storyText,
       'isModerated': isModerated,
       'isResolved': status == YagoPetStatus.reunited,
+      'likesCount': likedBy.isNotEmpty ? likedBy.length : likesCount,
+      'likedBy': likedBy,
+      'isLiked': isLiked,
       'createdAt': Timestamp.fromDate(date),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -143,6 +167,18 @@ class Pet {
         }
       }
     }
+
+    final likedByList = (map['likedBy'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const <String>[];
+    final rawLikesCount = (map['likesCount'] as num?)?.toInt() ?? 0;
+    final actualLikesCount =
+        likedByList.isNotEmpty ? likedByList.length : rawLikesCount;
+    final currentUid = AuthService().currentUser?.uid;
+    final isLikedCalculated = currentUid != null && likedByList.isNotEmpty
+        ? likedByList.contains(currentUid)
+        : (map['isLiked'] as bool? ?? false);
 
     return Pet(
       id: map['id'] ?? docId,
@@ -166,6 +202,9 @@ class Pet {
       isUserOwner: map['isUserOwner'] as bool? ?? false,
       storyText: map['storyText'] as String?,
       isModerated: map['isModerated'] as bool? ?? false,
+      likesCount: actualLikesCount,
+      likedBy: likedByList,
+      isLiked: isLikedCalculated,
     );
   }
 
@@ -196,7 +235,11 @@ class Pet {
     bool? isUserOwner,
     String? storyText,
     bool? isModerated,
+    int? likesCount,
+    List<String>? likedBy,
+    bool? isLiked,
   }) {
+    final newLikedBy = likedBy ?? this.likedBy;
     return Pet(
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
@@ -219,6 +262,9 @@ class Pet {
       isUserOwner: isUserOwner ?? this.isUserOwner,
       storyText: storyText ?? this.storyText,
       isModerated: isModerated ?? this.isModerated,
+      likesCount: likesCount ?? (likedBy != null ? newLikedBy.length : this.likesCount),
+      likedBy: newLikedBy,
+      isLiked: isLiked ?? this.isLiked,
     );
   }
 }

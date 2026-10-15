@@ -4,6 +4,7 @@ import '../models/feed_post.dart';
 import '../models/pet.dart';
 import '../models/user_model.dart';
 import '../utils/time_utils.dart';
+import 'auth_service.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -198,8 +199,8 @@ class FirestoreService {
       timeAgo: 'Hace 3 horas',
       content:
           '💡 Consejo de seguridad: Si tu mascota se extravía, mantén cerca una prenda con tu aroma cerca de la puerta o lugar de extravío. Su olfato es su mejor guía para volver.',
-      likesCount: 34,
-      commentsCount: 6,
+      likesCount: 0,
+      commentsCount: 0,
     ),
     FeedPost(
       id: 'post-2',
@@ -209,8 +210,8 @@ class FirestoreService {
       timeAgo: 'Hace 1 día',
       content:
           'Jornada de castración y chipeo gratuito este fin de semana en la Unión Vecinal de Caleta Olivia. Cuidemos a nuestros compañeros.',
-      likesCount: 52,
-      commentsCount: 12,
+      likesCount: 0,
+      commentsCount: 0,
     ),
   ];
 
@@ -221,20 +222,25 @@ class FirestoreService {
     }
 
     try {
-      final batch = _db!.batch();
-      for (final pet in existingPets) {
-        final docRef = _petsRef!.doc(pet.id);
-        batch.set(docRef, pet.toMap(), SetOptions(merge: true));
+      final petsSnapshot = await _petsRef!.limit(1).get();
+      if (petsSnapshot.docs.isEmpty || force) {
+        final batch = _db!.batch();
+        for (final pet in existingPets) {
+          final docRef = _petsRef!.doc(pet.id);
+          batch.set(docRef, pet.toMap(), SetOptions(merge: true));
+        }
+        await batch.commit();
       }
 
       final postsSnapshot = await _postsRef!.limit(1).get();
       if (postsSnapshot.docs.isEmpty || force) {
+        final batch = _db!.batch();
         for (final post in existingCommunityPosts) {
           final docRef = _postsRef!.doc(post.id);
           batch.set(docRef, post.toMap(), SetOptions(merge: true));
         }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (_) {
       // Tolera desconexión o fallo de permisos
     }
@@ -297,7 +303,10 @@ class FirestoreService {
           .orderBy('date', descending: true);
     }
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc))).toList();
+      return snapshot.docs
+          .map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc)))
+          .where((p) => !p.isModerated)
+          .toList();
     });
   }
 
@@ -315,7 +324,10 @@ class FirestoreService {
       }
       final snapshot = await query.get();
       if (snapshot.docs.isNotEmpty) {
-        final pets = snapshot.docs.map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc))).toList();
+        final pets = snapshot.docs
+            .map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc)))
+            .where((p) => !p.isModerated)
+            .toList();
         pets.sort((a, b) => b.date.compareTo(a.date));
         return pets;
       }
@@ -336,7 +348,10 @@ class FirestoreService {
     }
 
     return _postsRef!.snapshots().map((snapshot) {
-      final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+      final posts = snapshot.docs
+          .map((doc) => FeedPost.fromFirestore(doc))
+          .where((p) => !p.isModerated)
+          .toList();
       posts.sort((a, b) {
         final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
         final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
@@ -361,7 +376,10 @@ class FirestoreService {
     try {
       final snapshot = await _postsRef!.get();
       if (snapshot.docs.isNotEmpty) {
-        final posts = snapshot.docs.map((doc) => FeedPost.fromFirestore(doc)).toList();
+        final posts = snapshot.docs
+            .map((doc) => FeedPost.fromFirestore(doc))
+            .where((p) => !p.isModerated)
+            .toList();
         posts.sort((a, b) {
           final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
           final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
@@ -428,14 +446,101 @@ class FirestoreService {
     }
   }
 
-  /// Alterna 'me gusta' en una publicación comunitaria
-  Future<void> togglePostLike(String postId, bool newIsLiked) async {
+  /// Alterna 'me gusta' en una publicación comunitaria vinculado a cuentas reales
+  Future<void> togglePostLike(
+    String postId, {
+    String? userId,
+    bool? isLiked,
+  }) async {
     if (!isFirebaseReady || _postsRef == null) return;
     try {
-      await _postsRef!.doc(postId).update({
-        'likesCount': FieldValue.increment(newIsLiked ? 1 : -1),
-        'isLiked': newIsLiked,
-      });
+      final uid = userId ?? AuthService().currentUser?.uid;
+      final docRef = _postsRef!.doc(postId);
+      if (uid != null && uid.isNotEmpty) {
+        if (isLiked == true) {
+          await docRef.update({
+            'likedBy': FieldValue.arrayUnion([uid]),
+            'likesCount': FieldValue.increment(1),
+          });
+        } else if (isLiked == false) {
+          await docRef.update({
+            'likedBy': FieldValue.arrayRemove([uid]),
+            'likesCount': FieldValue.increment(-1),
+          });
+        } else {
+          final snap = await docRef.get();
+          final data = snap.data() ?? {};
+          final likedBy = (data['likedBy'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [];
+          if (likedBy.contains(uid)) {
+            await docRef.update({
+              'likedBy': FieldValue.arrayRemove([uid]),
+              'likesCount': FieldValue.increment(-1),
+            });
+          } else {
+            await docRef.update({
+              'likedBy': FieldValue.arrayUnion([uid]),
+              'likesCount': FieldValue.increment(1),
+            });
+          }
+        }
+      } else if (isLiked != null) {
+        await docRef.update({
+          'likesCount': FieldValue.increment(isLiked ? 1 : -1),
+          'isLiked': isLiked,
+        });
+      }
+    } catch (_) {}
+  }
+
+  /// Alterna 'me gusta' en un reporte de mascota vinculado a cuentas reales
+  Future<void> togglePetLike(
+    String petId, {
+    String? userId,
+    bool? isLiked,
+  }) async {
+    if (!isFirebaseReady || _petsRef == null) return;
+    try {
+      final uid = userId ?? AuthService().currentUser?.uid;
+      final docRef = _petsRef!.doc(petId);
+      if (uid != null && uid.isNotEmpty) {
+        if (isLiked == true) {
+          await docRef.update({
+            'likedBy': FieldValue.arrayUnion([uid]),
+            'likesCount': FieldValue.increment(1),
+          });
+        } else if (isLiked == false) {
+          await docRef.update({
+            'likedBy': FieldValue.arrayRemove([uid]),
+            'likesCount': FieldValue.increment(-1),
+          });
+        } else {
+          final snap = await docRef.get();
+          final data = snap.data() ?? {};
+          final likedBy = (data['likedBy'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [];
+          if (likedBy.contains(uid)) {
+            await docRef.update({
+              'likedBy': FieldValue.arrayRemove([uid]),
+              'likesCount': FieldValue.increment(-1),
+            });
+          } else {
+            await docRef.update({
+              'likedBy': FieldValue.arrayUnion([uid]),
+              'likesCount': FieldValue.increment(1),
+            });
+          }
+        }
+      } else if (isLiked != null) {
+        await docRef.update({
+          'likesCount': FieldValue.increment(isLiked ? 1 : -1),
+          'isLiked': isLiked,
+        });
+      }
     } catch (_) {}
   }
 
@@ -506,5 +611,53 @@ class FirestoreService {
     } catch (e) {
       throw Exception('No se pudo actualizar el perfil: $e');
     }
+  }
+
+  // ─── Guardados personales (/users/{uid}/saved_items) ─────────────────────
+
+  /// Guarda o retira un elemento (mascota o post) de los guardados personales del usuario
+  Future<void> toggleSaveItem(
+    String uid,
+    String itemId, {
+    required bool isSaved,
+    String itemType = 'item',
+  }) async {
+    if (!isFirebaseReady || _usersRef == null) return;
+    try {
+      final docRef = _usersRef!.doc(uid).collection('saved_items').doc(itemId);
+      if (isSaved) {
+        await docRef.set({
+          'id': itemId,
+          'itemType': itemType,
+          'savedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await docRef.delete();
+      }
+    } catch (_) {}
+  }
+
+  /// Obtiene la lista de IDs de elementos guardados por el usuario
+  Future<Set<String>> getSavedItemIds(String uid) async {
+    if (!isFirebaseReady || _usersRef == null) return {};
+    try {
+      final snapshot =
+          await _usersRef!.doc(uid).collection('saved_items').get();
+      return snapshot.docs.map((doc) => doc.id).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Stream reactivo de los IDs de elementos guardados
+  Stream<Set<String>> streamSavedItemIds(String uid) {
+    if (!isFirebaseReady || _usersRef == null) {
+      return Stream.value({});
+    }
+    return _usersRef!
+        .doc(uid)
+        .collection('saved_items')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.id).toSet());
   }
 }

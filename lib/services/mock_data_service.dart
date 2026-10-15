@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/feed_post.dart';
 import '../models/pet.dart';
 import '../utils/time_utils.dart';
+import 'auth_service.dart';
 import 'firestore_service.dart';
 
 class MockDataService extends ChangeNotifier {
@@ -39,12 +40,20 @@ class MockDataService extends ChangeNotifier {
         notifyListeners();
       }
     }, onError: (_) {});
+
+    final currentUid = AuthService().currentUser?.uid;
+    if (currentUid != null) {
+      FirestoreService().streamSavedItemIds(currentUid).listen((savedIds) {
+        _bookmarkedPetIds.clear();
+        _bookmarkedPetIds.addAll(savedIds);
+        notifyListeners();
+      }, onError: (_) {});
+    }
   }
 
   /// Recarga los datos desde Cloud Firestore
   Future<void> refreshFromFirestore() async {
     try {
-      await FirestoreService().seedExistingData();
       final freshPets = await FirestoreService().getPets();
       if (freshPets.isNotEmpty) {
         _pets.clear();
@@ -54,6 +63,14 @@ class MockDataService extends ChangeNotifier {
       if (freshPosts.isNotEmpty) {
         _communityPosts.clear();
         _communityPosts.addAll(freshPosts);
+      }
+      final currentUid = AuthService().currentUser?.uid;
+      if (currentUid != null) {
+        final savedIds = await FirestoreService().getSavedItemIds(currentUid);
+        if (savedIds.isNotEmpty) {
+          _bookmarkedPetIds.clear();
+          _bookmarkedPetIds.addAll(savedIds);
+        }
       }
       notifyListeners();
     } catch (_) {}
@@ -134,16 +151,40 @@ class MockDataService extends ChangeNotifier {
     }
   }
 
-  /// Manejo de guardados / marcadores
-  bool isBookmarked(String petId) => _bookmarkedPetIds.contains(petId);
+  /// Manejo de guardados / marcadores (soporta reportes de mascotas y publicaciones)
+  bool isBookmarked(String itemId) => _bookmarkedPetIds.contains(itemId);
 
-  void toggleBookmark(String petId) {
-    if (_bookmarkedPetIds.contains(petId)) {
-      _bookmarkedPetIds.remove(petId);
+  void toggleBookmark(String itemId, {String? userId}) {
+    final willBookmark = !_bookmarkedPetIds.contains(itemId);
+    if (willBookmark) {
+      _bookmarkedPetIds.add(itemId);
     } else {
-      _bookmarkedPetIds.add(petId);
+      _bookmarkedPetIds.remove(itemId);
     }
     notifyListeners();
+
+    final uid = userId ?? AuthService().currentUser?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      final isPet = _pets.any((p) => p.id == itemId);
+      FirestoreService()
+          .toggleSaveItem(
+            uid,
+            itemId,
+            isSaved: willBookmark,
+            itemType: isPet ? 'pet' : 'post',
+          )
+          .catchError((_) {});
+    }
+  }
+
+  /// Obtiene los reportes de mascotas guardados
+  List<Pet> getSavedPets() {
+    return _pets.where((pet) => _bookmarkedPetIds.contains(pet.id)).toList();
+  }
+
+  /// Obtiene las publicaciones comunitarias guardadas
+  List<FeedPost> getSavedPosts() {
+    return _communityPosts.where((post) => _bookmarkedPetIds.contains(post.id)).toList();
   }
 
   /// Posts comunitarios
@@ -194,19 +235,83 @@ class MockDataService extends ChangeNotifier {
     }
   }
 
-  /// Alterna 'me gusta' en una publicación comunitaria y sincroniza Firestore
-  void togglePostLike(String postId) {
+  /// Obtiene una publicación por su ID
+  FeedPost? getFeedPostById(String id) {
+    try {
+      return _communityPosts.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Obtiene un reporte de mascota por su ID
+  Pet? getPetById(String id) {
+    try {
+      return _pets.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Alterna 'me gusta' en una publicación comunitaria vinculado a la cuenta actual y sincroniza con Firestore
+  void togglePostLike(String postId, {String? userId}) {
+    final currentAuthUid = AuthService().currentUser?.uid;
+    final uid = userId ?? currentAuthUid ?? 'local-user';
     final index = _communityPosts.indexWhere((p) => p.id == postId);
     if (index != -1) {
       final post = _communityPosts[index];
-      final newIsLiked = !post.isLiked;
-      final newLikesCount = newIsLiked ? post.likesCount + 1 : (post.likesCount > 0 ? post.likesCount - 1 : 0);
+      final wasLiked = post.likedBy.contains(uid);
+      final newIsLiked = !wasLiked;
+      final updatedLikedBy = List<String>.from(post.likedBy);
+      if (newIsLiked) {
+        if (!updatedLikedBy.contains(uid)) updatedLikedBy.add(uid);
+      } else {
+        updatedLikedBy.remove(uid);
+      }
+      final newLikesCount = updatedLikedBy.length;
+
       _communityPosts[index] = post.copyWith(
         isLiked: newIsLiked,
+        likedBy: updatedLikedBy,
         likesCount: newLikesCount,
       );
       notifyListeners();
-      FirestoreService().togglePostLike(postId, newIsLiked).catchError((_) {});
+      if (currentAuthUid != null || (userId != null && userId != 'local-user')) {
+        FirestoreService()
+            .togglePostLike(postId, userId: uid, isLiked: newIsLiked)
+            .catchError((_) {});
+      }
+    }
+  }
+
+  /// Alterna 'me gusta' en un reporte/mascota vinculado a la cuenta actual y sincroniza con Firestore
+  void togglePetLike(String petId, {String? userId}) {
+    final currentAuthUid = AuthService().currentUser?.uid;
+    final uid = userId ?? currentAuthUid ?? 'local-user';
+    final index = _pets.indexWhere((p) => p.id == petId);
+    if (index != -1) {
+      final pet = _pets[index];
+      final wasLiked = pet.likedBy.contains(uid);
+      final newIsLiked = !wasLiked;
+      final updatedLikedBy = List<String>.from(pet.likedBy);
+      if (newIsLiked) {
+        if (!updatedLikedBy.contains(uid)) updatedLikedBy.add(uid);
+      } else {
+        updatedLikedBy.remove(uid);
+      }
+      final newLikesCount = updatedLikedBy.length;
+
+      _pets[index] = pet.copyWith(
+        isLiked: newIsLiked,
+        likedBy: updatedLikedBy,
+        likesCount: newLikesCount,
+      );
+      notifyListeners();
+      if (currentAuthUid != null || (userId != null && userId != 'local-user')) {
+        FirestoreService()
+            .togglePetLike(petId, userId: uid, isLiked: newIsLiked)
+            .catchError((_) {});
+      }
     }
   }
 
@@ -239,6 +344,7 @@ class MockDataService extends ChangeNotifier {
     _userLocation = '';
     _userPhone = '';
     _userCustomPhotoUrl = null;
+    _bookmarkedPetIds.clear();
     notifyListeners();
   }
 }

@@ -15,6 +15,25 @@ class LocationResult {
   });
 }
 
+class CityResult {
+  final String cityName;
+  final String province;
+  final String country;
+  final double latitude;
+  final double longitude;
+
+  const CityResult({
+    required this.cityName,
+    required this.province,
+    required this.country,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  String get fullDisplayName =>
+      province.isNotEmpty ? '$cityName, $province' : (country.isNotEmpty ? '$cityName, $country' : cityName);
+}
+
 class LocationServiceException implements Exception {
   final String message;
   const LocationServiceException(this.message);
@@ -143,6 +162,103 @@ class LocationService {
       }
     } catch (e) {
       debugPrint('LocationService: error en searchPlaces: $e');
+    } finally {
+      client.close();
+    }
+
+    return [];
+  }
+
+  /// Busca ciudades y localidades dinámicamente mediante el servicio geográfico
+  /// oficial de OpenStreetMap / Nominatim (igual que en Google Maps o Facebook Marketplace).
+  Future<List<CityResult>> searchCities(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
+
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return [
+        CityResult(
+          cityName: cleanQuery,
+          province: 'Chubut',
+          country: 'Argentina',
+          latitude: -43.2531,
+          longitude: -65.3094,
+        ),
+      ];
+    }
+
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 4);
+
+    try {
+      final encodedQuery = Uri.encodeComponent(cleanQuery);
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?format=jsonv2&q=$encodedQuery&limit=8&addressdetails=1',
+      );
+
+      final request = await client.getUrl(uri);
+      request.headers.set('User-Agent', 'YagoPetApp/1.0 (contacto@yagoapp.com)');
+      final response = await request.close().timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final list = jsonDecode(responseBody) as List<dynamic>;
+
+        final results = <CityResult>[];
+        final seen = <String>{};
+
+        for (final item in list) {
+          final address = item['address'] as Map<String, dynamic>?;
+          String rawCity = '';
+          String province = '';
+          String country = '';
+
+          if (address != null) {
+            rawCity = address['city'] ??
+                address['town'] ??
+                address['village'] ??
+                address['municipality'] ??
+                address['hamlet'] ??
+                address['county'] ??
+                item['name'] ??
+                '';
+            province = address['state'] ?? address['state_district'] ?? '';
+            country = address['country'] ?? '';
+          } else {
+            rawCity = item['name'] ?? '';
+          }
+
+          // Limpiar prefijos administrativos comunes para tener el nombre limpio de la ciudad
+          String cleanCity = rawCity
+              .replaceAll('Municipio de ', '')
+              .replaceAll('Comuna de ', '')
+              .replaceAll('Departamento ', '')
+              .replaceAll('Partido de ', '')
+              .trim();
+          if (cleanCity.isEmpty) {
+            cleanCity = item['name']?.toString() ?? '';
+          }
+
+          final key = '${cleanCity.toLowerCase()}_${province.toLowerCase()}';
+          if (cleanCity.isNotEmpty && !seen.contains(key)) {
+            seen.add(key);
+            final lat = double.tryParse(item['lat']?.toString() ?? '') ?? 0.0;
+            final lon = double.tryParse(item['lon']?.toString() ?? '') ?? 0.0;
+
+            results.add(CityResult(
+              cityName: cleanCity,
+              province: province,
+              country: country,
+              latitude: lat,
+              longitude: lon,
+            ));
+          }
+        }
+
+        return results;
+      }
+    } catch (e) {
+      debugPrint('LocationService.searchCities error: $e');
     } finally {
       client.close();
     }

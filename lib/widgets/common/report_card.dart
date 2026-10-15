@@ -44,14 +44,19 @@ class ReportGridCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ─── 1. Fotografía 100% limpia estilo Pinterest (sin chips invasivos) ──
+          // ─── 1. Fotografía limpia con tamaño definido uniforme (180px) ──
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: YagoPetImage(
-              imageUrl: pet.imageUrl,
+            child: SizedBox(
+              height: 180,
               width: double.infinity,
-              fit: BoxFit.fitWidth,
-              placeholderHeight: 180,
+              child: YagoPetImage(
+                imageUrl: pet.imageUrl,
+                width: double.infinity,
+                height: 180,
+                fit: BoxFit.cover,
+                placeholderHeight: 180,
+              ),
             ),
           ),
 

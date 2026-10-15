@@ -492,15 +492,33 @@ class _FeedTabState extends State<FeedTab> {
                       authorHandle: pet.status == YagoPetStatus.community
                           ? '@yago.app'
                           : '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
-                      commentsCount: 8 + (pet.name.length * 2),
-                      sharesCount: 15 + (pet.name.length * 3),
-                      likesCount: 95 + (pet.name.length * 14),
-                      viewsCount: '${15 + pet.name.length * 2} mil',
-                      imagesCount: 2 + (pet.name.length % 3),
+                      commentsCount: 0,
+                      sharesCount: 0,
+                      likesCount: pet.likesCount,
+                      isLiked: pet.isLiked,
+                      viewsCount: '1',
+                      imagesCount: 1,
                       isBookmarked: isBookmarked,
                       onBookmarkTap: () {
+                        final willBookmark = !isBookmarked;
                         setState(() {
                           MockDataService().toggleBookmark(pet.id);
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              willBookmark
+                                  ? 'Reporte guardado en tu perfil'
+                                  : 'Reporte eliminado de guardados',
+                            ),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      },
+                      onLikeTap: () {
+                        setState(() {
+                          MockDataService().togglePetLike(pet.id);
                         });
                       },
                       onContactTap: () => _showContactModal(context, pet),
@@ -791,46 +809,100 @@ class _FeedTabState extends State<FeedTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildMiniAction(
-                      Icons.chat_bubble_outline_rounded,
-                      '${post.commentsCount}',
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          MockDataService().togglePostLike(post.id);
-                        });
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            post.isLiked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 17,
-                            color: post.isLiked
-                                ? AppColors.likeRed
-                                : AppColors.twitterAction,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              MockDataService().togglePostLike(post.id);
+                            });
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                post.isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 17,
+                                color: post.isLiked
+                                    ? AppColors.likeRed
+                                    : AppColors.twitterAction,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${post.likesCount}',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: post.isLiked
+                                      ? AppColors.likeRed
+                                      : AppColors.twitterAction,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '${post.likesCount}',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: post.isLiked
-                                  ? AppColors.likeRed
-                                  : AppColors.twitterAction,
-                              fontWeight: FontWeight.w500,
+                        ),
+                        const SizedBox(width: 18),
+                        Tooltip(
+                          message: 'Compartir publicación',
+                          child: GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Enlace copiado al portapapeles'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                              child: Icon(
+                                Icons.ios_share_rounded,
+                                size: 18,
+                                color: AppColors.twitterAction,
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const Icon(
-                      Icons.ios_share_rounded,
-                      size: 18,
-                      color: AppColors.twitterAction,
+                    Tooltip(
+                      message: MockDataService().isBookmarked(post.id)
+                          ? 'Guardado'
+                          : 'Guardar publicación',
+                      child: GestureDetector(
+                        onTap: () {
+                          final isSaved = MockDataService().isBookmarked(post.id);
+                          setState(() {
+                            MockDataService().toggleBookmark(post.id);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                !isSaved
+                                    ? 'Publicación guardada en tu perfil'
+                                    : 'Publicación eliminada de guardados',
+                              ),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Icon(
+                            MockDataService().isBookmarked(post.id)
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                            size: 20,
+                            color: MockDataService().isBookmarked(post.id)
+                                ? AppColors.primary
+                                : AppColors.twitterAction,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -839,24 +911,6 @@ class _FeedTabState extends State<FeedTab> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMiniAction(IconData icon, String count) {
-    return Row(
-      children: [
-        Icon(icon, size: 17, color: AppColors.twitterAction),
-        const SizedBox(width: 5),
-        Text(
-          count,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: AppColors.twitterAction,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 

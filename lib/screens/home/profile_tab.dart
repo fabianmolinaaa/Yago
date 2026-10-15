@@ -29,13 +29,6 @@ class _ProfileTabState extends State<ProfileTab> {
     MockDataService().refreshFromFirestore().catchError((_) {});
   }
 
-  // Estado para likes interactivos dentro de las publicaciones del perfil
-  final Set<String> _likedPostIds = {'user-post-1'};
-  final Map<String, int> _postLikesCount = {
-    'user-post-1': 18,
-    'user-report-1': 45,
-  };
-
   void _handleLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -71,16 +64,19 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  void _toggleLike(String postId) {
-    setState(() {
-      if (_likedPostIds.contains(postId)) {
-        _likedPostIds.remove(postId);
-        _postLikesCount[postId] = (_postLikesCount[postId] ?? 1) - 1;
+  void _toggleLike(String postId, {Pet? pet, FeedPost? feedPost}) {
+    if (feedPost != null) {
+      MockDataService().togglePostLike(postId);
+    } else if (pet != null) {
+      MockDataService().togglePetLike(postId);
+    } else {
+      final existingPost = MockDataService().getFeedPostById(postId);
+      if (existingPost != null) {
+        MockDataService().togglePostLike(postId);
       } else {
-        _likedPostIds.add(postId);
-        _postLikesCount[postId] = (_postLikesCount[postId] ?? 0) + 1;
+        MockDataService().togglePetLike(postId);
       }
-    });
+    }
   }
 
   String _formatJoinDate(DateTime? dateTime) {
@@ -149,6 +145,8 @@ class _ProfileTabState extends State<ProfileTab> {
           userId: user?.uid,
           userName: userName,
         );
+        final savedPets = MockDataService().getSavedPets();
+        final savedPosts = MockDataService().getSavedPosts();
         final joinDate = user?.metadata.creationTime ?? userModel?.createdAt;
 
         return DefaultTabController(
@@ -307,7 +305,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     bottomInset: bottomInset,
                   ),
                   _buildReportsTab(context, myReports, bottomInset),
-                  _buildSavedTab(context, bottomInset),
+                  _buildSavedTab(
+                    context: context,
+                    savedPets: savedPets,
+                    savedPosts: savedPosts,
+                    bottomInset: bottomInset,
+                  ),
                 ],
               ),
             ),
@@ -796,16 +799,21 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   /// Pestaña 3: Publicaciones y reportes guardados
-  Widget _buildSavedTab(BuildContext context, double bottomInset) {
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: () async {
-        await MockDataService().refreshFromFirestore();
-        if (context.mounted) {
-          setState(() {});
-        }
-      },
-      child: ListView(
+  Widget _buildSavedTab({
+    required BuildContext context,
+    required List<Pet> savedPets,
+    required List<FeedPost> savedPosts,
+    required double bottomInset,
+  }) {
+    final List<_ProfileFeedItem> savedItems = [
+      ...savedPosts.map(_ProfileFeedItem.fromPost),
+      ...savedPets.map(_ProfileFeedItem.fromPet),
+    ];
+    savedItems.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+    final Widget content;
+    if (savedItems.isEmpty) {
+      content = ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(32.0, 24.0, 32.0, 96.0 + bottomInset),
         children: [
@@ -837,7 +845,56 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
         ],
-      ),
+      );
+    } else {
+      content = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: 96.0 + bottomInset),
+        children: [
+          for (final item in savedItems)
+            if (item.post != null)
+              _buildPostCard(
+                context: context,
+                postId: item.post!.id,
+                authorName: item.post!.authorName,
+                authorPhoto: item.post!.authorAvatar,
+                categoryBadge: item.post!.categoryTag,
+                timeAgo: formatTimeAgo(item.dateTime, fallback: item.post!.timeAgo),
+                content: item.post!.displayContent,
+                imageUrl: item.post!.imageUrl,
+                commentsCount: item.post!.commentsCount,
+                feedPost: item.post,
+              )
+            else if (item.pet != null)
+              _buildPostCard(
+                context: context,
+                postId: item.pet!.id,
+                authorName: item.pet!.contactName.isNotEmpty
+                    ? item.pet!.contactName
+                    : (item.pet!.status == YagoPetStatus.community
+                        ? 'Equipo Yago'
+                        : 'Comunidad Yago'),
+                authorPhoto: null,
+                statusBadge: item.pet!.status,
+                timeAgo: formatTimeAgo(item.dateTime, fallback: item.pet!.timeAgo),
+                content: item.pet!.description,
+                imageUrl: item.pet!.imageUrl,
+                pet: item.pet,
+                commentsCount: 0,
+              ),
+        ],
+      );
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () async {
+        await MockDataService().refreshFromFirestore();
+        if (context.mounted) {
+          setState(() {});
+        }
+      },
+      child: content,
     );
   }
 
@@ -1061,8 +1118,10 @@ class _ProfileTabState extends State<ProfileTab> {
     FeedPost? feedPost,
     required int commentsCount,
   }) {
-    final isLiked = _likedPostIds.contains(postId);
-    final likesCount = _postLikesCount[postId] ?? 0;
+    final resolvedPost = feedPost ?? MockDataService().getFeedPostById(postId);
+    final resolvedPet = pet ?? MockDataService().getPetById(postId);
+    final isLiked = resolvedPost?.isLiked ?? resolvedPet?.isLiked ?? false;
+    final likesCount = resolvedPost?.likesCount ?? resolvedPet?.likesCount ?? 0;
 
     return Container(
       decoration: const BoxDecoration(
@@ -1137,6 +1196,43 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 const SizedBox(height: 3),
 
+                // Si es un reporte de mascota, mostramos su nombre y datos clave
+                if (pet != null) ...[
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PetDetailScreen(pet: pet),
+                        ),
+                      ).then((_) => setState(() {}));
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pet.name,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${pet.breed} · ${pet.location}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+
                 // Contenido formateado según categoría
                 _buildPostFormattedContent(content, categoryBadge),
 
@@ -1164,46 +1260,104 @@ class _ProfileTabState extends State<ProfileTab> {
                 ],
                 const SizedBox(height: 12),
 
-                // Barra de interacciones (comentarios, me gusta, compartir)
+                // Barra de interacciones (me gusta, compartir, guardar)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildIconAction(
-                      Icons.chat_bubble_outline_rounded,
-                      '$commentsCount',
-                    ),
-                    GestureDetector(
-                      onTap: () => _toggleLike(postId),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLiked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 17,
-                            color: isLiked
-                                ? AppColors.likeRed
-                                : AppColors.twitterAction,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _toggleLike(
+                            postId,
+                            pet: resolvedPet,
+                            feedPost: resolvedPost,
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '$likesCount',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: isLiked
-                                  ? AppColors.likeRed
-                                  : AppColors.twitterAction,
-                              fontWeight: FontWeight.w500,
+                          child: Row(
+                            children: [
+                              Icon(
+                                isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 17,
+                                color: isLiked
+                                    ? AppColors.likeRed
+                                    : AppColors.twitterAction,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '$likesCount',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: isLiked
+                                      ? AppColors.likeRed
+                                      : AppColors.twitterAction,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Tooltip(
+                          message: 'Compartir',
+                          child: GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Enlace copiado al portapapeles'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                              child: Icon(
+                                Icons.ios_share_rounded,
+                                size: 17,
+                                color: AppColors.twitterAction,
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const Icon(
-                      Icons.ios_share_rounded,
-                      size: 17,
-                      color: AppColors.twitterAction,
+                    Tooltip(
+                      message: MockDataService().isBookmarked(postId)
+                          ? 'Guardado'
+                          : 'Guardar',
+                      child: GestureDetector(
+                        onTap: () {
+                          final isSaved = MockDataService().isBookmarked(postId);
+                          setState(() {
+                            MockDataService().toggleBookmark(postId);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                !isSaved
+                                    ? 'Elemento guardado en tu perfil'
+                                    : 'Elemento eliminado de guardados',
+                              ),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Icon(
+                            MockDataService().isBookmarked(postId)
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                            size: 19,
+                            color: MockDataService().isBookmarked(postId)
+                                ? AppColors.primary
+                                : AppColors.twitterAction,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1212,24 +1366,6 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildIconAction(IconData icon, String count) {
-    return Row(
-      children: [
-        Icon(icon, size: 17, color: AppColors.twitterAction),
-        const SizedBox(width: 5),
-        Text(
-          count,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: AppColors.twitterAction,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 class FeedPost {
   final String id;
@@ -8,9 +9,10 @@ class FeedPost {
   final String timeAgo;
   final String content;
   final String? imageUrl;
-  final int likesCount;
+  final int _explicitLikesCount;
+  final List<String> likedBy;
   final int commentsCount;
-  final bool isLiked;
+  final bool _explicitIsLiked;
   final bool isModerated;
   final String postType; // 'general', 'tip', 'success_story', etc.
   final DateTime? createdAt;
@@ -23,13 +25,26 @@ class FeedPost {
     required this.timeAgo,
     required this.content,
     this.imageUrl,
-    this.likesCount = 0,
+    int likesCount = 0,
+    this.likedBy = const [],
     this.commentsCount = 0,
-    this.isLiked = false,
+    bool isLiked = false,
     this.isModerated = false,
     this.postType = 'general',
     this.createdAt,
-  });
+  })  : _explicitLikesCount = likesCount,
+        _explicitIsLiked = isLiked;
+
+  int get likesCount =>
+      likedBy.isNotEmpty ? likedBy.length : _explicitLikesCount;
+
+  bool get isLiked {
+    final currentUid = AuthService().currentUser?.uid;
+    if (currentUid != null) {
+      return likedBy.contains(currentUid);
+    }
+    return _explicitIsLiked;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -40,7 +55,8 @@ class FeedPost {
       'timeAgo': timeAgo,
       'content': content,
       'imageUrl': imageUrl,
-      'likesCount': likesCount,
+      'likesCount': likedBy.isNotEmpty ? likedBy.length : likesCount,
+      'likedBy': likedBy,
       'commentsCount': commentsCount,
       'isLiked': isLiked,
       'isModerated': isModerated,
@@ -71,6 +87,18 @@ class FeedPost {
       }
     }
 
+    final likedByList = (map['likedBy'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const <String>[];
+    final rawLikesCount = (map['likesCount'] as num?)?.toInt() ?? 0;
+    final actualLikesCount =
+        likedByList.isNotEmpty ? likedByList.length : rawLikesCount;
+    final currentUid = AuthService().currentUser?.uid;
+    final isLikedCalculated = currentUid != null && likedByList.isNotEmpty
+        ? likedByList.contains(currentUid)
+        : (map['isLiked'] as bool? ?? false);
+
     return FeedPost(
       id: map['id'] ?? docId,
       authorId: map['authorId'] as String?,
@@ -79,9 +107,10 @@ class FeedPost {
       timeAgo: map['timeAgo'] ?? 'Reciente',
       content: map['content'] ?? '',
       imageUrl: map['imageUrl'] as String?,
-      likesCount: (map['likesCount'] as num?)?.toInt() ?? 0,
+      likesCount: actualLikesCount,
+      likedBy: likedByList,
       commentsCount: (map['commentsCount'] as num?)?.toInt() ?? 0,
-      isLiked: map['isLiked'] as bool? ?? false,
+      isLiked: isLikedCalculated,
       isModerated: map['isModerated'] as bool? ?? false,
       postType: map['postType'] as String? ?? 'general',
       createdAt: parsedCreatedAt,
@@ -102,12 +131,14 @@ class FeedPost {
     String? content,
     String? imageUrl,
     int? likesCount,
+    List<String>? likedBy,
     int? commentsCount,
     bool? isLiked,
     bool? isModerated,
     String? postType,
     DateTime? createdAt,
   }) {
+    final newLikedBy = likedBy ?? this.likedBy;
     return FeedPost(
       id: id ?? this.id,
       authorId: authorId ?? this.authorId,
@@ -116,7 +147,8 @@ class FeedPost {
       timeAgo: timeAgo ?? this.timeAgo,
       content: content ?? this.content,
       imageUrl: imageUrl ?? this.imageUrl,
-      likesCount: likesCount ?? this.likesCount,
+      likesCount: likesCount ?? (likedBy != null ? newLikedBy.length : this.likesCount),
+      likedBy: newLikedBy,
       commentsCount: commentsCount ?? this.commentsCount,
       isLiked: isLiked ?? this.isLiked,
       isModerated: isModerated ?? this.isModerated,

@@ -202,15 +202,31 @@ class _SearchTabState extends State<SearchTab> {
                         description: pet.description,
                         authorName: pet.contactName.isNotEmpty ? pet.contactName : 'Comunidad Yago',
                         authorHandle: '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
-                        commentsCount: 6 + (pet.name.length * 2),
-                        sharesCount: 14 + (pet.name.length * 2),
-                        likesCount: 88 + (pet.name.length * 11),
-                        viewsCount: '${11 + pet.name.length} mil',
-                        imagesCount: 2 + (pet.name.length % 3),
+                        commentsCount: 0,
+                        sharesCount: 0,
+                        likesCount: pet.likesCount,
+                        isLiked: pet.isLiked,
+                        viewsCount: '1',
+                        imagesCount: 1,
                         isBookmarked: isBookmarked,
                         onBookmarkTap: () {
+                          final wasBookmarked = MockDataService().isBookmarked(pet.id);
                           setState(() {
                             MockDataService().toggleBookmark(pet.id);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(wasBookmarked
+                                  ? 'Reporte eliminado de guardados'
+                                  : 'Reporte guardado en tu perfil'),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        onLikeTap: () {
+                          setState(() {
+                            MockDataService().togglePetLike(pet.id);
                           });
                         },
                         onContactTap: () {

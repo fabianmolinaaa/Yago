@@ -50,7 +50,7 @@ class PetCard extends StatefulWidget {
     this.imagesCount = 3,
     this.commentsCount = 8,
     this.sharesCount = 24,
-    this.likesCount = 142,
+    this.likesCount = 0,
     this.viewsCount = '1.8 mil',
     this.isBookmarked = false,
     this.isLiked = false,
@@ -78,10 +78,21 @@ class _PetCardState extends State<PetCard> {
     _likes = widget.likesCount;
   }
 
+  @override
+  void didUpdateWidget(covariant PetCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isLiked != widget.isLiked) {
+      _liked = widget.isLiked;
+    }
+    if (oldWidget.likesCount != widget.likesCount) {
+      _likes = widget.likesCount;
+    }
+  }
+
   void _handleLike() {
     setState(() {
       _liked = !_liked;
-      _likes += _liked ? 1 : -1;
+      _likes += _liked ? 1 : (_likes > 0 ? -1 : 0);
     });
     widget.onLikeTap?.call();
   }
@@ -345,51 +356,70 @@ class _PetCardState extends State<PetCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Comentarios
-                _buildActionButton(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: _formatCount(widget.commentsCount),
-                  color: AppColors.twitterAction,
-                  onTap: widget.onCommentTap,
-                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Apoyo / Like
+                    _buildActionButton(
+                      icon: _liked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      label: _formatCount(_likes),
+                      color: _liked ? AppColors.likeRed : AppColors.twitterAction,
+                      onTap: _handleLike,
+                    ),
+                    const SizedBox(width: 18),
 
-                // Apoyo / Like
-                _buildActionButton(
-                  icon: _liked
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  label: _formatCount(_likes),
-                  color: _liked ? AppColors.likeRed : AppColors.twitterAction,
-                  onTap: _handleLike,
-                ),
-
-                // Contactar con el dueño por mensaje directo (icono DM)
-                Tooltip(
-                  message: 'Enviar mensaje directo al dueño',
-                  child: GestureDetector(
-                    onTap: widget.onContactTap,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      child: Icon(
-                        Icons.mail_outline_rounded,
-                        size: 20,
-                        color: AppColors.twitterAction,
+                    // Contactar con el dueño por mensaje directo (icono DM)
+                    Tooltip(
+                      message: 'Enviar mensaje directo al dueño',
+                      child: GestureDetector(
+                        onTap: widget.onContactTap,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Icon(
+                            Icons.mail_outline_rounded,
+                            size: 20,
+                            color: AppColors.twitterAction,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 18),
+
+                    // Compartir
+                    Tooltip(
+                      message: 'Compartir publicación',
+                      child: GestureDetector(
+                        onTap: widget.onShareTap,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Icon(
+                            Icons.ios_share_rounded,
+                            size: 19,
+                            color: AppColors.twitterAction,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
-                // Compartir
+                // Guardar reporte / publicación
                 Tooltip(
-                  message: 'Compartir publicación',
+                  message: widget.isBookmarked ? 'Guardado' : 'Guardar reporte',
                   child: GestureDetector(
-                    onTap: widget.onShareTap,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    onTap: widget.onBookmarkTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                       child: Icon(
-                        Icons.ios_share_rounded,
-                        size: 19,
-                        color: AppColors.twitterAction,
+                        widget.isBookmarked
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        size: 21,
+                        color: widget.isBookmarked
+                            ? AppColors.primary
+                            : AppColors.twitterAction,
                       ),
                     ),
                   ),

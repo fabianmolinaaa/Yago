@@ -61,6 +61,7 @@ class YagoButton extends StatelessWidget {
     final childContent = Row(
       mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (isLoading) ...[
           SizedBox(
@@ -79,6 +80,7 @@ class YagoButton extends StatelessWidget {
         Flexible(
           child: Text(
             text,
+            textAlign: TextAlign.center,
             style: textStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

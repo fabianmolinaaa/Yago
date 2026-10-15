@@ -70,6 +70,7 @@ class AppColors {
 
   /// Mascota Reunida (Éxito / Caso resuelto / Regresó con su familia: Sage Green #4FA175)
   static const Color reunited = Color(0xFF4FA175);
+  static const Color success = Color(0xFF4FA175);
   static const Color reunitedBg = Color(0xFFEAF5EE);
   static const Color reunitedText = Color(0xFF428C63);
 

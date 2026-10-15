@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funciones auxiliares de verificación
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Colección: users ---
+    match /users/{userId} {
+      // Lectura pública de perfiles básicos
+      allow read: if isAuthenticated();
+      // Creación al registrarse
+      allow create: if isOwner(userId);
+      // Solo el propio usuario puede editar su perfil (y no puede autoasignarse rol admin)
+      allow update: if isOwner(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isActive']))
+                    || isAdmin();
+      // Guardados personales y likes personales
+      match /saved_pets/{petId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /saved_posts/{postId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /saved_items/{itemId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /liked_pets/{petId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /liked_posts/{postId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // --- Colección: pets ---
+    match /pets/{petId} {
+      // Lectura comunitaria abierta para permitir consultas del feed y reportes
+      allow read: if true;
+      // Creación si está autenticado
+      allow create: if isAuthenticated();
+      // Modificación por el dueño, Administrador, o cualquier usuario autenticado alternando 'likedBy', 'likesCount' o 'isLiked'
+      allow update: if isOwner(resource.data.ownerId) 
+                    || isAdmin()
+                    || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount', 'isLiked']));
+      // Baja por el dueño o Administrador
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
+
+      // Subcolección: sightings
+      match /sightings/{sightingId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+    }
+
+    // --- Colección: feed_posts ---
+    match /feed_posts/{postId} {
+      // Lectura comunitaria abierta para permitir consultas y streams del feed
+      allow read: if true;
+      allow create: if isAuthenticated();
+      // Modificación por el autor, Administrador, o cualquier usuario autenticado alternando 'likedBy', 'likesCount' o 'isLiked'
+      allow update: if isOwner(resource.data.authorId) 
+                    || isAdmin()
+                    || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount', 'isLiked']));
+      allow delete: if isOwner(resource.data.authorId) || isAdmin();
+
+      // Subcolección: likes
+      match /likes/{userId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // --- Colección: moderation_reports ---
+    match /moderation_reports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

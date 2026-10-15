@@ -182,6 +182,46 @@ void main() {
     expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
   });
 
+  testWidgets('PetCard starts with 0 likes by default, increments on tap, and fires onLikeTap', (WidgetTester tester) async {
+    bool likeTapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PetCard(
+            name: 'Luna',
+            details: 'Lhasa Apso · Hembra · 3 años',
+            locationAndTime: 'Costanera, Caleta Olivia · Hace 2 horas',
+            imageUrl: 'https://example.com/pet.jpg',
+            status: YagoPetStatus.lost,
+            onLikeTap: () {
+              likeTapped = true;
+            },
+          ),
+        ),
+      ),
+    );
+
+    // Initial likes count is 0 (no hardcoded 142)
+    expect(find.text('0'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+
+    // Tap like button
+    await tester.tap(find.byIcon(Icons.favorite_border_rounded));
+    await tester.pump();
+
+    // Now has 1 like, icon turns filled, callback triggered
+    expect(find.text('1'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    expect(likeTapped, isTrue);
+
+    // Tap again to unlike
+    await tester.tap(find.byIcon(Icons.favorite_rounded));
+    await tester.pump();
+
+    expect(find.text('0'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+  });
+
   testWidgets('ComingSoonView renders title, badge and description', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -357,6 +397,55 @@ void main() {
     await tester.tap(find.text('Reportes'));
     await tester.pumpAndSettle();
     expect(find.text('Sin reportes activos'), findsOneWidget);
+
+    // Navegar a Guardados y comprobar estado vacío inicial
+    await tester.tap(find.text('Guardados'));
+    await tester.pumpAndSettle();
+    expect(find.text('No tienes elementos guardados'), findsOneWidget);
+  });
+
+  testWidgets('ProfileTab Guardados displays saved reports and posts and allows unbookmarking', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final mock = MockDataService();
+    mock.toggleBookmark('pet-1'); // Guardamos a Luna
+
+    try {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ProfileTab(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Cambiar a la pestaña Guardados
+      await tester.tap(find.text('Guardados'));
+      await tester.pumpAndSettle();
+
+      // Debe mostrar a Luna en guardados
+      expect(find.text('Luna'), findsOneWidget);
+
+      // Tocar el botón de bookmark para quitarlo
+      final bookmarkBtn = find.byIcon(Icons.bookmark_rounded);
+      expect(bookmarkBtn, findsWidgets);
+      await tester.tap(bookmarkBtn.first);
+      await tester.pumpAndSettle();
+
+      // Ya no debe estar guardado
+      expect(find.text('Luna'), findsNothing);
+      expect(find.text('No tienes elementos guardados'), findsOneWidget);
+    } finally {
+      if (mock.isBookmarked('pet-1')) {
+        mock.toggleBookmark('pet-1');
+      }
+    }
   });
 
   testWidgets('ProfileTab shows post options menu and triggers delete dialog', (WidgetTester tester) async {
@@ -624,6 +713,8 @@ void main() {
     // Tocar el botón de tres puntos (...) en la primera tarjeta
     final moreOptions = find.byIcon(Icons.more_horiz_rounded);
     expect(moreOptions, findsWidgets);
+    await tester.ensureVisible(moreOptions.first);
+    await tester.pump();
     await tester.tap(moreOptions.first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -650,8 +741,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Seleccionar filtro de Gatos
-    await tester.tap(find.text('🐱 Gatos'));
+    // Seleccionar filtro de Gatos con icono elegante
+    await tester.tap(find.text('Gatos'));
     await tester.pump();
 
     // Aplicar filtros
@@ -664,6 +755,28 @@ void main() {
     expect(find.text('Thor'), findsNothing);
 
     // Restablecer filtros desde el header
+    await tester.tap(find.byTooltip('Filtrar reportes'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Restablecer'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Filtrar por raza 'Caniche' desde el modal de filtros
+    await tester.tap(find.byTooltip('Filtrar reportes'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Caniche').first);
+    await tester.pump();
+    await tester.tap(find.text('Aplicar filtros'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Solo debe verse Luna la caniche
+    expect(find.text('Luna'), findsWidgets);
+    expect(find.text('Thor'), findsNothing);
+
+    // Restablecer filtros nuevamente
     await tester.tap(find.byTooltip('Filtrar reportes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -686,6 +799,63 @@ void main() {
     // Solo debe verse Luna la Caniche
     expect(find.text('Luna'), findsWidgets);
     expect(find.text('Thor'), findsNothing);
+  });
+
+  testWidgets('ReportsFeedTab filters reports by city Marketplace-style (HU-S2-06)', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ReportsFeedTab(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // 1. Debe mostrar por defecto la barra de ubicación con Caleta Olivia
+    expect(find.text('Caleta Olivia'), findsWidgets);
+    expect(find.text('Ver todas'), findsOneWidget);
+
+    // 2. Reportes locales de Caleta Olivia visibles por defecto
+    expect(find.text('Luna'), findsWidgets);
+    expect(find.text('Thor'), findsWidgets);
+
+    // 3. Tocar el pill de ubicación para abrir el modal selector de ciudad
+    await tester.tap(find.text('Caleta Olivia').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar contenido del modal selector de ciudad
+    expect(find.text('Ubicación de reportes'), findsOneWidget);
+    expect(find.text('Usar mi ubicación actual'), findsOneWidget);
+    expect(find.text('Todas las ciudades'), findsWidgets);
+
+    // 4. Buscar una ciudad sin reportes para verificar estado vacío
+    final citySearchField = find.widgetWithText(TextField, 'Buscar ciudad o localidad...');
+    expect(citySearchField, findsOneWidget);
+    await tester.enterText(citySearchField, 'Trelew');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verificar que aparezca el encabezado de sugerencias dinámicas y la sugerencia de Trelew (Chubut)
+    expect(find.text('Sugerencias para "Trelew"'), findsOneWidget);
+    final trelewTile = find.widgetWithText(ListTile, 'Trelew');
+    expect(trelewTile, findsOneWidget);
+    await tester.tap(trelewTile);
+    await tester.pumpAndSettle();
+
+    // Debe mostrar estado vacío específico de la ciudad
+    expect(find.text('No hay reportes en Trelew'), findsOneWidget);
+    expect(find.text('Ver todas las ciudades'), findsOneWidget);
+
+    // 5. Tocar "Ver todas las ciudades" para restaurar la vista completa
+    await tester.tap(find.text('Ver todas las ciudades'));
+    await tester.pumpAndSettle();
+
+    // Debe volver a mostrar todos los reportes y el pill cambia a "Todas las ciudades"
+    expect(find.text('Todas las ciudades'), findsWidgets);
+    expect(find.text('Luna'), findsWidgets);
+    expect(find.text('Thor'), findsWidgets);
   });
 
   testWidgets('ContextualZoneModal displays neighborhood approximate zone radius and safety note', (WidgetTester tester) async {
