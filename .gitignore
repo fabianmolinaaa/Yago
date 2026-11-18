@@ -8,6 +8,8 @@
 .history
 .DS_Store
 **/.DS_Store
+.idea/caches/
+skills/
 
 
 

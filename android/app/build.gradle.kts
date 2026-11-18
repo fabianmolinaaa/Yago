@@ -9,12 +9,16 @@ plugins {
 
 android {
     namespace = "com.example.yago"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    androidResources {
+        noCompress += listOf("tflite", "lite")
     }
 
     defaultConfig {

@@ -202,6 +202,8 @@ class _SearchTabState extends State<SearchTab> {
                         description: pet.description,
                         authorName: pet.contactName.isNotEmpty ? pet.contactName : 'Comunidad Yago',
                         authorHandle: '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
+                        authorAvatar: MockDataService().resolvePetAuthorAvatar(pet),
+                        showContactButton: !pet.isUserOwner,
                         commentsCount: 0,
                         sharesCount: 0,
                         likesCount: pet.likesCount,
@@ -229,14 +231,15 @@ class _SearchTabState extends State<SearchTab> {
                             MockDataService().togglePetLike(pet.id);
                           });
                         },
-                        onContactTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Contacto de ${pet.name}: ${pet.contactName} (${pet.contactPhone})'),
-                              backgroundColor: AppColors.textPrimary,
-                            ),
-                          );
-                        },
+                        onContactTap: pet.isUserOwner
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PetDetailScreen(pet: pet),
+                                  ),
+                                );
+                              },
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(

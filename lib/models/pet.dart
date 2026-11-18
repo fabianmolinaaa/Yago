@@ -15,6 +15,7 @@ enum YagoPetStatus {
 class Pet {
   final String id;
   final String? ownerId;
+  final String? ownerAvatar;
   final String name;
   final String breed; // Raza, ej: "Golden Retriever", "Mestizo", "Siamés"
   final String species; // "Perro", "Gato", "Otro"
@@ -22,8 +23,9 @@ class Pet {
   final String age; // ej: "2 años", "Cachorro", "Adulto"
   final YagoPetStatus status;
   final String location; // ej: "Palermo, CABA"
-  final String timeAgo; // ej: "Hace 2 horas"
-  final DateTime date;
+  final String timeAgo; // ej: "Hace 2 horas" (relativo a la fecha de pérdida/hallazgo)
+  final DateTime date; // Fecha de pérdida o hallazgo indicada por el usuario
+  final DateTime? createdAt; // Fecha real de creación/publicación del reporte en el sistema
   final String description;
   final String imageUrl;
   final List<String> tags; // ej: ["Collar rojo", "Con chip", "Mancha blanca"]
@@ -41,6 +43,7 @@ class Pet {
   const Pet({
     required this.id,
     this.ownerId,
+    this.ownerAvatar,
     required this.name,
     required this.breed,
     required this.species,
@@ -50,6 +53,7 @@ class Pet {
     required this.location,
     required this.timeAgo,
     required this.date,
+    this.createdAt,
     required this.description,
     required this.imageUrl,
     this.tags = const [],
@@ -70,14 +74,30 @@ class Pet {
   int get likesCount =>
       likedBy.isNotEmpty ? likedBy.length : _explicitLikesCount;
 
-  bool isUserOwnerFor(String? userId) {
-    if (userId != null) {
-      return ownerId != null && ownerId == userId;
+  bool isUserOwnerFor(String? userId, {String? userName}) {
+    if (userId != null && userId.isNotEmpty) {
+      if (ownerId != null && ownerId == userId) {
+        return true;
+      }
+      if (userName != null &&
+          userName.trim().isNotEmpty &&
+          contactName.trim().toLowerCase() == userName.trim().toLowerCase()) {
+        return true;
+      }
+      return false;
+    }
+    if (userName != null &&
+        userName.trim().isNotEmpty &&
+        contactName.trim().toLowerCase() == userName.trim().toLowerCase()) {
+      return true;
     }
     return _explicitUserOwner;
   }
 
-  bool get isUserOwner => isUserOwnerFor(AuthService().currentUser?.uid);
+  bool get isUserOwner {
+    final user = AuthService().currentUser;
+    return isUserOwnerFor(user?.uid, userName: user?.displayName);
+  }
 
 
   bool get isLiked {
@@ -90,12 +110,79 @@ class Pet {
 
   bool get isResolved => status == YagoPetStatus.reunited;
 
-  /// Detalle resumido para PetCard (ej: "Golden Retriever · Macho · 2 años")
-  String get detailsSummary => '$breed · $gender · $age';
+  /// Extrae los números de teléfono válidos y llamables asociados al reporte.
+  /// Si quien reportó no ingresó un teléfono (ej. "Contacto por chat interno" o vacío),
+  /// retorna una lista vacía.
+  List<String> get callablePhones {
+    if (status == YagoPetStatus.community) return const [];
+    final raw = contactPhone.trim();
+    if (raw.isEmpty) return const [];
+    final lower = raw.toLowerCase();
+    if (lower.contains('chat') ||
+        lower.contains('sin tel') ||
+        lower.contains('no especificado') ||
+        lower.contains('desconocido')) {
+      return const [];
+    }
+    final parts = raw.split('/');
+    final valid = <String>[];
+    for (final part in parts) {
+      final clean = part.trim();
+      final digits = clean.replaceAll(RegExp(r'\D'), '');
+      if (digits.length >= 6 && clean != '+54 9 297 000-0000') {
+        valid.add(clean);
+      }
+    }
+    return valid;
+  }
 
-  /// Ubicación y tiempo para PetCard (ej: "Palermo, CABA · Hace 2 horas")
+  /// Indica si quien reportó agregó al menos un número de teléfono válido para llamar.
+  bool get hasContactPhone => callablePhones.isNotEmpty;
+
+  /// Primer número de teléfono válido para iniciar la llamada nativa.
+  String? get primaryCallablePhone =>
+      callablePhones.isNotEmpty ? callablePhones.first : null;
+
+  /// Determina si un atributo opcional fue completado con un valor real
+  /// (descartando cadenas vacías o marcadores como "Desconocido/a").
+  static bool isKnownAttribute(String value) {
+    final clean = value.trim().toLowerCase();
+    if (clean.isEmpty) return false;
+    const unknownValues = {
+      'desconocido',
+      'desconocida',
+      'no especificado',
+      'no especificada',
+      'sin especificar',
+      'no conozco la edad',
+      'raza desconocida',
+      'sin raza',
+    };
+    return !unknownValues.contains(clean);
+  }
+
+  bool get hasKnownBreed => isKnownAttribute(breed);
+
+  /// Detalle resumido para PetCard en el feed: muestra únicamente los campos completados
+  /// (raza, sexo, edad), omitiendo valores vacíos o "Desconocido/a".
+  String get detailsSummary {
+    final parts = <String>[
+      if (isKnownAttribute(breed)) breed.trim(),
+      if (isKnownAttribute(gender)) gender.trim(),
+      if (isKnownAttribute(age)) age.trim(),
+    ];
+    return parts.join(' · ');
+  }
+
+  /// Fecha efectiva de creación del reporte en el sistema.
+  /// Se utiliza para el orden cronológico en los feeds (los reportes recién publicados
+  /// siempre aparecen primero sin importar si la fecha de extravío/hallazgo `date` es antigua).
+  DateTime get effectiveCreatedAt =>
+      createdAt ?? extractDateFromId(id) ?? date;
+
+  /// Ubicación y tiempo de publicación para PetCard en el feed (ej: "Palermo, CABA · Recién publicado")
   String get locationAndTime =>
-      '$location · ${formatTimeAgo(date, fallback: timeAgo.isNotEmpty ? timeAgo : 'Reciente')}';
+      '$location · ${formatTimeAgo(effectiveCreatedAt, fallback: timeAgo.isNotEmpty ? timeAgo : 'Reciente')}';
 
   static YagoPetStatus parseStatus(String? statusStr) {
     switch (statusStr) {
@@ -122,6 +209,7 @@ class Pet {
     return {
       'id': id,
       'ownerId': ownerId,
+      'ownerAvatar': ownerAvatar,
       'name': name,
       'breed': breed,
       'species': species,
@@ -146,26 +234,36 @@ class Pet {
       'likesCount': likedBy.isNotEmpty ? likedBy.length : likesCount,
       'likedBy': likedBy,
       'isLiked': isLiked,
-      'createdAt': Timestamp.fromDate(date),
+      'createdAt': Timestamp.fromDate(effectiveCreatedAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
   factory Pet.fromMap(Map<String, dynamic> map, String docId) {
+    final idStr = (map['id'] as String?) ?? docId;
+    final idDate = extractDateFromId(idStr);
+
     DateTime parsedDate = DateTime.now();
     if (map['date'] is Timestamp) {
       parsedDate = (map['date'] as Timestamp).toDate();
     } else if (map['date'] is String) {
       parsedDate = DateTime.tryParse(map['date'] as String) ?? DateTime.now();
-    } else {
-      final idStr = (map['id'] as String?) ?? docId;
-      final match = RegExp(r'\d{10,}').firstMatch(idStr);
-      if (match != null) {
-        final millis = int.tryParse(match.group(0)!);
-        if (millis != null) {
-          parsedDate = DateTime.fromMillisecondsSinceEpoch(millis);
-        }
-      }
+    } else if (idDate != null) {
+      parsedDate = idDate;
+    }
+
+    DateTime? parsedCreatedAt;
+    if (map['createdAt'] is Timestamp) {
+      parsedCreatedAt = (map['createdAt'] as Timestamp).toDate();
+    } else if (map['createdAt'] is String) {
+      parsedCreatedAt = DateTime.tryParse(map['createdAt'] as String);
+    }
+    // Si el ID contiene el timestamp de creación y es más reciente que `createdAt`
+    // (ej. reportes creados cuando `createdAt` copiaba la fecha antigua de extravío),
+    // se prioriza la fecha real de creación del ID.
+    if (idDate != null &&
+        (parsedCreatedAt == null || idDate.isAfter(parsedCreatedAt))) {
+      parsedCreatedAt = idDate;
     }
 
     final likedByList = (map['likedBy'] as List<dynamic>?)
@@ -183,6 +281,7 @@ class Pet {
     return Pet(
       id: map['id'] ?? docId,
       ownerId: map['ownerId'] as String?,
+      ownerAvatar: map['ownerAvatar'] as String?,
       name: map['name'] ?? '',
       breed: map['breed'] ?? '',
       species: map['species'] ?? '',
@@ -192,6 +291,7 @@ class Pet {
       location: map['location'] ?? map['locationName'] ?? '',
       timeAgo: map['timeAgo'] ?? '',
       date: parsedDate,
+      createdAt: parsedCreatedAt,
       description: map['description'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
       tags: List<String>.from(map['tags'] ?? []),
@@ -216,6 +316,8 @@ class Pet {
   Pet copyWith({
     String? id,
     String? ownerId,
+    String? ownerAvatar,
+    bool clearOwnerAvatar = false,
     String? name,
     String? breed,
     String? species,
@@ -225,6 +327,7 @@ class Pet {
     String? location,
     String? timeAgo,
     DateTime? date,
+    DateTime? createdAt,
     String? description,
     String? imageUrl,
     List<String>? tags,
@@ -243,6 +346,7 @@ class Pet {
     return Pet(
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
+      ownerAvatar: clearOwnerAvatar ? null : (ownerAvatar ?? this.ownerAvatar),
       name: name ?? this.name,
       breed: breed ?? this.breed,
       species: species ?? this.species,
@@ -252,6 +356,7 @@ class Pet {
       location: location ?? this.location,
       timeAgo: timeAgo ?? this.timeAgo,
       date: date ?? this.date,
+      createdAt: createdAt ?? this.createdAt,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
       tags: tags ?? this.tags,

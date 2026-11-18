@@ -41,7 +41,10 @@ Yago/
 │   │
 │   ├── models/                         # Modelos de datos del dominio (Clean Architecture)
 │   │   ├── pet.dart                    # Modelo de reporte, perfil de mascota y enum de estados (YagoPetStatus)
-│   │   └── feed_post.dart              # Modelo de publicación social y comunitaria del feed
+│   │   ├── feed_post.dart              # Modelo de publicación social y comunitaria del feed
+│   │   ├── user_model.dart             # Modelo de usuario y rol (User / Admin)
+│   │   ├── ai_analysis.dart            # Modelos de análisis fenotípico IA (AiPetAnalysis) y coincidencia (AiMatchResult)
+│   │   └── chat_conversation.dart      # Modelos de conversación y mensajes de chat directo 1 a 1
 │   │
 │   ├── screens/                        # Pantallas y vistas de la aplicación
 │   │   ├── onboarding/
@@ -53,17 +56,28 @@ Yago/
 │   │   ├── home/
 │   │   │   ├── home_screen.dart        # Contenedor principal con YagoBottomNavBar de 5 accesos
 │   │   │   ├── feed_tab.dart           # Feed de publicaciones comunitarias y sociales (Pantalla 1)
+│   │   │   ├── reports_feed_tab.dart   # Feed de reportes de perdidos/encontrados con filtro por ciudad y especie (Pantalla 2)
+│   │   │   ├── ai_camera_screen.dart   # Cámara analizadora con IA, extracción de rasgos y cotejo visual (Pantalla 3)
+│   │   │   ├── direct_chats_tab.dart   # Bandeja de chats directos 1 a 1 ordenados cronológicamente con indicadores de no leídos (Pantalla 4)
+│   │   │   ├── direct_chat_screen.dart # Conversación de chat directo 1 a 1 con tarjeta resumida de contexto, fotos y coordinación
 │   │   │   ├── profile_tab.dart        # Perfil del usuario, estadísticas, reportes propios y logout (Pantalla 5)
-│   │   │   └── create_report_screen.dart # Publicación de mascotas perdidas y encontradas con fotos y atributos
+│   │   │   ├── edit_profile_screen.dart# Edición de nombre, teléfono, ciudad y biografía del usuario
+│   │   │   ├── create_post_screen.dart # Creación de publicaciones en el feed comunitario
+│   │   │   └── create_report_screen.dart # Publicación de mascotas perdidas/encontradas y reutilización desde Cámara IA
 │   │   └── pet_detail/
-│   │       └── pet_detail_screen.dart  # Ficha detallada de la mascota con atributos, mapa y contacto directo
+│   │       └── pet_detail_screen.dart  # Ficha detallada de la mascota con atributos, mapa contextual y chat directo
 │   │
-│   └── services/                       # Integraciones con backend y APIs
+│   └── services/                       # Integraciones con backend, geolocalización e IA
 │       ├── auth_service.dart           # Servicio de autenticación con Firebase Auth y traducción de errores
-│       └── mock_data_service.dart      # Servicio de datos simulados de mascotas y comunidad para desarrollo
+│       ├── firestore_service.dart      # Persistencia reactiva en Cloud Firestore (pets, feed_posts, ai_scans, chats)
+│       ├── storage_service.dart        # Subida y compresión de imágenes en Firebase Cloud Storage
+│       ├── location_service.dart       # Geolocalización GPS y geocodificación inversa (OpenStreetMap Nominatim)
+│       ├── ai_vision_service.dart      # Extracción fenotípica (Gemini Multimodal + análisis local) y motor de similitud
+│       └── mock_data_service.dart      # Estado reactivo local sincronizado con Firestore y soporte offline
 │
 └── test/
-    └── widget_test.dart                # Pruebas automatizadas de la app, componentes del Design System y PetCard
+    ├── firestore_service_test.dart     # Pruebas unitarias de serialización, lógica de negocio y motor de IA
+    └── widget_test.dart                # Pruebas automatizadas de UI, flujos de Sprints 1, 2 y 3 (67 tests)
 ```
 
 ---
@@ -115,12 +129,14 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 | Archivo | ¿Qué contiene? |
 | :--- | :--- |
 | **`home_screen.dart`** | Contenedor principal de la aplicación que orquesta la barra de navegación `YagoBottomNavBar` con sus 5 accesos (Publicaciones, Reportes, Cámara IA, Chat y Perfil). |
-| **`feed_tab.dart`** | Pantalla 1: Feed de publicaciones comunitarias y sociales (novedades, fotos de mascotas, historias y consejos con reacciones y mensaje directo al autor). |
-| **`reports_feed_tab.dart`** *(En construcción)* | Pantalla 2: Feed de reportes de mascotas perdidas y encontradas con visualización contextual de la zona en el mapa. |
-| **`ai_camera_screen.dart`** *(En construcción)* | Pantalla 3: Cámara para análisis con IA (toma de foto en la calle y búsqueda automática de coincidencias en la BD de perdidos). |
-| **`chat_list_screen.dart`** *(En construcción)* | Pantalla 4: Chat directo entre personas (mensajería 1 a 1 para coordinar pistas y reencuentros). |
-| **`profile_tab.dart`** | Pantalla 5: Pestaña de perfil del usuario autenticado: métricas personales, gestión de reportes propios publicados y botón seguro de cierre de sesión. |
-| **`pet_detail_screen.dart`** | Ficha detallada de la mascota con foto expandida, atributos físicos, ubicación contextual de la zona del hecho, descripción y botón de contacto. |
+| **`feed_tab.dart`** | Pantalla 1: Feed de publicaciones comunitarias y sociales (novedades, fotos de mascotas, historias y consejos con reacciones y filtros por categoría). |
+| **`reports_feed_tab.dart`** | Pantalla 2: Feed de reportes de mascotas perdidas y encontradas con visualización contextual de zona en el mapa, filtros por especie (`Perro`, `Gato`, `Otro`) y filtro por localidad. |
+| **`ai_camera_screen.dart`** | Pantalla 3 (`HU-S3-01` a `HU-S3-06`): Cámara analizadora con IA para capturar o cargar fotos, extraer rasgos fenotípicos, comparar contra la base de datos activa de perdidos/encontrados con porcentaje de similitud y fotos comparativas, abrir chat directo con el responsable o reutilizar los datos para publicar un nuevo hallazgo. |
+| **`direct_chats_tab.dart`** | Pantalla 4 (`HU-S4-01`, `HU-S4-04`, `HU-S4-05`): Bandeja de chats directos con conversaciones activas ordenadas cronológicamente, filtros por no leídos/categoría, buscador y badges de mensajes pendientes. |
+| **`direct_chat_screen.dart`** | Conversación de chat directo 1 a 1 (`HU-S3-05`, `HU-S4-02`, `HU-S4-03`, `HU-S4-04`, `HU-S4-05`) vinculada a un reporte de mascota o publicación comunitaria, con tarjeta resumida en el encabezado, envío de fotos, coordinación de punto de reencuentro y lectura en tiempo real. |
+| **`create_report_screen.dart`** | Formulario de creación de reportes de mascotas perdidas o encontradas con GPS, selector de mapa manual, soporte multi-especie (`Regla 4`) y pre-carga automática de foto y rasgos desde la Cámara IA (`HU-S3-06`). |
+| **`profile_tab.dart`** | Pantalla 5: Pestaña de perfil del usuario autenticado: métricas personales, gestión de reportes propios, guardados y cierre de sesión. |
+| **`pet_detail_screen.dart`** | Ficha detallada de la mascota con foto expandida, atributos físicos, ubicación contextual de la zona del hecho, resolución del caso por el autor y acceso a `DirectChatScreen`. |
 
 ---
 
@@ -128,8 +144,12 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 
 | Archivo | ¿Qué contiene? |
 | :--- | :--- |
-| **`auth_service.dart`** | Servicio singleton centralizado para Firebase Authentication: métodos para login, registro con `displayName`, recuperación de contraseña, cierre de sesión, flujo `authStateChanges` y mapeo completo de `FirebaseAuthException` a mensajes amigables. |
-| **`mock_data_service.dart`** | Servicio singleton de datos simulados en memoria para mascotas (perdidas, encontradas, resueltas), marcadores guardados y publicaciones del feed comunitario. |
+| **`auth_service.dart`** | Servicio singleton centralizado para Firebase Authentication: métodos para login, registro con `displayName`, recuperación de contraseña, cierre de sesión y mapeo de `FirebaseAuthException`. |
+| **`firestore_service.dart`** | Servicio de persistencia reactiva en Cloud Firestore para `users`, `pets`, `feed_posts`, `ai_scans` y `chats`. |
+| **`storage_service.dart`** | Subida y compresión automática de fotografías de reportes y publicaciones hacia Firebase Cloud Storage. |
+| **`location_service.dart`** | Obtención de coordenadas GPS (`geolocator`) y geocodificación / búsqueda de calles mediante OpenStreetMap Nominatim. |
+| **`ai_vision_service.dart`** | Servicio de Visión Computacional e IA (`HU-S3-02`, `HU-S3-03`, `HU-S3-04`): extracción multimodal con Google Gemini (`gemini-2.0-flash`) + analizador fenotípico y cromático RGB local, y algoritmo de comparación multicriterio contra reportes activos (`lost` y `found`). |
+| **`mock_data_service.dart`** | Estado reactivo local sincronizado con Firestore para mascotas, publicaciones comunitarias, guardados y conversaciones de chat directo. |
 
 ---
 
@@ -152,7 +172,8 @@ Contiene los bloques de construcción gráficos listos para ser utilizados en cu
 
 | Archivo | Propósito |
 | :--- | :--- |
-| **`widget_test.dart`** | Pruebas unitarias y de widgets: validación de renderizado del login (`YagoApp`), formulario de registro (`RegisterScreen`), `PetCard` y componentes del Design System (`YagoButton`, `YagoStatusBadge`). |
+| **`firestore_service_test.dart`** | Pruebas unitarias de serialización de modelos (`Pet`, `FeedPost`, `UserModel`, `AiPetAnalysis`, `DirectChatConversation`), motor de visión IA (`AiVisionService`) y servicios de datos. |
+| **`widget_test.dart`** | Pruebas automatizadas de UI y flujos de extremo a extremo de los Sprints 1, 2 y 3 (`Onboarding`, `Auth`, `FeedTab`, `ReportsFeedTab`, `ContextualZoneModal`, `CreateReportScreen`, `PetDetailScreen`, `AiCameraScreen` y `DirectChatScreen`). |
 
 ---
 

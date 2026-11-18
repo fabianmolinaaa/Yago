@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../utils/design_system.dart';
 import 'yago_badge.dart';
+import 'yago_expandable_text.dart';
 import 'yago_logo.dart';
 import 'yago_pet_image.dart';
 
@@ -32,6 +34,7 @@ class PetCard extends StatefulWidget {
   final VoidCallback? onShareTap;
   final VoidCallback? onCommentTap;
   final VoidCallback? onContactTap;
+  final bool showContactButton;
   final Widget? optionsMenu;
 
   const PetCard({
@@ -60,6 +63,7 @@ class PetCard extends StatefulWidget {
     this.onShareTap,
     this.onCommentTap,
     this.onContactTap,
+    this.showContactButton = true,
     this.optionsMenu,
   });
 
@@ -128,10 +132,10 @@ class _PetCardState extends State<PetCard> {
         children: [
           // ─── 1. Arriba del post ──────────────────────────────────────────
           // Imagen del usuario - nombre (sin el user) - etiqueta de la publicación
-          // A la derecha del todo: horario - Icono de mascota (botón que abre modal con info de la mascota)
+          // A la derecha del todo: horario - menú de opciones (...)
           Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 14.0,
+              horizontal: 16.0,
               vertical: 10.0,
             ),
             child: Row(
@@ -152,27 +156,10 @@ class _PetCardState extends State<PetCard> {
                     child: const YagoLogoIcon(size: 20),
                   )
                 else
-                  CircleAvatar(
-                    radius: 17,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    backgroundImage: widget.authorAvatar != null
-                        ? (widget.authorAvatar!.startsWith('assets/')
-                            ? AssetImage(widget.authorAvatar!) as ImageProvider
-                            : NetworkImage(widget.authorAvatar!))
-                        : null,
-                    onBackgroundImageError: widget.authorAvatar != null ? (_, _) {} : null,
-                    child: widget.authorAvatar == null
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 20,
-                            color: AppColors.primary,
-                          )
-                        : null,
-                  ),
+                  _buildAuthorAvatar(widget.authorAvatar),
                 const SizedBox(width: 9),
-                Flexible(
+                Expanded(
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
                         child: Text(
@@ -195,18 +182,30 @@ class _PetCardState extends State<PetCard> {
                           color: AppColors.primary,
                         ),
                       ],
+                      const SizedBox(width: 6),
+                      YagoStatusBadge(status: widget.status),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '·',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.5,
+                          color: AppColors.twitterHandle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          time,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12.5,
+                            color: AppColors.twitterHandle,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                YagoStatusBadge(status: widget.status),
-                const Spacer(),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: AppColors.twitterHandle,
                   ),
                 ),
                 if (widget.optionsMenu != null) ...[
@@ -229,34 +228,40 @@ class _PetCardState extends State<PetCard> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.name,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
+                    Flexible(
                       child: Text(
-                        widget.details,
+                        widget.name,
                         style: const TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 12.5,
-                          color: AppColors.textSecondary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (widget.details.trim().isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.details,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 if (widget.description != null &&
                     widget.description!.isNotEmpty) ...[
                   const SizedBox(height: 3),
-                  Text(
-                    widget.description!,
+                  YagoExpandableText(
+                    text: widget.description!,
+                    maxLines: 4,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
@@ -370,22 +375,24 @@ class _PetCardState extends State<PetCard> {
                     ),
                     const SizedBox(width: 18),
 
-                    // Contactar con el dueño por mensaje directo (icono DM)
-                    Tooltip(
-                      message: 'Enviar mensaje directo al dueño',
-                      child: GestureDetector(
-                        onTap: widget.onContactTap,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                          child: Icon(
-                            Icons.mail_outline_rounded,
-                            size: 20,
-                            color: AppColors.twitterAction,
+                    // Contactar con el dueño por mensaje directo (solo si no es el propio usuario)
+                    if (widget.showContactButton) ...[
+                      Tooltip(
+                        message: 'Enviar mensaje directo al dueño',
+                        child: GestureDetector(
+                          onTap: widget.onContactTap,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                            child: Icon(
+                              Icons.mail_outline_rounded,
+                              size: 20,
+                              color: AppColors.twitterAction,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 18),
+                      const SizedBox(width: 18),
+                    ],
 
                     // Compartir
                     Tooltip(
@@ -429,6 +436,67 @@ class _PetCardState extends State<PetCard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAuthorAvatar(String? avatarUrl) {
+    final cleanUrl = avatarUrl?.trim() ?? '';
+    Widget fallbackIcon() {
+      return Container(
+        width: 34,
+        height: 34,
+        color: AppColors.primary.withValues(alpha: 0.12),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.person_rounded,
+          size: 20,
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (cleanUrl.isEmpty) {
+      return ClipOval(child: fallbackIcon());
+    }
+
+    Widget imageChild;
+    if (cleanUrl.startsWith('assets/')) {
+      imageChild = Image.asset(
+        cleanUrl,
+        key: ValueKey(cleanUrl),
+        width: 34,
+        height: 34,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    } else if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      imageChild = Image.network(
+        cleanUrl,
+        key: ValueKey(cleanUrl),
+        width: 34,
+        height: 34,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    } else {
+      imageChild = Image.file(
+        File(cleanUrl),
+        key: ValueKey(cleanUrl),
+        width: 34,
+        height: 34,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    }
+
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primary.withValues(alpha: 0.12),
+      ),
+      child: ClipOval(child: imageChild),
     );
   }
 

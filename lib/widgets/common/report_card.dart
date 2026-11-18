@@ -73,7 +73,9 @@ class ReportGridCard extends StatelessWidget {
                     children: [
                       // Nombre de la mascota
                       Text(
-                        pet.name.isNotEmpty ? pet.name : pet.breed,
+                        pet.name.isNotEmpty
+                            ? pet.name
+                            : (pet.hasKnownBreed ? pet.breed : 'Sin nombre'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -280,7 +282,9 @@ class ReportListCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${pet.species} · ${pet.breed}',
+                      pet.hasKnownBreed
+                          ? '${pet.species} · ${pet.breed}'
+                          : pet.species,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

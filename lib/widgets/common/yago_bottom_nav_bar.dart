@@ -8,6 +8,7 @@ class YagoBottomNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
   final VoidCallback? onPublishTap;
   final bool isCompact;
+  final int unreadChatsCount;
 
   const YagoBottomNavBar({
     super.key,
@@ -15,6 +16,7 @@ class YagoBottomNavBar extends StatelessWidget {
     required this.onTap,
     this.onPublishTap,
     this.isCompact = false,
+    this.unreadChatsCount = 0,
   });
 
   // Colores monocromáticos minimalistas (sin colores llamativos)
@@ -86,6 +88,7 @@ class YagoBottomNavBar extends StatelessWidget {
                     outlineIcon: Icons.chat_bubble_outline_rounded,
                     filledIcon: Icons.chat_bubble_rounded,
                     tooltip: 'Chat',
+                    badgeCount: unreadChatsCount,
                   ),
 
                   // 4: Perfil / Cuenta
@@ -109,6 +112,7 @@ class YagoBottomNavBar extends StatelessWidget {
     required IconData outlineIcon,
     required IconData filledIcon,
     required String tooltip,
+    int badgeCount = 0,
   }) {
     final isSelected = currentIndex == index;
     final color = isSelected ? _activeColor : _inactiveColor;
@@ -126,7 +130,44 @@ class YagoBottomNavBar extends StatelessWidget {
               scale: isCompact ? 0.85 : 1.0,
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOutCubic,
-              child: Icon(icon, size: 26, color: color),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 26, color: color),
+                  if (badgeCount > 0)
+                    Positioned(
+                      right: -6,
+                      top: -4,
+                      child: Container(
+                        key: const Key('nav_bar_chat_unread_badge'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4.5,
+                          vertical: 1.5,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _activeColor,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          badgeCount > 9 ? '9+' : '$badgeCount',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

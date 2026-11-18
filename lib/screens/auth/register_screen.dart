@@ -34,19 +34,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    return InputValidators.isValidEmail(email);
   }
 
   Future<void> _handleRegister() async {
     setState(() => _errorMessage = null);
 
-    final name = _nameController.text.trim();
+    final name = InputValidators.sanitizeText(_nameController.text);
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty) {
-      setState(() => _errorMessage = 'Por favor, ingresa tu nombre completo.');
+    final nameError = InputValidators.validatePersonName(name);
+    if (nameError != null) {
+      setState(() => _errorMessage = nameError);
       return;
     }
 
@@ -58,10 +59,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (password.length < 6) {
-      setState(
-        () => _errorMessage = 'La contraseña debe tener al menos 6 caracteres.',
-      );
+    final passwordError = InputValidators.validatePassword(password);
+    if (passwordError != null) {
+      setState(() => _errorMessage = passwordError);
       return;
     }
 
@@ -266,6 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Nombre completo',
                   hint: 'Juancito Valderrama',
                   controller: _nameController,
+                  maxLength: 60,
                   prefixIcon: const Icon(
                     Icons.person_outline_rounded,
                     size: 20,
@@ -280,6 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: 'ejemplo@correo.com',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  maxLength: 100,
                   prefixIcon: const Icon(
                     Icons.email_outlined,
                     size: 20,
@@ -294,6 +296,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: 'Mínimo 6 caracteres',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  maxLength: 128,
                   prefixIcon: const Icon(
                     Icons.lock_outline_rounded,
                     size: 20,
@@ -320,6 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: 'Repite tu contraseña',
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
+                  maxLength: 128,
                   prefixIcon: const Icon(
                     Icons.lock_outline_rounded,
                     size: 20,

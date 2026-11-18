@@ -4,6 +4,7 @@ import '../../services/auth_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
+import '../home/direct_chat_screen.dart';
 
 /// Icono vectorial minimalista oficial para representar especie Felina / Gato.
 class CatIcon extends StatelessWidget {
@@ -88,6 +89,15 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
     _isBookmarked = MockDataService().isBookmarked(_pet.id);
   }
 
+  @override
+  void didUpdateWidget(covariant PetDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pet != widget.pet) {
+      _pet = widget.pet;
+      _isBookmarked = MockDataService().isBookmarked(_pet.id);
+    }
+  }
+
   void _toggleBookmark() {
     setState(() {
       MockDataService().toggleBookmark(_pet.id);
@@ -96,6 +106,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
   }
 
   void _showContactDialog() {
+    if (_pet.isUserOwner) return;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -176,26 +187,25 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.mdBorder,
-                side: const BorderSide(color: AppColors.border),
-              ),
-              leading: const Icon(Icons.phone_rounded, color: AppColors.primary),
-              title: const Text('Llamar por teléfono', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(_pet.contactPhone),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Marcando a ${_pet.contactPhone}...'),
-                    backgroundColor: AppColors.primary,
+            if (_pet.hasContactPhone) ...[
+              for (final phone in _pet.callablePhones) ...[
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.mdBorder,
+                    side: const BorderSide(color: AppColors.border),
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
+                  leading: const Icon(Icons.phone_rounded, color: AppColors.primary),
+                  title: const Text('Llamar por teléfono', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(phone),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    PhoneLauncher.launchPhoneDialer(context, phone);
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
             ListTile(
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.mdBorder,
@@ -207,10 +217,9 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
               onTap: () {
                 Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Iniciando chat con el contacto...'),
-                    backgroundColor: AppColors.primary,
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DirectChatScreen(pet: _pet),
                   ),
                 );
               },
@@ -332,7 +341,7 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: CircleAvatar(
                   backgroundColor: Colors.black.withValues(alpha: 0.45),
                   child: IconButton(
@@ -345,6 +354,29 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                   ),
                 ),
               ),
+              if (!_pet.isUserOwner)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, bottom: 8.0, right: 8.0, left: 4.0),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withValues(alpha: 0.45),
+                    child: IconButton(
+                      tooltip: 'Denunciar publicación',
+                      icon: const Icon(
+                        Icons.flag_outlined,
+                        size: 19,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        ReportContentModal.show(
+                          context,
+                          targetType: 'pet',
+                          targetId: _pet.id,
+                          pet: _pet,
+                        );
+                      },
+                    ),
+                  ),
+                ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -400,9 +432,13 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _pet.species.isNotEmpty && _pet.species != 'Otro'
-                                  ? '${_pet.species} · ${_pet.breed}'
-                                  : _pet.breed,
+                              _pet.hasKnownBreed
+                                  ? (_pet.species.isNotEmpty && _pet.species != 'Otro'
+                                      ? '${_pet.species} · ${_pet.breed}'
+                                      : _pet.breed)
+                                  : (_pet.species.isNotEmpty && _pet.species != 'Otro'
+                                      ? '${_pet.species} · Raza desconocida'
+                                      : 'Raza desconocida'),
                               style: AppTypography.subheadline.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
@@ -615,15 +651,17 @@ class _PetDetailScreenState extends State<PetDetailScreen> {
                     const SizedBox(height: 14),
                   ],
 
-                  // ─── 7. Botón principal de contacto ───
-                  YagoButton(
-                    text: 'Contactar',
-                    variant: YagoButtonVariant.primary,
-                    size: YagoButtonSize.large,
-                    isFullWidth: true,
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Colors.white),
-                    onPressed: _showContactDialog,
-                  ),
+                  // ─── 7. Botón principal de contacto (solo si el reporte NO pertenece al propio usuario) ───
+                  if (!isOwner) ...[
+                    YagoButton(
+                      text: 'Contactar',
+                      variant: YagoButtonVariant.primary,
+                      size: YagoButtonSize.large,
+                      isFullWidth: true,
+                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Colors.white),
+                      onPressed: _showContactDialog,
+                    ),
+                  ],
                   const SizedBox(height: 40),
                 ],
               ),

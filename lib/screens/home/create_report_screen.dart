@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/pet.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/storage_service.dart';
@@ -11,8 +12,27 @@ import '../../widgets/common/widgets.dart';
 
 class CreateReportScreen extends StatefulWidget {
   final VoidCallback? onReportCreated;
+  final bool initialIsLostReport;
+  final File? initialImageFile;
+  final String? initialImageUrl;
+  final String? initialSpecies;
+  final String? initialBreed;
+  final List<String>? initialTags;
+  final String? initialDescription;
+  final bool fromAiCamera;
 
-  const CreateReportScreen({super.key, this.onReportCreated});
+  const CreateReportScreen({
+    super.key,
+    this.onReportCreated,
+    this.initialIsLostReport = true,
+    this.initialImageFile,
+    this.initialImageUrl,
+    this.initialSpecies,
+    this.initialBreed,
+    this.initialTags,
+    this.initialDescription,
+    this.fromAiCamera = false,
+  });
 
   @override
   State<CreateReportScreen> createState() => _CreateReportScreenState();
@@ -36,13 +56,21 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   String _selectedGender = 'Macho';
   DateTime _reportDate = DateTime.now();
 
-  double _latitude = -34.5889;
-  double _longitude = -58.4233;
+  double _latitude = -46.4385;
+  double _longitude = -67.5278;
   bool _isDetectingLocation = false;
 
   final List<String> _tags = [];
   final List<String> _contactPhones = [];
   bool _isSubmitting = false;
+
+  // Estados de error de validación por campo
+  String? _nameError;
+  String? _ageError;
+  String? _locationError;
+  String? _phoneError;
+  String? _tagError;
+  String? _descriptionError;
 
   // Foto de la mascota: archivo local seleccionado o muestra
   File? _pickedImageFile;
@@ -63,6 +91,43 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _isLostReport = widget.initialIsLostReport;
+    if (widget.initialImageFile != null) {
+      _pickedImageFile = widget.initialImageFile;
+    }
+    if (widget.initialImageUrl != null &&
+        widget.initialImageUrl!.trim().isNotEmpty) {
+      _selectedImageUrl = widget.initialImageUrl!.trim();
+    }
+    if (widget.initialSpecies != null &&
+        _speciesOptions.contains(widget.initialSpecies)) {
+      _selectedSpecies = widget.initialSpecies!;
+    }
+    if (widget.initialBreed != null &&
+        widget.initialBreed!.trim().isNotEmpty) {
+      _breedController.text = widget.initialBreed!.trim();
+    }
+    if (widget.initialTags != null && widget.initialTags!.isNotEmpty) {
+      for (final tag in widget.initialTags!) {
+        final clean = tag.trim();
+        if (clean.isNotEmpty && !_tags.contains(clean)) {
+          _tags.add(clean);
+        }
+      }
+    }
+    if (widget.initialDescription != null &&
+        widget.initialDescription!.trim().isNotEmpty) {
+      _descriptionController.text = widget.initialDescription!.trim();
+    }
+    if (widget.fromAiCamera) {
+      _unknownAge = true;
+      _selectedGender = 'Desconocido';
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _breedController.dispose();
@@ -75,23 +140,53 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   void _addTag() {
-    final tag = _tagInputController.text.trim();
-    if (tag.isNotEmpty && !_tags.contains(tag)) {
-      setState(() {
-        _tags.add(tag);
-        _tagInputController.clear();
-      });
+    final rawTag = _tagInputController.text;
+    if (rawTag.trim().isEmpty) return;
+    final error = InputValidators.validateTag(rawTag, _tags);
+    if (error != null) {
+      setState(() => _tagError = error);
+      return;
     }
+    setState(() {
+      _tags.add(InputValidators.sanitizeText(rawTag));
+      _tagInputController.clear();
+      _tagError = null;
+    });
   }
 
   void _addContactPhone() {
-    final phone = _contactPhoneController.text.trim();
-    if (phone.isNotEmpty && !_contactPhones.contains(phone)) {
+    final rawPhone = _contactPhoneController.text;
+    if (rawPhone.trim().isEmpty) return;
+
+    if (_contactPhones.length >= InputValidators.maxContactPhones) {
       setState(() {
-        _contactPhones.add(phone);
-        _contactPhoneController.clear();
+        _phoneError =
+            'Puedes agregar hasta ${InputValidators.maxContactPhones} teléfonos como máximo.';
       });
+      return;
     }
+
+    final error = InputValidators.validatePhone(rawPhone, required: true);
+    if (error != null) {
+      setState(() => _phoneError = error);
+      return;
+    }
+
+    final cleanPhone = InputValidators.sanitizeText(rawPhone);
+    final digitsNew = cleanPhone.replaceAll(RegExp(r'\D'), '');
+    final isDuplicate = _contactPhones.any(
+      (p) => p.replaceAll(RegExp(r'\D'), '') == digitsNew,
+    );
+    if (isDuplicate) {
+      setState(() => _phoneError = 'Este número de teléfono ya fue agregado.');
+      return;
+    }
+
+    setState(() {
+      _contactPhones.add(cleanPhone);
+      _contactPhoneController.clear();
+      _phoneError = null;
+    });
   }
 
   Future<void> _detectCurrentLocation() async {
@@ -105,6 +200,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         _locationController.text = result.locationName;
         _latitude = result.latitude;
         _longitude = result.longitude;
+        _locationError = null;
         _isDetectingLocation = false;
       });
 
@@ -160,6 +256,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         _locationController.text = result.locationName;
         _latitude = result.latitude;
         _longitude = result.longitude;
+        _locationError = null;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,11 +278,20 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _selectReportDate() async {
+    final now = DateTime.now();
+    final earliestAllowed = now.subtract(
+      const Duration(days: InputValidators.maxReportAgeDays),
+    );
+    final safeInitialDate = _reportDate.isBefore(earliestAllowed)
+        ? earliestAllowed
+        : (_reportDate.isAfter(now) ? now : _reportDate);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _reportDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now(),
+      initialDate: safeInitialDate,
+      firstDate: earliestAllowed,
+      lastDate: now,
+      helpText: 'Fecha del extravío o hallazgo (máx. ${InputValidators.maxReportAgeDays} días)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -210,7 +316,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   Future<void> _pickImage(ImageSource source) async {
     Navigator.of(context).pop();
     try {
-      final file = await StorageService().pickImage(source: source);
+      final file = await StorageService().pickImage(
+        source: source,
+        preset: ImageCompressionPreset.postAndReport,
+      );
       if (file != null) {
         setState(() {
           _pickedImageFile = file;
@@ -312,60 +421,153 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _submitReport() async {
-    final name = _nameController.text.trim().isEmpty
-        ? 'Sin nombre'
-        : _nameController.text.trim();
-    final breed = _breedController.text.trim().isEmpty ? 'Mestizo' : _breedController.text.trim();
-    final location = _locationController.text.trim().isEmpty ? 'Caleta Olivia' : _locationController.text.trim();
-    final description = _descriptionController.text.trim().isEmpty
+    // 1. Validar fecha del reporte (máximo 30 días hacia atrás y nunca futura)
+    final dateError = InputValidators.validateReportDate(_reportDate);
+    if (dateError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(dateError),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // 2. Validar campos del formulario
+    final rawName = InputValidators.sanitizeText(_nameController.text);
+    final rawLocation = InputValidators.sanitizeText(_locationController.text);
+    final rawDescription = InputValidators.sanitizeText(_descriptionController.text);
+    final currentInputPhone = InputValidators.sanitizeText(_contactPhoneController.text);
+
+    String? nameErr;
+    if (_isLostReport && rawName.isEmpty) {
+      nameErr = 'Indica el nombre o apodo al que responde tu mascota.';
+    } else if (rawName.length > 50) {
+      nameErr = 'El nombre no puede superar los 50 caracteres.';
+    }
+
+    final ageErr = InputValidators.validateNeutralAge(
+      _ageController.text,
+      unknownAge: _unknownAge,
+    );
+    final locationErr = InputValidators.validateLocationText(rawLocation);
+
+    String? phoneErr;
+    if (currentInputPhone.isNotEmpty) {
+      phoneErr = InputValidators.validatePhone(currentInputPhone, required: true);
+    }
+
+    String? descErr;
+    if (rawDescription.length < 10 && _tags.isEmpty && !widget.fromAiCamera) {
+      descErr =
+          'Agrega una breve descripción (mín. 10 caracteres) o al menos una seña particular.';
+    }
+
+    if (nameErr != null ||
+        ageErr != null ||
+        locationErr != null ||
+        phoneErr != null ||
+        descErr != null) {
+      setState(() {
+        _nameError = nameErr;
+        _ageError = ageErr;
+        _locationError = locationErr;
+        _phoneError = phoneErr;
+        _descriptionError = descErr;
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, revisa los campos marcados antes de publicar.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      return;
+    }
+
+    final name = rawName.isEmpty ? 'Sin nombre' : rawName;
+    final breed = InputValidators.sanitizeText(_breedController.text);
+    // Inferir coordenadas aproximadas si escribió el barrio manualmente sin GPS
+    final coords = InputValidators.inferCoordinatesFromText(
+      rawLocation,
+      currentLat: _latitude,
+      currentLng: _longitude,
+    );
+
+    // Si el usuario ingresó solo el barrio o calle (ej. "Barrio Miramar") y las coordenadas
+    // corresponden a Caleta Olivia, agregamos ", Caleta Olivia" para garantizar consistencia en filtros de ciudad.
+    final isWithinCaleta = coords.latitude >= -46.65 &&
+        coords.latitude <= -46.20 &&
+        coords.longitude >= -67.85 &&
+        coords.longitude <= -67.25;
+    final String location = (isWithinCaleta &&
+            !rawLocation.toLowerCase().contains('caleta olivia'))
+        ? '$rawLocation, Caleta Olivia'
+        : rawLocation;
+    final description = rawDescription.isEmpty
         ? (_isLostReport
             ? 'Se extravió recientemente. Por favor si alguien la ve, contactarse de inmediato.'
             : 'Encontrada en la vía pública. Se busca a sus dueños o familia responsable.')
-        : _descriptionController.text.trim();
+        : rawDescription;
 
-    // Edad neutral según especie
+    // Edad neutral según especie (Regla 4)
     final age = (_unknownAge || _ageController.text.trim().isEmpty)
         ? 'Desconocida'
-        : _ageController.text.trim();
+        : InputValidators.sanitizeText(_ageController.text);
 
-    // Teléfonos consolidados (lista + entrada actual)
+    // Teléfonos consolidados (solo si el usuario agregó teléfono en el reporte)
     final allPhones = List<String>.from(_contactPhones);
-    final currentInputPhone = _contactPhoneController.text.trim();
     if (currentInputPhone.isNotEmpty && !allPhones.contains(currentInputPhone)) {
       allPhones.add(currentInputPhone);
     }
-    final phone = allPhones.isEmpty ? '+54 9 11 0000-0000' : allPhones.join(' / ');
+    final phone = allPhones.isNotEmpty
+        ? allPhones.join(' / ')
+        : 'Contacto por chat interno';
 
     setState(() => _isSubmitting = true);
 
     String finalImageUrl = _selectedImageUrl;
 
-    // Si el usuario seleccionó una foto propia, la subimos a Firebase Storage
+    // Si el usuario seleccionó o reutilizó una foto propia, la comprimimos con alta calidad y la subimos a Firebase Storage
     if (_pickedImageFile != null) {
-      try {
-        finalImageUrl = await StorageService().uploadImage(
-          file: _pickedImageFile!,
-          folder: 'reports',
+      if (FirestoreService().isFirebaseReady) {
+        try {
+          finalImageUrl = await StorageService().uploadImage(
+            file: _pickedImageFile!,
+            folder: 'reports',
+            preset: ImageCompressionPreset.postAndReport,
+          );
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No se pudo subir la foto a Firebase Storage: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return;
+        }
+      } else {
+        final compressed = await ImageCompressor.compressFile(
+          _pickedImageFile!,
+          preset: ImageCompressionPreset.postAndReport,
         );
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No se pudo subir la foto a Firebase Storage: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
+        finalImageUrl = compressed.path;
       }
     }
 
     final currentUser = AuthService().currentUser;
     final contactName = currentUser?.displayName ?? 'Usuario Yago';
+    final ownerAvatar =
+        MockDataService().currentUserAvatar ?? currentUser?.photoURL;
 
+    final now = DateTime.now();
     final newPet = Pet(
-      id: 'pet-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'pet-${now.millisecondsSinceEpoch}',
       ownerId: currentUser?.uid,
+      ownerAvatar: ownerAvatar,
       name: name,
       breed: breed,
       species: _selectedSpecies,
@@ -373,15 +575,16 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       age: age,
       status: _isLostReport ? YagoPetStatus.lost : YagoPetStatus.found,
       location: location,
-      timeAgo: 'Recién publicado',
+      timeAgo: InputValidators.formatReportTimeAgo(_reportDate),
       date: _reportDate,
+      createdAt: now,
       description: description,
       imageUrl: finalImageUrl,
       tags: _tags.isEmpty ? ['Se busca ayuda'] : List.from(_tags),
       contactName: contactName,
       contactPhone: phone,
-      latitude: _latitude,
-      longitude: _longitude,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
       isUserOwner: true,
     );
 
@@ -403,30 +606,32 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     setState(() => _isSubmitting = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _isLostReport
-                    ? 'Reporte de búsqueda publicado con éxito'
-                    : 'Reporte de mascota encontrada publicado con éxito',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _isLostReport
+                      ? 'Reporte de búsqueda publicado con éxito'
+                      : 'Reporte de mascota encontrada publicado con éxito',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
 
     widget.onReportCreated?.call();
     if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(newPet);
     }
   }
 
@@ -479,6 +684,41 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.fromAiCamera) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryTint,
+                  borderRadius: AppRadius.mdBorder,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Foto y rasgos físicos reutilizados desde Cámara con IA para ahorrar tiempo.',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // ─── 1. Selector Segmentado Deslizante (Sin colores rojo/verde) ─
             Container(
               height: 44,
@@ -702,6 +942,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               label: 'Nombre de la mascota',
               hint: 'Ej: Milo, Luna, "Negrito"...',
               controller: _nameController,
+              maxLength: 50,
+              errorText: _nameError,
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
               prefixIcon: const Icon(Icons.pets_rounded, size: 20, color: AppColors.subtle),
             ),
             const SizedBox(height: 14),
@@ -762,13 +1007,21 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   hint: _unknownAge ? 'Edad desconocida' : 'Ej: 2 años, 6 meses, aprox. 10 años...',
                   controller: _ageController,
                   enabled: !_unknownAge,
+                  maxLength: 35,
+                  errorText: _ageError,
+                  onChanged: (_) {
+                    if (_ageError != null) setState(() => _ageError = null);
+                  },
                 ),
                 const SizedBox(height: 6),
                 InkWell(
                   onTap: () {
                     setState(() {
                       _unknownAge = !_unknownAge;
-                      if (_unknownAge) _ageController.clear();
+                      if (_unknownAge) {
+                        _ageController.clear();
+                        _ageError = null;
+                      }
                     });
                   },
                   borderRadius: BorderRadius.circular(6),
@@ -787,7 +1040,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                             onChanged: (val) {
                               setState(() {
                                 _unknownAge = val ?? false;
-                                if (_unknownAge) _ageController.clear();
+                                if (_unknownAge) {
+                                  _ageController.clear();
+                                  _ageError = null;
+                                }
                               });
                             },
                           ),
@@ -810,124 +1066,60 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 14),
 
-            YagoTextField(
+            YagoBreedSelectorField(
               label: 'Raza o apariencia',
-              hint: 'Ej: Mestizo, Caniche, Golden...',
+              hint: 'Escribe o elige una raza (ej. Mestizo, Caniche, Cane Corso...)',
               controller: _breedController,
+              species: _selectedSpecies,
+              maxLength: 60,
             ),
             const SizedBox(height: 28),
 
             // ─── 4. Dónde y Cuándo ───────────────────────────────────────────
             _buildSectionHeader('DÓNDE Y CUÁNDO'),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                YagoTextField(
-                  label: 'Ubicación',
-                  hint: 'Ej: Costanera, Caleta Olivia',
-                  controller: _locationController,
-                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isDetectingLocation)
-                        const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          ),
-                        )
-                      else
-                        IconButton(
-                          icon: const Icon(
-                            Icons.my_location_rounded,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                          tooltip: 'Usar mi ubicación',
-                          onPressed: _detectCurrentLocation,
-                        ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.map_outlined,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                        tooltip: 'Ubicar en el mapa',
-                        onPressed: _openMapPicker,
+            YagoTextField(
+              label: 'Ubicación',
+              hint: 'Ej: Costanera, Caleta Olivia',
+              controller: _locationController,
+              maxLength: 90,
+              errorText: _locationError,
+              onChanged: (_) {
+                if (_locationError != null) setState(() => _locationError = null);
+              },
+              prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.subtle),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isDetectingLocation)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                       ),
-                    ],
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(
+                        Icons.my_location_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      tooltip: 'Usar mi ubicación',
+                      onPressed: _detectCurrentLocation,
+                    ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.map_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    tooltip: 'Ubicar en el mapa',
+                    onPressed: _openMapPicker,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: _isDetectingLocation ? null : _detectCurrentLocation,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.my_location_rounded,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isDetectingLocation ? 'Detectando GPS...' : 'Usar mi ubicación',
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: AppColors.border,
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: _openMapPicker,
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.map_outlined,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Ubicar en el mapa',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 14),
 
@@ -986,10 +1178,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 YagoTextField(
-                  label: 'Teléfono o WhatsApp de contacto',
+                  label: 'Teléfono',
                   hint: '+54 9 11 1234-5678',
                   controller: _contactPhoneController,
                   keyboardType: TextInputType.phone,
+                  maxLength: 25,
+                  errorText: _phoneError,
+                  onChanged: (_) {
+                    if (_phoneError != null) setState(() => _phoneError = null);
+                  },
                   prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: AppColors.subtle),
                   onFieldSubmitted: (_) => _addContactPhone(),
                   suffixIcon: Padding(
@@ -1044,6 +1241,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   label: 'Señas particulares (chips, collar, manchas)',
                   hint: 'Ej: Collar rojo, mancha blanca en el lomo...',
                   controller: _tagInputController,
+                  maxLength: InputValidators.maxTagLength,
+                  errorText: _tagError,
+                  onChanged: (_) {
+                    if (_tagError != null) setState(() => _tagError = null);
+                  },
                   onFieldSubmitted: (_) => _addTag(),
                   suffixIcon: Padding(
                     padding: const EdgeInsets.all(7.0),
@@ -1075,7 +1277,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                         label: Text(tag, style: const TextStyle(fontSize: 12)),
                         backgroundColor: AppColors.surface,
                         deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                        onDeleted: () => setState(() => _tags.remove(tag)),
+                        onDeleted: () {
+                          setState(() {
+                            _tags.remove(tag);
+                            _tagError = null;
+                          });
+                        },
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: const BorderSide(color: AppColors.border),
@@ -1094,6 +1301,13 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               hint: 'Cuéntanos qué ocurrió, cómo reacciona o cualquier dato útil...',
               controller: _descriptionController,
               maxLines: 4,
+              maxLength: 600,
+              errorText: _descriptionError,
+              onChanged: (_) {
+                if (_descriptionError != null) {
+                  setState(() => _descriptionError = null);
+                }
+              },
             ),
             const SizedBox(height: 24),
 

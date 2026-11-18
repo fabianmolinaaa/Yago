@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    return InputValidators.isValidEmail(email);
   }
 
   Future<void> _handleLogin() async {
@@ -710,12 +710,14 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      maxLength: obscureText ? 128 : 100,
       style: const TextStyle(
         fontFamily: AppTypography.fontFamily,
         fontSize: 14,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
+        counterText: '',
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(

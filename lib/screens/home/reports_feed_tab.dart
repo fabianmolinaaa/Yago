@@ -12,6 +12,7 @@ import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../pet_detail/pet_detail_screen.dart';
 import 'create_report_screen.dart';
+import 'direct_chat_screen.dart';
 
 class CitySuggestion {
   final String name;
@@ -257,14 +258,105 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
     }
   }
 
-  String _extractCity(String location) {
+  // Barrios y zonas conocidas de Caleta Olivia para reconocer reportes que solo indiquen el barrio
+  static const List<String> _caletaOliviaNeighborhoods = [
+    'miramar',
+    'parque',
+    'gorosito',
+    'costanera',
+    'gregores',
+    'patagonia',
+    'rotary',
+    'mutual',
+    '26 de junio',
+    '3 de febrero',
+    '17 de octubre',
+    'guemes',
+    'centenario',
+    'jardin',
+    'vista hermosa',
+    'ceferino',
+    'malvinas',
+    'san martin',
+    'centro',
+    'union',
+    'golfo san jorge',
+    '13 de diciembre',
+    '2 de abril',
+    '8 de julio',
+    'koluel kaike',
+    'mini centro',
+    'hipico',
+    'industrial',
+    'perito moreno',
+    'etchepare',
+    'bicentenario',
+    'los pinos',
+    'don bosco',
+    '1 de mayo',
+    '400 departamentos',
+    '120 viviendas',
+    '36 viviendas',
+    '132 viviendas',
+    'zona de chacras',
+    'mar del plata',
+  ];
+
+  static bool _isWithinCaletaOliviaCoords(double lat, double lng) {
+    return lat >= -46.65 && lat <= -46.20 && lng >= -67.85 && lng <= -67.25;
+  }
+
+  String _extractCity(String location, {double? lat, double? lng}) {
     final clean = location.trim();
     if (clean.isEmpty) return 'Caleta Olivia';
-    final parts = clean.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final normalizedClean = _normalize(clean);
+    for (final city in _argentinaCities) {
+      if (normalizedClean.contains(_normalize(city.name))) {
+        return city.name;
+      }
+    }
+
+    // Si la ubicación solo menciona un barrio o calle dentro de Caleta Olivia (por coordenadas o nombre de barrio)
+    if ((lat != null && lng != null && _isWithinCaletaOliviaCoords(lat, lng)) ||
+        _caletaOliviaNeighborhoods.any((b) => normalizedClean.contains(b))) {
+      return 'Caleta Olivia';
+    }
+
+    final parts = clean
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.length >= 2) {
-      return parts[1];
+      return parts.last;
     }
     return parts.first;
+  }
+
+  /// Determina si un reporte pertenece a la ciudad seleccionada, contemplando tanto
+  /// el nombre de la ciudad como barrios específicos o coordenadas dentro de la localidad.
+  bool _matchesCity(Pet pet, String city) {
+    if (city == 'Todas las ciudades') return true;
+    final cityTarget = _normalize(city);
+    final locNorm = _normalize(pet.location);
+
+    // 1. Coincidencia directa en el texto de ubicación
+    if (locNorm.contains(cityTarget)) return true;
+
+    // 2. Si el texto menciona explícitamente otra ciudad del catálogo, pertenece a esa otra ciudad
+    for (final knownCity in _argentinaCities) {
+      final knownNorm = _normalize(knownCity.name);
+      if (knownNorm != cityTarget && locNorm.contains(knownNorm)) {
+        return false;
+      }
+    }
+
+    // 3. Si el reporte solo tiene el nombre de un barrio/calle sin especificar ciudad,
+    // verificamos por coordenadas geográficas y barrios conocidos de la ciudad:
+    final inferredCity = _normalize(
+      _extractCity(pet.location, lat: pet.latitude, lng: pet.longitude),
+    );
+    return inferredCity == cityTarget;
   }
 
   @override
@@ -276,8 +368,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
   bool get _hasActiveFilters =>
       _selectedStatusIndex != 0 ||
       _selectedSpecies != 'Todos' ||
-      _selectedBreed != 'Todas' ||
-      _selectedCity != _defaultUserCity;
+      _selectedBreed != 'Todas';
 
   /// Retorna exclusivamente reportes activos de mascotas perdidas y encontradas
   List<Pet> _getFilteredReports() {
@@ -325,10 +416,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
 
     // 5. Filtrar por ciudad / localidad geográfica (HU-S2-06 estilo Marketplace)
     if (_selectedCity != 'Todas las ciudades') {
-      final cityTarget = _normalize(_selectedCity);
-      filtered = filtered.where((pet) {
-        return _normalize(pet.location).contains(cityTarget);
-      }).toList();
+      filtered = filtered.where((pet) => _matchesCity(pet, _selectedCity)).toList();
     }
 
     // 5. Filtrar por término de búsqueda (raza, nombre, ubicación, señas particulares)
@@ -343,8 +431,8 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
       }).toList();
     }
 
-    // 6. Orden cronológico estricto (más recientes arriba)
-    filtered.sort((a, b) => b.date.compareTo(a.date));
+    // 6. Orden cronológico por fecha de creación del reporte (más recientes arriba)
+    filtered.sort((a, b) => b.effectiveCreatedAt.compareTo(a.effectiveCreatedAt));
     return filtered;
   }
 
@@ -357,7 +445,11 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
 
     // 1. Ciudades presentes en los reportes existentes
     for (final pet in allReports) {
-      final city = _extractCity(pet.location);
+      final city = _extractCity(
+        pet.location,
+        lat: pet.latitude,
+        lng: pet.longitude,
+      );
       if (city.isNotEmpty && !seen.contains(_normalize(city))) {
         seen.add(_normalize(city));
         final match = _argentinaCities
@@ -399,10 +491,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
     if (city == 'Todas las ciudades') {
       return allReports.length;
     }
-    final target = _normalize(city);
-    return allReports
-        .where((p) => _normalize(p.location).contains(target))
-        .length;
+    return allReports.where((p) => _matchesCity(p, city)).length;
   }
 
   Widget _buildLocationBar() {
@@ -581,6 +670,7 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
   void _showPetOptionsSheet(Pet pet) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -590,11 +680,12 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
         final isLost = pet.status == YagoPetStatus.lost;
 
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 Center(
                   child: Container(
                     width: 36,
@@ -644,7 +735,9 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                     ),
                   ),
                   subtitle: Text(
-                    '${pet.breed} · ${isLost ? "Mascota perdida" : "Mascota encontrada"}',
+                    pet.hasKnownBreed
+                        ? '${pet.breed} · ${isLost ? "Mascota perdida" : "Mascota encontrada"}'
+                        : (isLost ? 'Mascota perdida' : 'Mascota encontrada'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -656,6 +749,36 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                     _openDetail(pet);
                   },
                 ),
+                if (!pet.isUserOwner)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: AppColors.primary,
+                    ),
+                    title: const Text(
+                      'Enviar mensaje directo',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Contactar por chat privado a ${pet.contactName.isNotEmpty ? pet.contactName : "Responsable"}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DirectChatScreen(pet: pet),
+                        ),
+                      );
+                    },
+                  ),
                 ListTile(
                   leading: Icon(
                     isBookmarked
@@ -676,12 +799,47 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
                     setState(() {});
                   },
                 ),
+                if (!pet.isUserOwner) ...[
+                  const Divider(height: 1, indent: 16, endIndent: 16, color: AppColors.border),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.flag_outlined,
+                      color: AppColors.error,
+                    ),
+                    title: const Text(
+                      'Denunciar reporte',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Información falsa, estafa, maltrato o spam',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      ReportContentModal.show(
+                        context,
+                        targetType: 'pet',
+                        targetId: pet.id,
+                        pet: pet,
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   void _openFilterDialog() {
@@ -711,26 +869,21 @@ class _ReportsFeedTabState extends State<ReportsFeedTab> {
           initialStatusIndex: _selectedStatusIndex,
           initialSpecies: _selectedSpecies,
           initialBreed: _selectedBreed,
-          initialCity: _selectedCity,
-          defaultUserCity: _defaultUserCity,
           statusFilters: _statusFilters,
           speciesFilters: _speciesFilters,
           popularBreeds: _popularBreeds,
           getSpeciesIcon: _getSpeciesIcon,
           getStatusIcon: _getStatusIcon,
           normalize: _normalize,
-          onOpenCitySelector: _openCitySelectorSheet,
           onApplyFilters: ({
             required int statusIndex,
             required String species,
             required String breed,
-            required String city,
           }) {
             setState(() {
               _selectedStatusIndex = statusIndex;
               _selectedSpecies = species;
               _selectedBreed = breed;
-              _selectedCity = city;
             });
           },
         );
@@ -1702,8 +1855,6 @@ class _FilterDialogContent extends StatefulWidget {
   final int initialStatusIndex;
   final String initialSpecies;
   final String initialBreed;
-  final String initialCity;
-  final String defaultUserCity;
   final List<String> statusFilters;
   final List<String> speciesFilters;
   final List<String> popularBreeds;
@@ -1712,27 +1863,22 @@ class _FilterDialogContent extends StatefulWidget {
   final Widget Function(int index, bool isSelected, {double size})
       getStatusIcon;
   final String Function(String input) normalize;
-  final VoidCallback onOpenCitySelector;
   final void Function({
     required int statusIndex,
     required String species,
     required String breed,
-    required String city,
   }) onApplyFilters;
 
   const _FilterDialogContent({
     required this.initialStatusIndex,
     required this.initialSpecies,
     required this.initialBreed,
-    required this.initialCity,
-    required this.defaultUserCity,
     required this.statusFilters,
     required this.speciesFilters,
     required this.popularBreeds,
     required this.getSpeciesIcon,
     required this.getStatusIcon,
     required this.normalize,
-    required this.onOpenCitySelector,
     required this.onApplyFilters,
   });
 
@@ -1744,7 +1890,6 @@ class _FilterDialogContentState extends State<_FilterDialogContent> {
   late int _tempStatus;
   late String _tempSpecies;
   late String _tempBreed;
-  late String _tempCity;
   late final TextEditingController _breedTextController;
 
   @override
@@ -1753,7 +1898,6 @@ class _FilterDialogContentState extends State<_FilterDialogContent> {
     _tempStatus = widget.initialStatusIndex;
     _tempSpecies = widget.initialSpecies;
     _tempBreed = widget.initialBreed;
-    _tempCity = widget.initialCity;
     _breedTextController = TextEditingController(
       text: widget.initialBreed == 'Todas' ? '' : widget.initialBreed,
     );
@@ -2071,88 +2215,6 @@ class _FilterDialogContentState extends State<_FilterDialogContent> {
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 18),
-
-                          // 4. Ciudad o localidad
-                          const Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 16,
-                                color: AppColors.textSecondary,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Ciudad o localidad',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _FilterPill(
-                                label: widget.defaultUserCity,
-                                icon: Icon(
-                                  Icons.near_me_rounded,
-                                  size: 14,
-                                  color: _tempCity == widget.defaultUserCity
-                                      ? Colors.white
-                                      : AppColors.primary,
-                                ),
-                                isSelected:
-                                    _tempCity == widget.defaultUserCity,
-                                onTap: () => setState(
-                                    () => _tempCity = widget.defaultUserCity),
-                              ),
-                              _FilterPill(
-                                label: 'Todas las ciudades',
-                                icon: Icon(
-                                  Icons.public_rounded,
-                                  size: 14,
-                                  color: _tempCity == 'Todas las ciudades'
-                                      ? Colors.white
-                                      : AppColors.primary,
-                                ),
-                                isSelected:
-                                    _tempCity == 'Todas las ciudades',
-                                onTap: () => setState(
-                                    () => _tempCity = 'Todas las ciudades'),
-                              ),
-                              if (_tempCity != widget.defaultUserCity &&
-                                  _tempCity != 'Todas las ciudades')
-                                _FilterPill(
-                                  label: _tempCity,
-                                  icon: const Icon(
-                                    Icons.location_on_rounded,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  isSelected: true,
-                                  onTap: () {},
-                                ),
-                              _FilterPill(
-                                label: 'Más ciudades...',
-                                icon: const Icon(
-                                  Icons.explore_outlined,
-                                  size: 14,
-                                  color: AppColors.primary,
-                                ),
-                                isSelected: false,
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  widget.onOpenCitySelector();
-                                },
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -2179,7 +2241,6 @@ class _FilterDialogContentState extends State<_FilterDialogContent> {
                                 statusIndex: 0,
                                 species: 'Todos',
                                 breed: 'Todas',
-                                city: widget.defaultUserCity,
                               );
                             },
                           ),
@@ -2196,7 +2257,6 @@ class _FilterDialogContentState extends State<_FilterDialogContent> {
                               statusIndex: _tempStatus,
                               species: _tempSpecies,
                               breed: _tempBreed,
-                              city: _tempCity,
                             );
                           },
                         ),

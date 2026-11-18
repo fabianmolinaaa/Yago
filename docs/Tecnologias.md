@@ -46,8 +46,8 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 
 ## 4. Inteligencia Artificial y Visión Computacional
 
-* **API Multimodal / Visión (Gemini Multimodal API / Google Cloud Vision)**
-  * *Uso:* Reconocimiento visual y extracción de rasgos físicos (especie, raza aparente, colores y señas particulares) a partir de fotos tomadas con la cámara analizadora en la calle. Comparación automatizada contra la base de datos de mascotas perdidas para alertar coincidencias instantáneas y derivar al chat con el dueño.
+* **API Multimodal / Visión (Google Gemini `gemini-2.0-flash` + Analizador Fenotípico Local `AiVisionService`) — *Implementado***
+  * *Uso:* Reconocimiento visual y extracción de rasgos físicos (especie neutral `Perro` / `Gato` / `Otro`, raza aparente, colores dominantes y señas particulares) a partir de fotos tomadas con la cámara analizadora o cargadas desde la galería (`HU-S3-01`, `HU-S3-02`). Comparación automatizada contra la base de datos activa de mascotas perdidas y encontradas (`HU-S3-03`), visualización de porcentaje de similitud y fotos comparativas lado a lado (`HU-S3-04`), apertura de chat directo 1 a 1 con el responsable del reporte (`HU-S3-05`) y reutilización automática de la foto y atributos extraídos para publicar un nuevo reporte de hallazgo si no hay coincidencias (`HU-S3-06`).
 
 ---
 
@@ -64,11 +64,11 @@ Este documento resume las tecnologías, frameworks y herramientas seleccionadas 
 
 | Componente | Tecnología | Estado / Implementación | Propósito |
 | :--- | :--- | :---: | :--- |
-| **Frontend Móvil** | Flutter & Dart | Activo | Interfaz de usuario, Design System oficial, navegación y lógica cliente |
+| **Frontend Móvil** | Flutter & Dart | **Implementado** | Interfaz de usuario, Design System oficial, navegación y lógica cliente |
 | **Autenticación** | Firebase Authentication (`firebase_auth`) | **Implementado** | Inicio de sesión, registro, recuperación de contraseña y AuthGate reactivo |
 | **Configuración Android** | Gradle (`com.example.yago`) + Google Services | **Implementado** | Vinculación nativa de la app móvil con Firebase |
-| **Base de Datos & Chat**| Cloud Firestore | Próximo paso | Reportes, feed comunitario y chat directo 1 a 1 en tiempo real |
+| **Base de Datos & Chat**| Cloud Firestore (`cloud_firestore`) | **Implementado** | Reportes, feed comunitario, registros de escaneo IA (`ai_scans`) y chat directo (`chats`) |
 | **Almacenamiento Multimedia** | Cloud Storage (`firebase_storage`) + `image_picker` | **Implementado** | Subida, compresión y optimización de fotos de mascotas |
-| **Mapas Contextuales** | SDK de Mapas / Map View | Planificado | Visualización de zona de extravío/avistamiento por reporte |
-| **Cámara & Análisis IA**| Gemini Multimodal / Cloud Vision API | Planificado | Análisis fenotípico de fotos en la calle y cotejo contra BD de perdidos |
+| **Mapas Contextuales** | `flutter_map` + `geolocator` + Nominatim | **Implementado** | Visualización de zona de extravío/avistamiento y selector de ubicación en mapa |
+| **Cámara & Análisis IA**| Google Gemini Multimodal + `AiVisionService` | **Implementado** | Extracción fenotípica de fotos en la calle y cotejo contra BD de perdidos/encontrados |
 | **Control de Versiones** | Git + GitHub | Activo | Gestión del código fuente |

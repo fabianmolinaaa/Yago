@@ -46,6 +46,26 @@ class FeedPost {
     return _explicitIsLiked;
   }
 
+  bool isUserAuthorFor(String? userId, {String? userName}) {
+    if (userId != null &&
+        userId.isNotEmpty &&
+        authorId != null &&
+        authorId == userId) {
+      return true;
+    }
+    if (userName != null &&
+        userName.trim().isNotEmpty &&
+        authorName.trim().toLowerCase() == userName.trim().toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
+  bool get isUserAuthor {
+    final user = AuthService().currentUser;
+    return isUserAuthorFor(user?.uid, userName: user?.displayName);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -127,6 +147,7 @@ class FeedPost {
     String? authorId,
     String? authorName,
     String? authorAvatar,
+    bool clearAuthorAvatar = false,
     String? timeAgo,
     String? content,
     String? imageUrl,
@@ -143,7 +164,7 @@ class FeedPost {
       id: id ?? this.id,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
-      authorAvatar: authorAvatar ?? this.authorAvatar,
+      authorAvatar: clearAuthorAvatar ? null : (authorAvatar ?? this.authorAvatar),
       timeAgo: timeAgo ?? this.timeAgo,
       content: content ?? this.content,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -157,17 +178,22 @@ class FeedPost {
     );
   }
 
-  /// Categoría normalizada para presentación ('Consejo', 'Reencuentro', 'Comunidad', o null).
+  /// Categoría normalizada para presentación ('Consejo', 'Reencuentro', 'Aviso', 'Salud', 'Apareamiento', 'Comunidad', o null).
   String? get categoryTag {
     final type = postType.toLowerCase().trim();
     if (type == 'tip' || type == 'consejo') return 'Consejo';
     if (type == 'reunion' || type == 'reencuentro') return 'Reencuentro';
-    if (type == 'community' || type == 'comunidad' || type == 'aviso') return 'Comunidad';
+    if (type == 'aviso' || type == 'alert') return 'Aviso';
+    if (type == 'salud' || type == 'health') return 'Salud';
+    if (type == 'apareamiento' || type == 'mating') return 'Apareamiento';
+    if (type == 'community' || type == 'comunidad') return 'Comunidad';
 
     final text = content.trim();
     if (text.startsWith('[Consejo]') || text.startsWith('💡 Consejo')) return 'Consejo';
     if (text.startsWith('[Reencuentro]') || text.startsWith('❤️ Reencuentro')) return 'Reencuentro';
-    if (text.startsWith('[Comunidad]') || text.startsWith('[Aviso]')) return 'Comunidad';
+    if (text.startsWith('[Aviso]')) return 'Aviso';
+    if (text.startsWith('[Salud]')) return 'Salud';
+    if (text.startsWith('[Comunidad]')) return 'Comunidad';
 
     return null;
   }

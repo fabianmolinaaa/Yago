@@ -3,7 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Servicio para la selección, compresión y almacenamiento en la nube de imágenes (Firebase Storage)
+import '../utils/image_compressor.dart';
+
+export '../utils/image_compressor.dart';
+
+/// Servicio para la selección, compresión de alta calidad y almacenamiento en la nube
+/// de imágenes (Firebase Cloud Storage).
 class StorageService {
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -13,47 +18,73 @@ class StorageService {
   final ImagePicker _picker = ImagePicker();
 
   /// Permite al usuario capturar una foto o seleccionarla de la galería.
-  /// Incluye compresión de dimensiones y calidad para optimizar almacenamiento y red.
+  ///
+  /// Aplica compresión de alta fidelidad (no agresiva) según [preset]:
+  /// - `ImageCompressionPreset.postAndReport`: máx. 1600 px, calidad 85%.
+  /// - `ImageCompressionPreset.avatar`: máx. 800 px, calidad 85%.
   Future<File?> pickImage({
     ImageSource source = ImageSource.gallery,
-    int imageQuality = 80,
-    double maxWidth = 1280,
-    double maxHeight = 1280,
+    ImageCompressionPreset preset = ImageCompressionPreset.postAndReport,
+    int? imageQuality,
+    double? maxWidth,
+    double? maxHeight,
   }) async {
     try {
+      final effectiveQuality = imageQuality ?? preset.quality;
+      final effectiveMaxWidth = maxWidth ?? preset.maxDimension.toDouble();
+      final effectiveMaxHeight = maxHeight ?? preset.maxDimension.toDouble();
+
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        imageQuality: imageQuality,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
+        imageQuality: effectiveQuality,
+        maxWidth: effectiveMaxWidth,
+        maxHeight: effectiveMaxHeight,
       );
 
       if (pickedFile == null) return null;
-      return File(pickedFile.path);
+
+      final rawFile = File(pickedFile.path);
+      return await ImageCompressor.compressFile(
+        rawFile,
+        preset: preset,
+      );
     } catch (e) {
       throw Exception('No se pudo seleccionar la imagen: $e');
     }
   }
 
-  /// Sube un archivo a Firebase Storage y retorna la URL pública de descarga.
+  /// Comprime (si aún no está optimizada) y sube una imagen a Firebase Storage,
+  /// retornando la URL pública de descarga.
   ///
-  /// - [folder]: Carpeta en el bucket (ej.: 'posts', 'reports', 'avatars').
+  /// - [folder]: Carpeta en el bucket (ej.: `'community_posts'`, `'reports'`, `'mating_posts'`, `'avatars'`).
   /// - [file]: Archivo local a subir.
-  /// - [customFileName]: Nombre específico opcional; por defecto genera un nombre temporal único.
+  /// - [preset]: Perfil de compresión opcional (si se omite, se infiere automáticamente según [folder]).
+  /// - [customFileName]: Nombre específico opcional; por defecto genera un nombre único `.jpg`.
   Future<String> uploadImage({
     required File file,
     required String folder,
+    ImageCompressionPreset? preset,
     String? customFileName,
   }) async {
     try {
+      final effectivePreset = preset ?? ImageCompressor.presetForFolder(folder);
+      final optimizedFile = await ImageCompressor.compressFile(
+        file,
+        preset: effectivePreset,
+      );
+
       final userId = FirebaseAuth.instance.currentUser?.uid ?? 'public';
+      final baseName = optimizedFile.path
+          .split(Platform.pathSeparator)
+          .last
+          .replaceAll(RegExp(r'\.[^.]+$'), '');
       final fileName = customFileName ??
-          '${DateTime.now().millisecondsSinceEpoch}_${file.path.split(Platform.pathSeparator).last}';
+          '${DateTime.now().millisecondsSinceEpoch}_$baseName.jpg';
 
       final ref = _storage.ref().child('$folder/$userId/$fileName');
 
       final uploadTask = ref.putFile(
-        file,
+        optimizedFile,
         SettableMetadata(contentType: 'image/jpeg'),
       );
 

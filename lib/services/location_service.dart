@@ -148,10 +148,38 @@ class LocationService {
           final lat = double.tryParse(item['lat'].toString()) ?? -34.5889;
           final lon = double.tryParse(item['lon'].toString()) ?? -58.4233;
           final displayName = item['display_name'] as String? ?? cleanQuery;
+          final address = item['address'] as Map<String, dynamic>?;
 
-          // Simplificar nombres muy largos para mostrarlos de forma elegante
-          final parts = displayName.split(',');
-          final shortName = parts.take(3).join(',').trim();
+          // Simplificar nombres muy largos preservando siempre la ciudad/localidad
+          final parts = displayName
+              .split(',')
+              .map((p) => p.trim())
+              .where((p) => p.isNotEmpty)
+              .toList();
+          String shortName = parts.take(2).join(', ').trim();
+
+          String cleanCity = '';
+          if (address != null) {
+            final rawCity = (address['city'] ??
+                    address['town'] ??
+                    address['village'] ??
+                    address['municipality'] ??
+                    '')
+                .toString();
+            cleanCity = rawCity
+                .replaceAll('Municipio de ', '')
+                .replaceAll('Comuna de ', '')
+                .replaceAll('Departamento ', '')
+                .replaceAll('Partido de ', '')
+                .trim();
+          }
+
+          if (cleanCity.isNotEmpty &&
+              !shortName.toLowerCase().contains(cleanCity.toLowerCase())) {
+            shortName = shortName.isEmpty ? cleanCity : '$shortName, $cleanCity';
+          } else if (cleanCity.isEmpty && parts.length >= 3) {
+            shortName = parts.take(3).join(', ').trim();
+          }
 
           return LocationResult(
             locationName: shortName,
@@ -293,7 +321,18 @@ class LocationService {
               address['quarter'] ??
               address['residential'] ??
               address['city_district'];
-          final city = address['city'] ?? address['town'] ?? address['municipality'] ?? address['state'];
+          final rawCity = (address['city'] ??
+                  address['town'] ??
+                  address['municipality'] ??
+                  address['state'] ??
+                  '')
+              .toString();
+          final city = rawCity
+              .replaceAll('Municipio de ', '')
+              .replaceAll('Comuna de ', '')
+              .replaceAll('Departamento ', '')
+              .replaceAll('Partido de ', '')
+              .trim();
 
           final parts = <String>[];
           if (road != null) {
@@ -302,8 +341,8 @@ class LocationService {
           if (neighbourhood != null && !parts.contains(neighbourhood)) {
             parts.add(neighbourhood.toString());
           }
-          if (city != null && !parts.contains(city)) {
-            parts.add(city.toString());
+          if (city.isNotEmpty && !parts.contains(city)) {
+            parts.add(city);
           }
 
           if (parts.isNotEmpty) {

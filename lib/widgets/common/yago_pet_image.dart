@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../utils/app_colors.dart';
 
 /// Widget optimizado para renderizar imágenes de mascotas en Yago.
 /// Resuelve automáticamente assets locales empaquetados para carga instantánea
-/// y sin consumo de red, y proporciona un cargador con fallback ante URLs remotas.
+/// y sin consumo de red, soporta archivos locales capturados con cámara/galería
+/// y proporciona un cargador con fallback ante URLs remotas.
 class YagoPetImage extends StatelessWidget {
   final String imageUrl;
   final double? width;
@@ -114,6 +116,20 @@ class YagoPetImage extends StatelessWidget {
           return _buildPlaceholder();
         },
       );
+    } else if (imageUrl.trim().isNotEmpty) {
+      final cleanPath = imageUrl.trim().replaceFirst(RegExp(r'^file://'), '');
+      final localFile = File(cleanPath);
+      if (localFile.existsSync()) {
+        imageWidget = Image.file(
+          localFile,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (_, _, _) => _buildPlaceholder(),
+        );
+      } else {
+        imageWidget = _buildPlaceholder();
+      }
     } else {
       imageWidget = _buildPlaceholder();
     }

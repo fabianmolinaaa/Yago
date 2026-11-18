@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,7 @@ import '../../utils/design_system.dart';
 import '../../widgets/common/widgets.dart';
 import '../pet_detail/pet_detail_screen.dart';
 import 'create_post_screen.dart';
+import 'direct_chat_screen.dart';
 
 class FeedTab extends StatefulWidget {
   final VoidCallback? onGoToSearch;
@@ -44,7 +46,7 @@ class _FeedTabState extends State<FeedTab> {
 
   DateTime _getItemDate(dynamic item) {
     if (item is Pet) {
-      return item.date;
+      return item.effectiveCreatedAt;
     } else if (item is FeedPost) {
       return item.createdAt ?? extractDateFromId(item.id) ?? DateTime(2020);
     }
@@ -474,6 +476,7 @@ class _FeedTabState extends State<FeedTab> {
                     final pet = item as Pet;
                     final isBookmarked =
                         MockDataService().isBookmarked(pet.id);
+                    final isOwnPet = pet.isUserOwner;
                     return PetCard(
                       name: pet.name,
                       details: pet.detailsSummary,
@@ -492,6 +495,7 @@ class _FeedTabState extends State<FeedTab> {
                       authorHandle: pet.status == YagoPetStatus.community
                           ? '@yago.app'
                           : '@${pet.contactName.toLowerCase().replaceAll(' ', '').replaceAll('.', '')}',
+                      authorAvatar: MockDataService().resolvePetAuthorAvatar(pet),
                       commentsCount: 0,
                       sharesCount: 0,
                       likesCount: pet.likesCount,
@@ -521,7 +525,10 @@ class _FeedTabState extends State<FeedTab> {
                           MockDataService().togglePetLike(pet.id);
                         });
                       },
-                      onContactTap: () => _showContactModal(context, pet),
+                      showContactButton: !isOwnPet,
+                      onContactTap: isOwnPet
+                          ? null
+                          : () => _showContactModal(context, pet),
                       onTap: () {
                         Navigator.of(context)
                             .push(
@@ -550,6 +557,7 @@ class _FeedTabState extends State<FeedTab> {
 }
 
   void _showContactModal(BuildContext context, Pet pet) {
+    if (pet.isUserOwner) return;
     final isCommunity = pet.status == YagoPetStatus.community;
     final contactTitle = isCommunity
         ? 'Equipo Yago'
@@ -661,37 +669,31 @@ class _FeedTabState extends State<FeedTab> {
                     ),
                     onPressed: () {
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isCommunity
-                                ? 'Mensaje directo iniciado con el Equipo de Yago'
-                                : 'Mensaje directo iniciado con ${pet.contactName}',
-                          ),
-                          backgroundColor: AppColors.textPrimary,
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DirectChatScreen(pet: pet),
                         ),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: YagoButton(
-                    variant: YagoButtonVariant.outline,
-                    text: 'Llamar al teléfono (${pet.contactPhone})',
-                    icon: const Icon(Icons.phone_outlined, size: 18),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Llamando a ${pet.contactPhone}...'),
-                          backgroundColor: AppColors.textPrimary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                if (pet.hasContactPhone) ...[
+                  for (final phone in pet.callablePhones) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: YagoButton(
+                        variant: YagoButtonVariant.outline,
+                        text: 'Llamar al teléfono ($phone)',
+                        icon: const Icon(Icons.phone_outlined, size: 18),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          PhoneLauncher.launchPhoneDialer(context, phone);
+                        },
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
@@ -700,10 +702,93 @@ class _FeedTabState extends State<FeedTab> {
     );
   }
 
+  Widget _buildPostAuthorAvatar(
+    String? avatarUrl, {
+    required bool isYagoOfficial,
+  }) {
+    if (isYagoOfficial) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.primaryTint,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.border,
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.all(5),
+        child: const YagoLogoIcon(size: 24),
+      );
+    }
+
+    final cleanUrl = avatarUrl?.trim() ?? '';
+    Widget fallbackIcon() {
+      return Container(
+        width: 40,
+        height: 40,
+        color: AppColors.primary.withValues(alpha: 0.12),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.person_rounded,
+          size: 22,
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (cleanUrl.isEmpty) {
+      return ClipOval(child: fallbackIcon());
+    }
+
+    Widget imageChild;
+    if (cleanUrl.startsWith('assets/')) {
+      imageChild = Image.asset(
+        cleanUrl,
+        key: ValueKey(cleanUrl),
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    } else if (cleanUrl.startsWith('http://') ||
+        cleanUrl.startsWith('https://')) {
+      imageChild = Image.network(
+        cleanUrl,
+        key: ValueKey(cleanUrl),
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    } else {
+      imageChild = Image.file(
+        File(cleanUrl),
+        key: ValueKey(cleanUrl),
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackIcon(),
+      );
+    }
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primary.withValues(alpha: 0.12),
+      ),
+      child: ClipOval(child: imageChild),
+    );
+  }
+
   Widget _buildCommunityPostCard(FeedPost post) {
     final isYagoOfficial = post.authorName == 'Comunidad Yago' ||
-        post.authorName == 'Equipo Yago' ||
-        post.authorAvatar == null;
+        post.authorName == 'Equipo Yago';
+    final isOwnPost = post.isUserAuthor;
+    final resolvedAvatar = MockDataService().resolvePostAuthorAvatar(post);
     final category = post.categoryTag;
     final cleanText = post.displayContent;
 
@@ -718,28 +803,10 @@ class _FeedTabState extends State<FeedTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (post.authorAvatar != null)
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.community.withValues(alpha: 0.12),
-              backgroundImage: NetworkImage(post.authorAvatar!),
-              onBackgroundImageError: (_, _) {},
-            )
-          else
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primaryTint,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.border,
-                  width: 1,
-                ),
-              ),
-              padding: const EdgeInsets.all(5),
-              child: const YagoLogoIcon(size: 24),
-            ),
+          _buildPostAuthorAvatar(
+            resolvedAvatar,
+            isYagoOfficial: isYagoOfficial,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -845,6 +912,32 @@ class _FeedTabState extends State<FeedTab> {
                           ),
                         ),
                         const SizedBox(width: 18),
+                        if (!isOwnPost) ...[
+                          Tooltip(
+                            message: 'Enviar mensaje directo al autor',
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => DirectChatScreen(post: post),
+                                  ),
+                                );
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 4,
+                                ),
+                                child: Icon(
+                                  Icons.mail_outline_rounded,
+                                  size: 19,
+                                  color: AppColors.twitterAction,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                        ],
                         Tooltip(
                           message: 'Compartir publicación',
                           child: GestureDetector(
@@ -954,8 +1047,9 @@ class _FeedTabState extends State<FeedTab> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    content,
+                  YagoExpandableText(
+                    text: content,
+                    maxLines: 4,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13.5,
@@ -1008,8 +1102,9 @@ class _FeedTabState extends State<FeedTab> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    content,
+                  YagoExpandableText(
+                    text: content,
+                    maxLines: 4,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13.5,
@@ -1025,8 +1120,9 @@ class _FeedTabState extends State<FeedTab> {
       );
     }
 
-    return Text(
-      content,
+    return YagoExpandableText(
+      text: content,
+      maxLines: 4,
       style: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 13.5,
@@ -1092,7 +1188,13 @@ class _FeedTabState extends State<FeedTab> {
           } else if (value == 'delete') {
             _confirmDeletePost(context, postId: postId, pet: pet);
           } else if (value == 'report') {
-            _confirmReportPost(context, isReport: isReport);
+            _openReportModal(
+              context,
+              isReport: isReport,
+              postId: postId,
+              pet: pet,
+              post: post,
+            );
           } else if (value == 'hide') {
             setState(() {
               _hiddenPostIds.add(postId);
@@ -1205,39 +1307,19 @@ class _FeedTabState extends State<FeedTab> {
     );
   }
 
-  void _confirmReportPost(BuildContext context, {required bool isReport}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgBorder),
-        title: const Text('¿Reportar publicación?'),
-        content: const Text(
-          'Si consideras que esta publicación contiene información falsa, spam o lenguaje inapropiado, nuestro equipo de moderación la revisará.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Reporte enviado a moderación. Gracias por ayudar a cuidar la comunidad.'),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
-            },
-            child: const Text('Reportar'),
-          ),
-        ],
-      ),
+  void _openReportModal(
+    BuildContext context, {
+    required bool isReport,
+    required String postId,
+    Pet? pet,
+    FeedPost? post,
+  }) {
+    ReportContentModal.show(
+      context,
+      targetType: isReport ? 'pet' : 'feed_post',
+      targetId: isReport ? (pet?.id ?? postId) : (post?.id ?? postId),
+      pet: pet,
+      post: post,
     );
   }
 

@@ -38,8 +38,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _phoneController;
 
   File? _selectedImageFile;
+  bool _removeCurrentPhoto = false;
   bool _isSaving = false;
   String? _nameError;
+  String? _phoneError;
 
   @override
   void initState() {
@@ -61,10 +63,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final file = await StorageService().pickImage(source: source);
+      final file = await StorageService().pickImage(
+        source: source,
+        preset: ImageCompressionPreset.avatar,
+      );
       if (file != null) {
         setState(() {
           _selectedImageFile = file;
+          _removeCurrentPhoto = false;
         });
       }
     } catch (e) {
@@ -127,7 +133,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
-              if (_selectedImageFile != null || widget.currentPhotoUrl != null)
+              if (_selectedImageFile != null ||
+                  (!_removeCurrentPhoto && widget.currentPhotoUrl != null))
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
                   title: const Text(
@@ -138,6 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Navigator.pop(ctx);
                     setState(() {
                       _selectedImageFile = null;
+                      _removeCurrentPhoto = true;
                     });
                   },
                 ),
@@ -149,32 +157,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
+    final name = InputValidators.sanitizeText(_nameController.text);
+    final bio = InputValidators.sanitizeText(_bioController.text);
+    final location = InputValidators.sanitizeText(_locationController.text);
+    final phone = InputValidators.sanitizeText(_phoneController.text);
+
+    final nameErr = InputValidators.validatePersonName(
+      name,
+      emptyMessage: 'El nombre no puede estar vacío',
+    );
+    final phoneErr = InputValidators.validatePhone(phone, required: false);
+
+    if (nameErr != null || phoneErr != null) {
       setState(() {
-        _nameError = 'El nombre no puede estar vacío';
+        _nameError = nameErr;
+        _phoneError = phoneErr;
       });
       return;
     }
 
     setState(() {
       _nameError = null;
+      _phoneError = null;
       _isSaving = true;
     });
 
     try {
-      String? photoUrl = widget.currentPhotoUrl;
+      String? photoUrl = _removeCurrentPhoto ? null : widget.currentPhotoUrl;
 
-      // Subir nueva foto si se seleccionó una
+      // Subir nueva foto comprimida con perfil de avatar si se seleccionó una
       if (_selectedImageFile != null) {
         try {
           photoUrl = await StorageService().uploadImage(
             file: _selectedImageFile!,
             folder: 'avatars',
+            preset: ImageCompressionPreset.avatar,
           );
         } catch (_) {
-          // Si falla la subida a Cloud Storage (ej: sin conexión o pruebas), mantener ruta local
-          photoUrl = _selectedImageFile!.path;
+          // Si falla la subida a Cloud Storage (ej: sin conexión o pruebas), mantener ruta local optimizada
+          final compressed = await ImageCompressor.compressFile(
+            _selectedImageFile!,
+            preset: ImageCompressionPreset.avatar,
+          );
+          photoUrl = compressed.path;
         }
       }
 
@@ -184,36 +209,54 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         photoURL: photoUrl,
       );
 
-      final bio = _bioController.text.trim();
-      final location = _locationController.text.trim();
-      final phone = _phoneController.text.trim();
       final currentUser = AuthService().currentUser;
 
-      // Actualizar en Cloud Firestore si está autenticado
-      if (currentUser != null) {
-        try {
-          await FirestoreService().setUserProfile(
-            UserModel(
-              uid: currentUser.uid,
-              email: currentUser.email ?? '',
-              displayName: name,
-              photoUrl: photoUrl,
-              phoneNumber: phone,
-              bio: bio,
-              location: location,
-              updatedAt: DateTime.now(),
-            ),
-          );
-        } catch (_) {}
-      }
-
-      // Actualizar metadatos en caché local de MockDataService
+      // Actualizar metadatos en caché local de MockDataService (y propagar a publicaciones/reportes propios)
       MockDataService().updateUserProfile(
         bio: bio,
         location: location,
         phone: phone,
         photoUrl: photoUrl,
+        displayName: name,
+        clearPhoto: photoUrl == null,
       );
+
+      // Actualizar en Cloud Firestore si está autenticado (preservando rol y createdAt)
+      if (currentUser != null) {
+        try {
+          await FirestoreService().updateUserProfile(currentUser.uid, {
+            'displayName': name,
+            'photoUrl': photoUrl,
+            'phoneNumber': phone,
+            'bio': bio,
+            'location': location,
+          });
+        } catch (_) {
+          try {
+            await FirestoreService().setUserProfile(
+              UserModel(
+                uid: currentUser.uid,
+                email: currentUser.email ?? '',
+                displayName: name,
+                photoUrl: photoUrl,
+                phoneNumber: phone,
+                bio: bio,
+                location: location,
+                updatedAt: DateTime.now(),
+              ),
+            );
+          } catch (_) {}
+        }
+
+        // Sincronizar la nueva foto y nombre en todas las publicaciones y reportes del usuario en Firestore
+        FirestoreService()
+            .syncUserAuthorMetadata(
+              userId: currentUser.uid,
+              userName: name,
+              photoUrl: photoUrl,
+            )
+            .catchError((_) {});
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +407,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               label: 'Nombre',
               hint: 'Tu nombre completo o apodo',
               controller: _nameController,
+              maxLength: 60,
               errorText: _nameError,
               prefixIcon: const Icon(Icons.person_outline_rounded, size: 20, color: AppColors.textSecondary),
               onChanged: (_) {
@@ -379,6 +423,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hint: 'Cuéntale a la comunidad sobre ti y tus mascotas...',
               controller: _bioController,
               maxLines: 3,
+              maxLength: 200,
             ),
             const SizedBox(height: 16),
 
@@ -386,6 +431,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               label: 'Ubicación',
               hint: 'Ciudad, Provincia o Barrio (ej: Santa Cruz, Argentina)',
               controller: _locationController,
+              maxLength: 80,
               prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
@@ -395,6 +441,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hint: '+54 9 ... (opcional)',
               controller: _phoneController,
               keyboardType: TextInputType.phone,
+              maxLength: 25,
+              errorText: _phoneError,
+              onChanged: (_) {
+                if (_phoneError != null) {
+                  setState(() => _phoneError = null);
+                }
+              },
               prefixIcon: const Icon(Icons.phone_outlined, size: 20, color: AppColors.textSecondary),
               helperText: 'Visible cuando coordines avisos o reencuentros de mascotas.',
             ),
@@ -426,8 +479,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
 
-    final photoUrl = widget.currentPhotoUrl;
-    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+    if (_removeCurrentPhoto) {
+      return _buildGenericIcon();
+    }
+
+    final photoUrl = widget.currentPhotoUrl?.trim();
+    if (photoUrl != null && photoUrl.isNotEmpty) {
       if (photoUrl.startsWith('assets/')) {
         return Image.asset(
           photoUrl,
@@ -437,8 +494,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           errorBuilder: (_, _, _) => _buildGenericIcon(),
         );
       }
-      return Image.network(
-        photoUrl,
+      if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+        return Image.network(
+          photoUrl,
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildGenericIcon(),
+        );
+      }
+      return Image.file(
+        File(photoUrl),
         width: 96,
         height: 96,
         fit: BoxFit.cover,

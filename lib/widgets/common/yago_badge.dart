@@ -160,8 +160,22 @@ class YagoPostCategoryBadge extends StatelessWidget {
         color = AppColors.reunitedText;
         icon = Icons.favorite_rounded;
         break;
-      case 'comunidad':
+      case 'apareamiento':
+        bg = AppColors.matingBg;
+        color = AppColors.matingText;
+        icon = Icons.pets_rounded;
+        break;
+      case 'salud':
+        bg = const Color(0xFFE0F2FE);
+        color = const Color(0xFF0369A1);
+        icon = Icons.medical_services_outlined;
+        break;
       case 'aviso':
+        bg = const Color(0xFFFEF3C7);
+        color = const Color(0xFFB45309);
+        icon = Icons.campaign_rounded;
+        break;
+      case 'comunidad':
         bg = AppColors.primaryTint;
         color = AppColors.primary;
         icon = Icons.campaign_rounded;

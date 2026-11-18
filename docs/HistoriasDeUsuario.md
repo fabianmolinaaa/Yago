@@ -28,14 +28,14 @@
 
 ## Sprint 3: Cámara para Análisis con Inteligencia Artificial
 
-| ID | Historia de usuario | Prioridad |
-| :--- | :--- | :---: |
-| HU-S3-01 | Como usuario, quiero acceder a la cámara analizadora desde el botón central de la barra de navegación para identificar a un animal que veo en la calle o cotejar a mi mascota perdida. | Alta |
-| HU-S3-02 | Como usuario, quiero capturar una foto con la cámara (o cargar una imagen de la galería) para que el modelo de IA extraiga sus rasgos físicos (especie, raza aparente, colores y señas particulares). | Alta |
-| HU-S3-03 | Como usuario, quiero que la IA busque y compare automáticamente la foto analizada contra la base de datos activa de Yago, abarcando tanto mascotas reportadas como perdidas como mascotas encontradas por otros usuarios. | Alta |
-| HU-S3-04 | Como usuario, quiero visualizar el resultado de la búsqueda con el porcentaje de similitud visual y las fotos comparativas ante posibles coincidencias (perdidas o encontradas). | Alta |
-| HU-S3-05 | Como usuario, quiero abrir un chat directo con la persona responsable del reporte coincidente (dueño o reportante de hallazgo) desde el resultado del análisis de IA para avisarle al instante que su mascota fue avistada. | Alta |
-| HU-S3-06 | Como usuario, quiero que la app me permita generar un nuevo reporte de mascota encontrada si la IA no detecta coincidencias, reutilizando la foto tomada para ahorrar tiempo. | Alta |
+| ID | Título | Historia de usuario | Prioridad |
+| :--- | :--- | :--- | :---: |
+| HU-S3-01 | Acceso al escáner de animales | Como usuario, quiero acceder al escáner de animales desde el botón central de la barra de navegación para iniciar la identificación de una mascota. | Alta |
+| HU-S3-02 | Identificación de características mediante IA | Como usuario, quiero tomar una foto de un animal o seleccionar una imagen de mi galería para que la IA identifique sus características físicas, como especie, raza aparente, colores y señas particulares. | Alta |
+| HU-S3-03 | Búsqueda automática de coincidencias | Como usuario, quiero que la IA compare las características del animal analizado con los reportes de mascotas perdidas y encontradas en Yago para identificar posibles coincidencias. | Alta |
+| HU-S3-04 | Visualización de posibles coincidencias | Como usuario, quiero visualizar los reportes coincidentes con sus fotografías y porcentajes de similitud para evaluar si corresponden al animal que estoy buscando o encontré. | Alta |
+| HU-S3-05 | Contacto con el responsable del reporte | Como usuario, quiero iniciar una conversación con el responsable de un reporte coincidente para comunicarme sobre la posible identificación de una mascota. | Alta |
+| HU-S3-06 | Creación de reporte a partir del análisis | Como usuario, quiero crear un reporte de mascota encontrada cuando no se detecten coincidencias, reutilizando la fotografía analizada para agilizar el proceso. | Alta |
 
 ---
 

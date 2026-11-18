@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import '../../utils/design_system.dart';
+import '../../services/mock_data_service.dart';
 import '../../widgets/common/widgets.dart';
+import 'ai_camera_screen.dart';
 import 'create_report_screen.dart';
+import 'direct_chats_tab.dart';
 import 'feed_tab.dart';
 import 'profile_tab.dart';
 import 'reports_feed_tab.dart';
@@ -16,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int _previousIndex = 0;
   bool _isNavCompact = false;
 
   void _openCreateReport() {
@@ -32,12 +35,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _closeCameraScanner() {
+    setState(() {
+      _currentIndex = _previousIndex == 2 ? 0 : _previousIndex;
+      _isNavCompact = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Definición de las 5 vistas principales del nuevo alcance:
+    final isCameraOpen = _currentIndex == 2;
+
+    // Definición de las 5 vistas principales del alcance oficial:
     // 0: Feed de publicaciones (activo)
-    // 1: Feed de reportes (Próximamente con visor de zona en mapa)
-    // 2: Cámara para análisis con IA (Próximamente con escaneo y búsqueda en BD)
+    // 1: Feed de reportes (activo con visor de zona en mapa)
+    // 2: Cámara para análisis con IA (escáner directo a pantalla completa)
     // 3: Chat directo entre personas (Próximamente)
     // 4: Perfil de usuario (activo)
     final views = [
@@ -48,62 +60,70 @@ class _HomeScreenState extends State<HomeScreen> {
       ReportsFeedTab(
         onGoToCreateReport: _openCreateReport,
       ),
-      const ComingSoonView(
-        title: 'Cámara con IA',
-        description:
-            '¿Encontraste un animal en la calle? Toma una foto y nuestra IA analizará sus rasgos físicos para buscarlo dentro de la base de datos de mascotas perdidas.',
-        icon: Icons.center_focus_strong_rounded,
-        badgeText: 'PRÓXIMAMENTE',
-        accentColor: AppColors.primary,
-        featureHighlight:
-            'Identificación inteligente al instante en la vía pública con aviso y contacto directo al dueño.',
+      AiCameraScreen(
+        isActive: isCameraOpen,
+        onClose: _closeCameraScanner,
+        onReportCreated: () {
+          setState(() {
+            _currentIndex = 1; // Ir al feed de reportes tras publicar hallazgo
+          });
+        },
       ),
-      const ComingSoonView(
-        title: 'Chat Directo',
-        description:
-            'Canal de mensajería instantánea 1 a 1 para aportar pistas de avistamientos o coordinar el reencuentro de las mascotas de forma privada y segura.',
-        icon: Icons.chat_bubble_outline_rounded,
-        badgeText: 'PRÓXIMAMENTE',
-        accentColor: AppColors.primary,
-        featureHighlight:
-            'Bandeja de conversaciones vinculadas directamente al reporte de la mascota para actuar con rapidez.',
+      DirectChatsTab(
+        onGoToFeed: () => setState(() => _currentIndex = 0),
+        onGoToReports: () => setState(() => _currentIndex = 1),
       ),
       ProfileTab(
         onGoToCreateReport: _openCreateReport,
       ),
     ];
 
-    return Scaffold(
-      extendBody: true,
-      body: NotificationListener<UserScrollNotification>(
-        onNotification: (notification) {
-          if (notification.direction == ScrollDirection.reverse) {
-            if (!_isNavCompact) {
-              setState(() => _isNavCompact = true);
-            }
-          } else if (notification.direction == ScrollDirection.forward) {
-            if (_isNavCompact) {
-              setState(() => _isNavCompact = false);
-            }
-          }
-          return false;
-        },
-        child: IndexedStack(
-          index: _currentIndex,
-          children: views,
-        ),
-      ),
-      bottomNavigationBar: YagoBottomNavBar(
-        currentIndex: _currentIndex,
-        isCompact: _isNavCompact,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-            _isNavCompact = false;
-          });
-        },
-        onPublishTap: _openCreateReport,
-      ),
+    return ListenableBuilder(
+      listenable: MockDataService(),
+      builder: (context, _) {
+        final unreadChats = MockDataService().getTotalUnreadChatCount();
+
+        return Scaffold(
+          extendBody: true,
+          body: NotificationListener<UserScrollNotification>(
+            onNotification: (notification) {
+              if (notification.direction == ScrollDirection.reverse) {
+                if (!_isNavCompact) {
+                  setState(() => _isNavCompact = true);
+                }
+              } else if (notification.direction == ScrollDirection.forward) {
+                if (_isNavCompact) {
+                  setState(() => _isNavCompact = false);
+                }
+              }
+              return false;
+            },
+            child: IndexedStack(
+              index: _currentIndex,
+              children: views,
+            ),
+          ),
+          bottomNavigationBar: isCameraOpen
+              ? null
+              : YagoBottomNavBar(
+                  currentIndex: _currentIndex,
+                  isCompact: _isNavCompact,
+                  unreadChatsCount: unreadChats,
+                  onTap: (index) {
+                    setState(() {
+                      if (index != 2) {
+                        _previousIndex = index;
+                      } else if (_currentIndex != 2) {
+                        _previousIndex = _currentIndex;
+                      }
+                      _currentIndex = index;
+                      _isNavCompact = false;
+                    });
+                  },
+                  onPublishTap: _openCreateReport,
+                ),
+        );
+      },
     );
   }
 }

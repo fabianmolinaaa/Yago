@@ -4,8 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yago/main.dart';
 import 'package:yago/screens/auth/login_screen.dart';
 import 'package:yago/screens/auth/register_screen.dart';
+import 'package:yago/screens/home/ai_camera_screen.dart';
 import 'package:yago/screens/home/create_post_screen.dart';
 import 'package:yago/screens/home/create_report_screen.dart';
+import 'package:yago/screens/home/direct_chat_screen.dart';
+import 'package:yago/screens/home/direct_chats_tab.dart';
 import 'package:yago/screens/home/edit_profile_screen.dart';
 import 'package:yago/screens/home/home_screen.dart';
 import 'package:yago/screens/home/feed_tab.dart';
@@ -14,6 +17,7 @@ import 'package:yago/screens/home/reports_feed_tab.dart';
 import 'package:yago/models/feed_post.dart';
 import 'package:yago/models/pet.dart';
 import 'package:yago/screens/onboarding/onboarding_screen.dart';
+import 'package:yago/services/ai_vision_service.dart';
 import 'package:yago/services/mock_data_service.dart';
 import 'package:yago/widgets/common/widgets.dart';
 import 'package:yago/screens/pet_detail/pet_detail_screen.dart';
@@ -256,11 +260,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Reportes'), findsWidgets);
 
-    // Navegar a Pestaña 2: Cámara con IA (En construcción / Próximamente)
+    // Navegar a Pestaña 2: Cámara con IA (Escáner en vivo a pantalla completa estilo QR Mercado Pago)
     await tester.tap(find.byTooltip('Cámara con IA'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Cámara con IA'), findsWidgets);
+    expect(find.text('Tomar foto'), findsOneWidget);
+    expect(find.text('Cargar de galería'), findsOneWidget);
+
+    // Cerrar el escáner de cámara para volver a la barra de navegación
+    await tester.tap(find.byTooltip('Cerrar cámara'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Navegar a Pestaña 3: Chat Directo (En construcción / Próximamente)
     await tester.tap(find.byTooltip('Chat'));
@@ -314,17 +325,26 @@ void main() {
 
     expect(find.text('Crear Publicación'), findsOneWidget);
     expect(find.text('Publicar'), findsOneWidget);
-    expect(find.text('Descripción de la publicación'), findsOneWidget);
-    expect(find.textContaining('Perdida'), findsWidgets);
-    expect(find.textContaining('Apareamiento'), findsOneWidget);
+    expect(find.text('Agrega una descripción...'), findsOneWidget);
+    expect(find.text('Agregar Fotos'), findsOneWidget);
+    expect(find.text('Agregar Etiqueta'), findsOneWidget);
+
+    // Perdida y Encontrada ya no están en Crear Publicación (exclusivos de Crear Reporte)
+    expect(find.textContaining('Perdida'), findsNothing);
+    expect(find.textContaining('Encontrada'), findsNothing);
+
+    // Las 5 etiquetas comunitarias deben estar presentes
     expect(find.textContaining('Consejo'), findsOneWidget);
     expect(find.textContaining('Reencuentro'), findsOneWidget);
-    expect(find.text('Anécdota'), findsNothing);
+    expect(find.textContaining('Apareamiento'), findsOneWidget);
+    expect(find.textContaining('Aviso'), findsOneWidget);
+    expect(find.textContaining('Salud'), findsOneWidget);
 
-    // Al seleccionar el chip de Apareamiento deben mostrarse los campos contextuales
+    // Al seleccionar la etiqueta de Apareamiento deben mostrarse el indicador de etiqueta y los campos contextuales
     await tester.tap(find.textContaining('Apareamiento'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Etiqueta seleccionada: Apareamiento'), findsOneWidget);
     expect(find.text('Búsqueda de pareja / Apareamiento'), findsOneWidget);
     expect(find.text('Nombre de la mascota'), findsOneWidget);
     expect(find.text('Raza'), findsOneWidget);
@@ -435,6 +455,8 @@ void main() {
       // Tocar el botón de bookmark para quitarlo
       final bookmarkBtn = find.byIcon(Icons.bookmark_rounded);
       expect(bookmarkBtn, findsWidgets);
+      await tester.ensureVisible(bookmarkBtn.first);
+      await tester.pumpAndSettle();
       await tester.tap(bookmarkBtn.first);
       await tester.pumpAndSettle();
 
@@ -741,6 +763,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    // Verificar que no exista el filtro de "Ciudad o localidad" dentro del modal de filtros
+    expect(find.text('Ciudad o localidad'), findsNothing);
+
     // Seleccionar filtro de Gatos con icono elegante
     await tester.tap(find.text('Gatos'));
     await tester.pump();
@@ -924,8 +949,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // 5. Verificar teléfonos múltiples con botón +
-    expect(find.text('Teléfono o WhatsApp de contacto'), findsOneWidget);
+    // 5. Verificar teléfonos múltiples con botón + y label "Teléfono"
+    expect(find.text('Teléfono'), findsOneWidget);
+    expect(find.text('Teléfono o WhatsApp de contacto'), findsNothing);
     final phoneField = find.widgetWithText(TextField, '');
     expect(phoneField, findsWidgets);
 
@@ -933,12 +959,15 @@ void main() {
     expect(find.text('Señas particulares (chips, collar, manchas)'), findsOneWidget);
     expect(find.text('Sugerencias:'), findsNothing);
 
-    // 7. Verificar detección de ubicación actual ("Usar mi ubicación")
-    await tester.ensureVisible(find.text('Usar mi ubicación'));
+    // 7. Verificar detección de ubicación actual mediante el botón a la derecha de la entrada (sin labels inferiores)
+    expect(find.text('Usar mi ubicación'), findsNothing);
+    expect(find.text('Ubicar en el mapa'), findsNothing);
+    await tester.ensureVisible(find.byTooltip('Usar mi ubicación'));
     await tester.pumpAndSettle();
-    expect(find.text('Usar mi ubicación'), findsOneWidget);
+    expect(find.byTooltip('Usar mi ubicación'), findsOneWidget);
+    expect(find.byTooltip('Ubicar en el mapa'), findsOneWidget);
 
-    await tester.tap(find.text('Usar mi ubicación'));
+    await tester.tap(find.byTooltip('Usar mi ubicación'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -958,33 +987,28 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Desplazarse hasta el campo de ubicación
-    await tester.ensureVisible(find.text('Ubicar en el mapa').first);
+    // Desplazarse hasta el botón de ubicar en el mapa a la derecha del campo de ubicación
+    await tester.ensureVisible(find.byTooltip('Ubicar en el mapa'));
     await tester.pumpAndSettle();
 
     // Tocar "Ubicar en el mapa"
-    await tester.tap(find.text('Ubicar en el mapa').first);
+    await tester.tap(find.byTooltip('Ubicar en el mapa'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verificar que el modal de selección de mapa se abre correctamente
+    // Verificar que el modal de selección de mapa se abre correctamente y sin chips de sugerencias debajo del buscador
     expect(find.text('Ubicar en el mapa'), findsWidgets);
     expect(find.text('Elige la zona donde ocurrió el extravío o hallazgo'), findsOneWidget);
     expect(find.text('Confirmar esta ubicación'), findsOneWidget);
-
-    // Seleccionar una zona rápida de referencia en el mapa
-    expect(find.text('El Gorosito (Centro)'), findsOneWidget);
-    await tester.tap(find.text('El Gorosito (Centro)'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('El Gorosito (Centro)'), findsNothing);
 
     // Confirmar la ubicación seleccionada
     await tester.tap(find.text('Confirmar esta ubicación'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verificar que el campo Ubicación se actualizó con la zona elegida
-    expect(find.text('El Gorosito (Centro)'), findsWidgets);
+    // Verificar que el campo Ubicación se actualizó con la ubicación del mapa
+    expect(find.text('Costanera, Caleta Olivia'), findsWidgets);
   });
 
   testWidgets('MapLocationPickerModal searches address, selects result, and updates map position', (WidgetTester tester) async {
@@ -996,10 +1020,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Abrir modal de mapa
-    await tester.ensureVisible(find.text('Ubicar en el mapa').first);
+    // Abrir modal de mapa desde el botón a la derecha de la entrada de ubicación
+    await tester.ensureVisible(find.byTooltip('Ubicar en el mapa'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ubicar en el mapa').first);
+    await tester.tap(find.byTooltip('Ubicar en el mapa'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -1209,8 +1233,9 @@ void main() {
     await tester.scrollUntilVisible(find.text('Marcar como recuperada'), 100);
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Debe mostrar el botón de marcar como recuperada
+    // Debe mostrar el botón de marcar como recuperada y NO mostrar el botón Contactar (es su propio reporte)
     expect(find.text('Marcar como recuperada'), findsOneWidget);
+    expect(find.text('Contactar'), findsNothing);
 
     // Tocar botón
     await tester.tap(find.text('Marcar como recuperada'));
@@ -1237,6 +1262,818 @@ void main() {
     // Verificar que el estado en MockDataService ahora es reunited
     final updated = MockDataService().getAllPets().firstWhere((p) => p.id == 'test-pet-owner-recovered');
     expect(updated.status, equals(YagoPetStatus.reunited));
+  });
+
+  testWidgets('AiCameraScreen extracts physical traits, compares against active DB, and shows similarity percentage & comparative photos (HU-S3-01 to HU-S3-04)', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AiCameraScreen(),
+      ),
+    );
+    await tester.pump();
+
+    // 1. Verificar controles de captura a pantalla completa y ausencia de sugerencias/encuadre (HU-S3-01 / HU-S3-02)
+    expect(find.text('Cámara con IA'), findsOneWidget);
+    expect(find.text('Tomar foto'), findsOneWidget);
+    expect(find.text('Cargar de galería'), findsOneWidget);
+    expect(find.text('Caniche blanco'), findsNothing);
+    expect(find.text('Gato bicolor'), findsNothing);
+
+    // 2. Pulsar el obturador "Tomar foto" para disparar el análisis con IA
+    await tester.tap(find.text('Tomar foto'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // 3. Verificar rasgos físicos extraídos por el modelo de IA (HU-S3-02)
+    expect(find.text('RASGOS FÍSICOS EXTRAÍDOS POR IA'), findsOneWidget);
+    expect(find.text('Perro'), findsWidgets);
+    expect(find.text('Caniche'), findsWidgets);
+    expect(find.text('Blanco'), findsWidgets);
+    expect(find.text('Moño rosa'), findsWidgets);
+
+    // 4. Verificar comparación automática y visualización de porcentaje de similitud y fotos comparativas (HU-S3-03 / HU-S3-04)
+    expect(find.text('COINCIDENCIAS EN BASE DE DATOS'), findsOneWidget);
+    expect(find.textContaining('% de similitud'), findsWidgets);
+    expect(find.text('Foto analizada'), findsWidgets);
+    expect(find.text('Reporte: Luna'), findsOneWidget);
+    expect(find.text('PERDIDA'), findsWidgets);
+    expect(find.text('Abrir chat directo'), findsWidgets);
+  });
+
+  testWidgets('AiCameraScreen opens DirectChatScreen with report owner and sends instant sighting alert (HU-S3-05)', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AiCameraScreen(
+          initialPreset: AiVisionService.samplePresets[1],
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Reporte: Milo (Nombre asignado)'), findsOneWidget);
+    expect(find.text('ENCONTRADA'), findsWidgets);
+
+    // Desplazar hasta el botón "Abrir chat directo" y pulsarlo
+    final chatBtn = find.text('Abrir chat directo').first;
+    await tester.ensureVisible(chatBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(chatBtn);
+    await tester.pumpAndSettle();
+
+    // Debe abrir DirectChatScreen con Lucía Fernández y contexto de Milo
+    expect(find.byType(DirectChatScreen), findsOneWidget);
+    expect(find.text('Lucía Fernández'), findsOneWidget);
+    expect(find.text('Reportante de mascota encontrada'), findsOneWidget);
+    expect(find.textContaining('% IA'), findsOneWidget);
+
+    // Enviar un mensaje directo en el chat
+    final inputFinder = find.byType(TextField);
+    expect(inputFinder, findsOneWidget);
+    await tester.enterText(inputFinder, '¡Hola Lucía! Creo que Milo es mi gato.');
+    await tester.tap(find.byTooltip('Enviar mensaje'));
+    await tester.pumpAndSettle();
+
+    // El mensaje enviado debe mostrarse en la conversación
+    expect(find.text('¡Hola Lucía! Creo que Milo es mi gato.'), findsOneWidget);
+  });
+
+  testWidgets('AiCameraScreen allows generating a new found pet report reusing photo and traits when no matches are found (HU-S3-06)', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AiCameraScreen(
+          initialPreset: AiVisionService.samplePresets.last,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verificar extracción de especie Otro y estado sin coincidencias
+    expect(find.text('Otro'), findsWidgets);
+    expect(find.text('Conejo doméstico'), findsWidgets);
+    expect(find.text('0 coincidencias'), findsOneWidget);
+    expect(find.text('No se detectaron coincidencias'), findsOneWidget);
+
+    // Tocar botón "Generar reporte de mascota encontrada"
+    final generateBtn = find.text('Generar reporte de mascota encontrada');
+    await tester.ensureVisible(generateBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(generateBtn);
+    await tester.pumpAndSettle();
+
+    // Debe abrir CreateReportScreen con la foto y los rasgos precargados desde IA
+    expect(find.byType(CreateReportScreen), findsOneWidget);
+    expect(
+      find.text('Foto y rasgos físicos reutilizados desde Cámara con IA para ahorrar tiempo.'),
+      findsOneWidget,
+    );
+    expect(find.text('Conejo doméstico'), findsOneWidget);
+    expect(find.text('Gris ceniza'), findsOneWidget);
+  });
+
+  testWidgets('AiCameraScreen shows error screen when analyzed image is not an animal without mentioning detected object', (WidgetTester tester) async {
+    const nonAnimalPreset = AiSamplePreset(
+      id: 'preset-not-animal',
+      label: 'Objeto',
+      subtitle: 'No es un animal',
+      imageUrl: '',
+      isAnimal: false,
+      nonAnimalReason:
+          'No logramos identificar un animal en esta imagen. Por favor, toma una foto clara donde se vea bien a la mascota.',
+      species: 'Otro',
+      apparentBreed: 'No detectado',
+      colors: [],
+      distinctiveTraits: [],
+      summary: 'La imagen no muestra un animal.',
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AiCameraScreen(
+          initialPreset: nonAnimalPreset,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Debe mostrar la pantalla de error limpia sin mencionar qué objeto se detectó
+    expect(find.text('No detectamos un animal en la imagen'), findsOneWidget);
+    expect(
+      find.textContaining('No logramos identificar un animal en esta imagen'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('se detectó:'), findsNothing);
+    expect(find.text('Tomar otra foto'), findsOneWidget);
+    expect(find.text('Elegir otra de la galería'), findsOneWidget);
+    expect(find.text('COINCIDENCIAS EN BASE DE DATOS'), findsNothing);
+    expect(find.text('RASGOS FÍSICOS EXTRAÍDOS POR IA'), findsNothing);
+  });
+
+  test('Pet.detailsSummary hides unknown/empty optional fields in feed while keeping completed ones', () {
+    // Caso 1: Perro Bull Terrier sin nombre, sin sexo y sin edad conocida
+    final bullTerrier = Pet(
+      id: 'test-bull-terrier',
+      name: 'Sin nombre',
+      species: 'Perro',
+      breed: 'Bull Terrier',
+      gender: 'Desconocido',
+      age: 'Desconocida',
+      status: YagoPetStatus.found,
+      location: 'Centro, Caleta Olivia',
+      timeAgo: 'Hace 5 min',
+      date: DateTime.now(),
+      description: 'Perro encontrado en buen estado.',
+      imageUrl: '',
+      contactName: 'Vecino',
+      contactPhone: 'Contacto por chat interno',
+      latitude: -46.4393,
+      longitude: -67.5284,
+    );
+    expect(bullTerrier.name, 'Sin nombre');
+    expect(bullTerrier.detailsSummary, 'Bull Terrier');
+    expect(bullTerrier.detailsSummary.contains('Desconocido'), isFalse);
+    expect(bullTerrier.detailsSummary.contains('Desconocida'), isFalse);
+
+    // Caso 2: Mascota sin nombre, sin raza, sin sexo y sin edad conocida
+    final allUnknown = Pet(
+      id: 'test-all-unknown',
+      name: 'Sin nombre',
+      species: 'Perro',
+      breed: '',
+      gender: 'Desconocido',
+      age: 'Desconocida',
+      status: YagoPetStatus.found,
+      location: 'Centro, Caleta Olivia',
+      timeAgo: 'Hace 5 min',
+      date: DateTime.now(),
+      description: 'Perro encontrado sin datos adicionales.',
+      imageUrl: '',
+      contactName: 'Vecino',
+      contactPhone: 'Contacto por chat interno',
+      latitude: -46.4393,
+      longitude: -67.5284,
+    );
+    expect(allUnknown.name, 'Sin nombre');
+    expect(allUnknown.detailsSummary, isEmpty);
+  });
+
+  testWidgets('AiCameraScreen resets scanner when tab becomes inactive/active', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AiCameraScreen(
+          isActive: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Inicialmente está en el visor en vivo
+    expect(find.text('Tomar foto'), findsOneWidget);
+
+    // Simular captura en el visor
+    await tester.tap(find.byIcon(Icons.camera_alt_rounded));
+    await tester.pumpAndSettle();
+
+    // Debe mostrar resultados del análisis
+    expect(find.text('COINCIDENCIAS EN BASE DE DATOS'), findsOneWidget);
+
+    // Simular cambio de pestaña (isActive: false) y regreso (isActive: true)
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AiCameraScreen(
+          isActive: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AiCameraScreen(
+          isActive: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Debe haberse reseteado al visor de cámara sin mostrar el análisis anterior
+    expect(find.text('COINCIDENCIAS EN BASE DE DATOS'), findsNothing);
+    expect(find.text('Tomar foto'), findsOneWidget);
+  });
+
+  testWidgets('CreateReportScreen validates required fields, rejects invalid phone, and allows manual accessible submission', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: CreateReportScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1. Intentar publicar vacío debe bloquearse y mostrar mensajes de validación
+    final publishBtn = find.widgetWithText(YagoButton, 'Publicar reporte');
+    await tester.ensureVisible(publishBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(publishBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Indica el nombre o apodo al que responde tu mascota.'), findsOneWidget);
+    expect(find.textContaining('Indica el barrio, calle o zona aproximada'), findsOneWidget);
+    expect(find.textContaining('Agrega una breve descripción'), findsOneWidget);
+
+    // 2. Completar nombre, ubicación escrita manualmente (sin GPS) y descripción válida
+    ScaffoldMessenger.of(tester.element(publishBtn)).clearSnackBars();
+    await tester.pumpAndSettle();
+
+    final textFields = find.byType(TextField);
+    await tester.enterText(textFields.at(0), 'Copito'); // Nombre
+    await tester.enterText(textFields.at(3), 'Barrio Miramar, Caleta Olivia'); // Ubicación manual
+    await tester.enterText(textFields.at(4), 'telefono-invalido'); // Teléfono inválido
+    await tester.enterText(
+      textFields.at(6),
+      'Se escapó por el portón, tiene collar azul y es muy manso.',
+    ); // Descripción
+
+    await tester.ensureVisible(publishBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(publishBtn);
+    await tester.pumpAndSettle();
+
+    // Debe rechazar el teléfono inválido pero limpiar los errores ya corregidos
+    expect(find.text('Indica el nombre o apodo al que responde tu mascota.'), findsNothing);
+    expect(find.textContaining('El teléfono solo puede contener números'), findsOneWidget);
+
+    // 3. Dejar teléfono vacío (accesibilidad por Chat Directo) y publicar con éxito
+    ScaffoldMessenger.of(tester.element(publishBtn)).clearSnackBars();
+    await tester.pumpAndSettle();
+
+    await tester.enterText(textFields.at(4), '');
+    await tester.ensureVisible(publishBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(publishBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reporte de búsqueda publicado con éxito'), findsOneWidget);
+    final createdPet = MockDataService().getAllPets().firstWhere((p) => p.name == 'Copito');
+    expect(createdPet.contactPhone, 'Contacto por chat interno');
+  });
+
+  testWidgets('YagoExpandableText truncates long posts to 4 lines and toggles Ver más / Ver menos', (WidgetTester tester) async {
+    const longPost = 'Cada mascota merece volver a casa.\n\n'
+        'En Yago trabajamos para conectar a personas que perdieron o encontraron animales, '
+        'facilitando la difusión de reportes y ayudando a reunir mascotas con sus familias.\n\n'
+        'Compartí, ayudá y difundí. ¡Entre todos podemos hacer la diferencia!';
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 300,
+            child: YagoExpandableText(
+              text: longPost,
+              maxLines: 4,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Debe mostrar "Ver más" inicialmente y limitar el Text a 4 líneas
+    expect(find.text('Ver más'), findsOneWidget);
+    expect(find.text('Ver menos'), findsNothing);
+    final collapsedText = tester.widget<Text>(find.text(longPost));
+    expect(collapsedText.maxLines, equals(4));
+    expect(collapsedText.overflow, equals(TextOverflow.ellipsis));
+
+    // Al tocar "Ver más", se expande mostrando el texto completo y "Ver menos"
+    await tester.tap(find.text('Ver más'));
+    await tester.pump();
+
+    expect(find.text('Ver menos'), findsOneWidget);
+    expect(find.text('Ver más'), findsNothing);
+    final expandedText = tester.widget<Text>(find.text(longPost));
+    expect(expandedText.maxLines, isNull);
+  });
+
+  group('Sprint 4: Direct Chat Module UI & End-to-End Flows (HU-S4-01 to HU-S4-05)', () {
+    testWidgets('DirectChatsTab displays active conversations chronologically, shows unread indicators, and clears them when opened (HU-S4-01 & HU-S4-05)', (WidgetTester tester) async {
+      final mock = MockDataService();
+      mock.clearUserProfileCache();
+
+      final luna = mock.getPetById('pet-1')!;
+      final milo = mock.getPetById('pet-3')!;
+
+      final chatLuna = mock.getOrCreateChatForPet(luna, aiSimilarityPercentage: 95);
+      mock.sendDirectMessage(chatLuna.id, 'Hola Camila, vi una caniche parecida.');
+
+      final chatMilo = mock.getOrCreateChatForPet(milo);
+      mock.receiveDirectMessage(
+        chatMilo.id,
+        '¡Hola! Tengo a Milo resguardado en Barrio Miramar.',
+        sentAt: DateTime.now().add(const Duration(minutes: 2)),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: HomeScreen(),
+        ),
+      );
+      await tester.pump();
+
+      // 1. Verificar indicador visual de mensaje no leído en la barra de navegación inferior (HU-S4-05)
+      expect(find.byKey(const Key('nav_bar_chat_unread_badge')), findsOneWidget);
+      expect(find.text('1'), findsWidgets);
+
+      // 2. Navegar a la bandeja de Chat Directo (HU-S4-01)
+      await tester.tap(find.byTooltip('Chat'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DirectChatsTab), findsOneWidget);
+      expect(find.text('Chat Directo'), findsOneWidget);
+      expect(find.byKey(const Key('inbox_header_unread_badge')), findsOneWidget);
+      expect(find.byKey(Key('unread_badge_${chatMilo.id}')), findsOneWidget);
+
+      // 3. Verificar orden cronológico (Lucía Fernández de Milo arriba de Camila Rodriguez de Luna)
+      final luciaPos = tester.getTopLeft(find.text('Lucía Fernández'));
+      final camilaPos = tester.getTopLeft(find.text('Camila Rodriguez'));
+      expect(luciaPos.dy, lessThan(camilaPos.dy));
+
+      // 4. Filtrar por "No leídos"
+      await tester.tap(find.text('No leídos'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lucía Fernández'), findsOneWidget);
+      expect(find.text('Camila Rodriguez'), findsNothing);
+
+      // 5. Abrir la conversación no leída -> debe mostrar la tarjeta resumida en el encabezado (HU-S4-04) y limpiar el indicador de no leído (HU-S4-05)
+      await tester.tap(find.text('Lucía Fernández'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DirectChatScreen), findsOneWidget);
+      expect(find.byKey(const Key('chat_context_summary_card')), findsOneWidget);
+      expect(find.text('¡Hola! Tengo a Milo resguardado en Barrio Miramar.'), findsOneWidget);
+
+      // Volver a la bandeja y comprobar que ya no hay mensajes sin leer
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('inbox_header_unread_badge')), findsNothing);
+      expect(find.byKey(const Key('nav_bar_chat_unread_badge')), findsNothing);
+    });
+
+    testWidgets('User can start a private direct chat from a community post in FeedTab and see post context header (HU-S4-02 & HU-S4-04)', (WidgetTester tester) async {
+      final mock = MockDataService();
+      mock.clearUserProfileCache();
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FeedTab(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Desplazar hasta la publicación comunitaria de Veterinaria San Roque
+      await tester.scrollUntilVisible(
+        find.text('Veterinaria San Roque'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Tocar el botón de mensaje directo al autor de la publicación comunitaria
+      final dmPostBtn = find.byTooltip('Enviar mensaje directo al autor').first;
+      await tester.ensureVisible(dmPostBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(dmPostBtn);
+      await tester.pumpAndSettle();
+
+      // Debe abrir DirectChatScreen con el contexto resumido de la publicación comunitaria (HU-S4-04)
+      expect(find.byType(DirectChatScreen), findsOneWidget);
+      expect(find.text('Veterinaria San Roque'), findsOneWidget);
+      expect(find.text('Autor/a de publicación en el feed comunitario'), findsOneWidget);
+      expect(find.byKey(const Key('chat_context_summary_card')), findsOneWidget);
+      expect(find.text('Publicación de Veterinaria San Roque'), findsOneWidget);
+      expect(find.text('CONSEJO'), findsOneWidget);
+    });
+
+    testWidgets('DirectChatScreen shows only camera/gallery on attach, has no meeting point button, shows 3-dots menu (archive/clear/delete), and opens PetDetailScreen from header (HU-S4-03 & HU-S4-04)', (WidgetTester tester) async {
+      final mock = MockDataService();
+      mock.clearUserProfileCache();
+      final luna = mock.getPetById('pet-1')!;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DirectChatScreen(
+            pet: luna,
+            analyzedImageSource: 'assets/images/IMG_3508.JPG',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Verificar tarjeta resumida en el encabezado del chat y ausencia de botón de punto de encuentro (HU-S4-04)
+      expect(find.byKey(const Key('chat_context_summary_card')), findsOneWidget);
+      expect(find.text('Luna'), findsOneWidget);
+      expect(find.text('Caniche · Centro, El Gorosito, Caleta Olivia'), findsOneWidget);
+      expect(find.byTooltip('Coordinar punto de encuentro'), findsNothing);
+
+      // 2. Al pulsar 'Adjuntar foto' solo deben aparecer 'Tomar foto con la cámara' y 'Seleccionar de la galería'
+      await tester.tap(find.byTooltip('Adjuntar foto'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tomar foto con la cámara'), findsOneWidget);
+      expect(find.text('Seleccionar de la galería'), findsOneWidget);
+      expect(find.text('Adjuntar foto analizada con IA'), findsNothing);
+      expect(find.text('Adjuntar foto de avistamiento reciente'), findsNothing);
+
+      // Cerrar hoja modal de adjuntos
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      // 3. Enviar un mensaje y probar menú de 3 puntitos (Archivar chat, Vaciar chat, Eliminar chat)
+      await tester.enterText(
+        find.byType(TextField),
+        'Hola, tengo información sobre Luna.',
+      );
+      await tester.tap(find.byTooltip('Enviar mensaje'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hola, tengo información sobre Luna.'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Opciones de conversación'));
+      await tester.pumpAndSettle();
+      expect(find.text('Archivar chat'), findsOneWidget);
+      expect(find.text('Vaciar chat'), findsOneWidget);
+      expect(find.text('Eliminar chat'), findsOneWidget);
+
+      // Vaciar chat vacía los mensajes para el usuario actual
+      await tester.tap(find.text('Vaciar chat'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hola, tengo información sobre Luna.'), findsNothing);
+
+      // 4. Tocar la tarjeta resumida del encabezado para abrir la ficha completa del reporte (HU-S4-04)
+      await tester.tap(find.byKey(const Key('chat_context_summary_card')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PetDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('PetCard hides contact button when showContactButton is false (own post/report) and MockDataService propagates updated profile photo to user posts and reports', (WidgetTester tester) async {
+      // 1. Verificar que PetCard oculta el botón de contacto en publicaciones/reportes propios
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PetCard(
+                name: 'Mi Mascota',
+                details: 'Caniche · Macho · 2 años',
+                locationAndTime: 'Costanera, Caleta Olivia · Recién publicado',
+                imageUrl: 'assets/images/IMG_3508.JPG',
+                status: YagoPetStatus.lost,
+                showContactButton: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.mail_outline_rounded), findsNothing);
+
+      // 2. Verificar que actualizar la foto de perfil propaga el avatar a los posts y reportes del usuario
+      final mock = MockDataService();
+      mock.clearUserProfileCache();
+
+      final ownPost = FeedPost(
+        id: 'post-own-avatar-test',
+        authorName: 'Usuario Prueba',
+        authorAvatar: null,
+        timeAgo: 'Recién publicado',
+        content: 'Publicación de prueba para avatar actualizado.',
+        createdAt: DateTime.now(),
+      );
+      await mock.addCommunityPost(ownPost);
+
+      final ownPet = Pet(
+        id: 'pet-own-avatar-test',
+        name: 'Toby',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '2 años',
+        status: YagoPetStatus.lost,
+        location: 'Centro, Caleta Olivia',
+        timeAgo: 'Recién publicado',
+        date: DateTime.now(),
+        createdAt: DateTime.now(),
+        description: 'Reporte de prueba para avatar actualizado.',
+        imageUrl: 'assets/images/IMG_3508.JPG',
+        contactName: 'Usuario Prueba',
+        contactPhone: '+54 9 297 111-2222',
+        latitude: -46.4385,
+        longitude: -67.5278,
+        isUserOwner: true,
+      );
+      await mock.addPet(ownPet);
+
+      mock.updateUserProfile(
+        displayName: 'Usuario Prueba',
+        photoUrl: 'assets/images/IMG_4178.JPG',
+      );
+
+      final updatedPost = mock.getFeedPostById('post-own-avatar-test')!;
+      final updatedPet = mock.getPetById('pet-own-avatar-test')!;
+      expect(mock.resolvePostAuthorAvatar(updatedPost), 'assets/images/IMG_4178.JPG');
+      expect(mock.resolvePetAuthorAvatar(updatedPet), 'assets/images/IMG_4178.JPG');
+
+      await mock.deleteCommunityPost('post-own-avatar-test');
+      await mock.deletePet('pet-own-avatar-test');
+    });
+
+    testWidgets('PetDetailScreen hides phone call option when reporter did not add a phone number and shows it when phone is provided', (WidgetTester tester) async {
+      final petWithoutPhone = Pet(
+        id: 'pet-no-phone',
+        name: 'Rocco',
+        breed: 'Mestizo',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '3 años',
+        status: YagoPetStatus.lost,
+        location: 'Centro, Caleta Olivia',
+        timeAgo: 'Hace 1 hora',
+        date: DateTime.now(),
+        description: 'Perro mediano sin teléfono de contacto cargado.',
+        imageUrl: 'assets/images/IMG_3508.JPG',
+        contactName: 'Martín Gómez',
+        contactPhone: 'Contacto por chat interno',
+        latitude: -46.4385,
+        longitude: -67.5278,
+      );
+      expect(petWithoutPhone.hasContactPhone, isFalse);
+      expect(petWithoutPhone.callablePhones, isEmpty);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PetDetailScreen(pet: petWithoutPhone),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final contactBtn = find.widgetWithText(YagoButton, 'Contactar');
+      await tester.ensureVisible(contactBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(contactBtn);
+      await tester.pumpAndSettle();
+
+      // Sin teléfono: solo debe mostrar 'Enviar mensaje directo' y NO 'Llamar por teléfono'
+      expect(find.text('Enviar mensaje directo'), findsOneWidget);
+      expect(find.text('Llamar por teléfono'), findsNothing);
+
+      // Cerrar modal
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      // Con teléfono: debe mostrar tanto 'Llamar por teléfono' como 'Enviar mensaje directo'
+      final petWithPhone = petWithoutPhone.copyWith(
+        id: 'pet-with-phone',
+        contactPhone: '+54 9 297 456-7890',
+      );
+      expect(petWithPhone.hasContactPhone, isTrue);
+      expect(petWithPhone.callablePhones, ['+54 9 297 456-7890']);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PetDetailScreen(pet: petWithPhone),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(contactBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(contactBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Llamar por teléfono'), findsOneWidget);
+      expect(find.text('+54 9 297 456-7890'), findsOneWidget);
+      expect(find.text('Enviar mensaje directo'), findsOneWidget);
+    });
+  });
+
+  group('Sprint 5: Community Moderation Flow (HU-S5-01)', () {
+    testWidgets('ReportContentModal renders pet preview, allows reason selection, and submits report', (WidgetTester tester) async {
+      final pet = MockDataService().getAllPets().first;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ReportContentModal.show(
+                        context,
+                        targetType: 'pet',
+                        targetId: pet.id,
+                        pet: pet,
+                      );
+                    },
+                    child: const Text('Abrir denuncia'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Abrir modal
+      await tester.tap(find.text('Abrir denuncia'));
+      await tester.pumpAndSettle();
+
+      // Verificar cabecera y previsualización de la mascota
+      expect(find.text('Denunciar a moderación'), findsOneWidget);
+      expect(find.text('Motivo de la denuncia'), findsOneWidget);
+      expect(find.text('Información falsa o broma'), findsOneWidget);
+      expect(find.text('Estafa o extorsión con recompensa'), findsOneWidget);
+      expect(find.text('Venta de animales o publicidad (Spam)'), findsOneWidget);
+      expect(find.text('Maltrato animal o contenido violento'), findsOneWidget);
+      expect(find.text('Caso ya resuelto o reporte repetido'), findsOneWidget);
+      expect(find.text('Otro motivo'), findsOneWidget);
+
+      // Verificar texto de privacidad
+      expect(find.text('Tu denuncia es 100% anónima. La otra persona no sabrá quién reportó su contenido.'), findsOneWidget);
+
+      // Seleccionar motivo: Estafa o extorsión
+      await tester.tap(find.text('Estafa o extorsión con recompensa'));
+      await tester.pumpAndSettle();
+
+      // Ingresar descripción opcional
+      final textField = find.byType(TextField);
+      expect(textField, findsOneWidget);
+      await tester.enterText(textField, 'Exigen 50.000 pesos de rescate por transferencia.');
+      await tester.pumpAndSettle();
+
+      // Enviar denuncia
+      final submitBtn = find.text('Enviar denuncia');
+      expect(submitBtn, findsOneWidget);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      // El modal debe cerrarse y mostrar el snackbar de agradecimiento
+      expect(find.text('Denunciar a moderación'), findsNothing);
+      expect(find.text('Denuncia recibida'), findsOneWidget);
+    });
+
+    testWidgets('PetDetailScreen displays report button in AppBar for reports not owned by current user', (WidgetTester tester) async {
+      final pet = MockDataService().getAllPets().firstWhere((p) => !p.isUserOwner);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PetDetailScreen(pet: pet),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final reportButton = find.byTooltip('Denunciar publicación');
+      expect(reportButton, findsOneWidget);
+
+      await tester.tap(reportButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Denunciar a moderación'), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+
+      // Cancelar cierra el modal sin enviar
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Denunciar a moderación'), findsNothing);
+    });
+
+    testWidgets('DirectChatScreen unifies multiple animals for the same person with context selector and blocks user upon report', (WidgetTester tester) async {
+      final mock = MockDataService();
+      final pet1 = Pet(
+        id: 'pet-ui-ctx-1',
+        name: 'Bruno',
+        breed: 'Golden',
+        species: 'Perro',
+        gender: 'Macho',
+        age: '4 años',
+        status: YagoPetStatus.lost,
+        location: 'Caleta Olivia',
+        timeAgo: 'Hace 2h',
+        date: DateTime.now(),
+        description: 'Perdido en el centro',
+        imageUrl: '',
+        contactName: 'Sofía Castro',
+        contactPhone: '2974556677',
+        latitude: -46.43,
+        longitude: -67.52,
+        ownerId: 'uid_sofia_castro_ui',
+      );
+      final pet2 = Pet(
+        id: 'pet-ui-ctx-2',
+        name: 'Nina',
+        breed: 'Calicó',
+        species: 'Gato',
+        gender: 'Hembra',
+        age: '2 años',
+        status: YagoPetStatus.found,
+        location: 'Caleta Olivia',
+        timeAgo: 'Hace 30m',
+        date: DateTime.now(),
+        description: 'Encontrada en plaza',
+        imageUrl: '',
+        contactName: 'Sofía Castro',
+        contactPhone: '2974556677',
+        latitude: -46.44,
+        longitude: -67.53,
+        ownerId: 'uid_sofia_castro_ui',
+      );
+
+      final chatA = mock.getOrCreateChatForPet(pet1);
+      mock.sendDirectMessage(chatA.id, 'Hola Sofía, te escribo por Bruno');
+      final chatB = mock.getOrCreateChatForPet(pet2);
+      mock.sendDirectMessage(chatB.id, 'Y también vi tu reporte de Nina');
+
+      expect(chatB.id, equals(chatA.id));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DirectChatScreen(conversation: chatB),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verifica barra selectora de contextos y divisores de tema en el historial
+      expect(find.byKey(const Key('chat_context_selector_bar')), findsOneWidget);
+      expect(find.text('Conversación sobre Bruno'), findsOneWidget);
+      expect(find.text('Conversación sobre Nina'), findsOneWidget);
+
+      // Cambiar contexto activo tocando el chip de Bruno
+      await tester.tap(find.byKey(const Key('chat_context_chip_pet-ui-ctx-1')));
+      await tester.pumpAndSettle();
+      expect(mock.getChatById(chatA.id)!.relatedPetName, equals('Bruno'));
+
+      // Ahora denunciamos el chat desde el menú de 3 puntitos y verificamos que bloquea y quita de la bandeja
+      await tester.tap(find.byTooltip('Opciones de conversación'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Denunciar chat'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Información falsa o broma'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Enviar denuncia'));
+      await tester.pumpAndSettle();
+
+      expect(mock.getChatConversations().any((c) => c.id == chatA.id), isFalse);
+      expect(
+        mock.isPersonBlocked(
+          userId: 'uid_sofia_castro_ui',
+          userName: 'Sofía Castro',
+        ),
+        isTrue,
+      );
+    });
   });
 }
 

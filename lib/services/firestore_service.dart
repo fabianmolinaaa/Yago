@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import '../models/ai_analysis.dart';
+import '../models/chat_conversation.dart';
 import '../models/feed_post.dart';
+import '../models/moderation_report.dart';
 import '../models/pet.dart';
 import '../models/user_model.dart';
 import '../utils/time_utils.dart';
@@ -33,6 +37,15 @@ class FirestoreService {
 
   CollectionReference<Map<String, dynamic>>? get _usersRef =>
       _db?.collection('users');
+
+  CollectionReference<Map<String, dynamic>>? get _chatsRef =>
+      _db?.collection('chats');
+
+  CollectionReference<Map<String, dynamic>>? get _aiScansRef =>
+      _db?.collection('ai_scans');
+
+  CollectionReference<Map<String, dynamic>>? get _moderationReportsRef =>
+      _db?.collection('moderation_reports');
 
   /// Datos iniciales exactos existentes para el sembrado inicial en Firestore
   final List<Pet> existingPets = [
@@ -289,32 +302,35 @@ class FirestoreService {
     return pet;
   }
 
-  /// Stream reactivo de mascotas
+  /// Stream reactivo de mascotas ordenadas por fecha de creación del reporte (más recientes arriba)
   Stream<List<Pet>> streamPets({YagoPetStatus? status}) {
     if (!isFirebaseReady || _petsRef == null) {
       if (status == null) return Stream.value(List.from(existingPets));
       return Stream.value(existingPets.where((p) => p.status == status).toList());
     }
 
-    Query<Map<String, dynamic>> query = _petsRef!.orderBy('date', descending: true);
+    Query<Map<String, dynamic>> query = _petsRef!;
     if (status != null) {
-      query = _petsRef!
-          .where('status', isEqualTo: status.name)
-          .orderBy('date', descending: true);
+      query = _petsRef!.where('status', isEqualTo: status.name);
     }
     return query.snapshots().map((snapshot) {
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc)))
           .where((p) => !p.isModerated)
           .toList();
+      list.sort((a, b) => b.effectiveCreatedAt.compareTo(a.effectiveCreatedAt));
+      return list;
     });
   }
 
-  /// Obtiene la lista puntual de mascotas
+  /// Obtiene la lista puntual de mascotas ordenadas por fecha de creación del reporte
   Future<List<Pet>> getPets({YagoPetStatus? status}) async {
     if (!isFirebaseReady || _petsRef == null) {
-      if (status == null) return List.from(existingPets);
-      return existingPets.where((p) => p.status == status).toList();
+      final fallbackList = status == null
+          ? List<Pet>.from(existingPets)
+          : existingPets.where((p) => p.status == status).toList();
+      fallbackList.sort((a, b) => b.effectiveCreatedAt.compareTo(a.effectiveCreatedAt));
+      return fallbackList;
     }
 
     try {
@@ -323,22 +339,15 @@ class FirestoreService {
         query = query.where('status', isEqualTo: status.name);
       }
       final snapshot = await query.get();
-      if (snapshot.docs.isNotEmpty) {
-        final pets = snapshot.docs
-            .map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc)))
-            .where((p) => !p.isModerated)
-            .toList();
-        pets.sort((a, b) => b.date.compareTo(a.date));
-        return pets;
-      }
-    } catch (_) {}
-
-    // Fallback a existentes si la base no responde
-    final fallbackList = status == null
-        ? List<Pet>.from(existingPets)
-        : existingPets.where((p) => p.status == status).toList();
-    fallbackList.sort((a, b) => b.date.compareTo(a.date));
-    return fallbackList;
+      final pets = snapshot.docs
+          .map((doc) => _ensureCaletaOlivia(Pet.fromFirestore(doc)))
+          .where((p) => !p.isModerated)
+          .toList();
+      pets.sort((a, b) => b.effectiveCreatedAt.compareTo(a.effectiveCreatedAt));
+      return pets;
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Stream reactivo de publicaciones comunitarias
@@ -375,27 +384,19 @@ class FirestoreService {
 
     try {
       final snapshot = await _postsRef!.get();
-      if (snapshot.docs.isNotEmpty) {
-        final posts = snapshot.docs
-            .map((doc) => FeedPost.fromFirestore(doc))
-            .where((p) => !p.isModerated)
-            .toList();
-        posts.sort((a, b) {
-          final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
-          final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
-          return bDate.compareTo(aDate);
-        });
-        return posts;
-      }
-    } catch (_) {}
-
-    final fallbackList = List<FeedPost>.from(existingCommunityPosts);
-    fallbackList.sort((a, b) {
-      final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
-      final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
-      return bDate.compareTo(aDate);
-    });
-    return fallbackList;
+      final posts = snapshot.docs
+          .map((doc) => FeedPost.fromFirestore(doc))
+          .where((p) => !p.isModerated)
+          .toList();
+      posts.sort((a, b) {
+        final aDate = a.createdAt ?? extractDateFromId(a.id) ?? DateTime(2020);
+        final bDate = b.createdAt ?? extractDateFromId(b.id) ?? DateTime(2020);
+        return bDate.compareTo(aDate);
+      });
+      return posts;
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Guarda una nueva mascota/reporte en Cloud Firestore
@@ -613,6 +614,99 @@ class FirestoreService {
     }
   }
 
+  /// Stream reactivo de todos los perfiles de usuario para resolver avatares actualizados en el feed
+  Stream<List<UserModel>> streamAllUserProfiles() {
+    if (!isFirebaseReady || _usersRef == null) {
+      return Stream.value(const []);
+    }
+    return _usersRef!.snapshots().map((snapshot) {
+      return snapshot.docs.map(UserModel.fromFirestore).toList();
+    });
+  }
+
+  /// Obtiene la lista de perfiles de usuario registrados
+  Future<List<UserModel>> getAllUserProfiles() async {
+    if (!isFirebaseReady || _usersRef == null) return const [];
+    try {
+      final snapshot = await _usersRef!.get();
+      return snapshot.docs.map(UserModel.fromFirestore).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Sincroniza la foto de perfil y nombre actualizados del usuario en todas sus publicaciones y reportes de Firestore
+  Future<void> syncUserAuthorMetadata({
+    required String userId,
+    String? userName,
+    String? photoUrl,
+  }) async {
+    if (!isFirebaseReady || _db == null) return;
+    final normName = userName?.trim().toLowerCase() ?? '';
+
+    try {
+      if (_postsRef != null) {
+        final postsSnap = await _postsRef!.get();
+        final batch = _db!.batch();
+        int updates = 0;
+        for (final doc in postsSnap.docs) {
+          final data = doc.data();
+          final authorId = (data['authorId'] as String?)?.trim() ?? '';
+          final authorName =
+              (data['authorName'] as String?)?.trim().toLowerCase() ?? '';
+          final matches = (authorId.isNotEmpty && authorId == userId) ||
+              (authorId.isEmpty && normName.isNotEmpty && authorName == normName);
+          if (matches) {
+            final updateMap = <String, dynamic>{
+              'authorId': userId,
+              'authorAvatar': photoUrl,
+              'updatedAt': FieldValue.serverTimestamp(),
+            };
+            if (userName != null && userName.trim().isNotEmpty) {
+              updateMap['authorName'] = userName.trim();
+            }
+            batch.update(doc.reference, updateMap);
+            updates++;
+          }
+        }
+        if (updates > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (_petsRef != null) {
+        final petsSnap = await _petsRef!.get();
+        final batch = _db!.batch();
+        int updates = 0;
+        for (final doc in petsSnap.docs) {
+          final data = doc.data();
+          final ownerId = (data['ownerId'] as String?)?.trim() ?? '';
+          final contactName =
+              (data['contactName'] as String?)?.trim().toLowerCase() ?? '';
+          final matches = (ownerId.isNotEmpty && ownerId == userId) ||
+              (ownerId.isEmpty && normName.isNotEmpty && contactName == normName);
+          if (matches) {
+            final updateMap = <String, dynamic>{
+              'ownerId': userId,
+              'ownerAvatar': photoUrl,
+              'updatedAt': FieldValue.serverTimestamp(),
+            };
+            if (userName != null && userName.trim().isNotEmpty) {
+              updateMap['contactName'] = userName.trim();
+            }
+            batch.update(doc.reference, updateMap);
+            updates++;
+          }
+        }
+        if (updates > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (_) {}
+  }
+
   // ─── Guardados personales (/users/{uid}/saved_items) ─────────────────────
 
   /// Guarda o retira un elemento (mascota o post) de los guardados personales del usuario
@@ -659,5 +753,375 @@ class FirestoreService {
         .collection('saved_items')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.id).toSet());
+  }
+
+  // ─── Análisis con IA (/ai_scans) y Chats Directos (/chats) ────────────────
+
+  /// Registra el análisis fenotípico realizado con la cámara de IA (HU-S3-02)
+  Future<void> saveAiAnalysis(AiPetAnalysis analysis) async {
+    if (!isFirebaseReady || _aiScansRef == null) return;
+    try {
+      await _aiScansRef!
+          .doc(analysis.id)
+          .set(analysis.toMap(), SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  /// Crea o actualiza el documento de conversación directa en /chats/{chatId} (HU-S3-05, HU-S4-01, HU-S4-02)
+  Future<void> saveChatConversation(DirectChatConversation chat) async {
+    if (!isFirebaseReady || _chatsRef == null) return;
+    try {
+      await _chatsRef!
+          .doc(chat.id)
+          .set(chat.toMap(), SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  /// Agrega un mensaje en /chats/{chatId}/messages/{messageId} y actualiza lastMessage y unreadCount (HU-S4-03, HU-S4-05)
+  Future<void> addChatMessage(
+    String chatId,
+    DirectChatMessage message, {
+    String? recipientId,
+    DirectChatConversation? conversation,
+  }) async {
+    if (!isFirebaseReady || _chatsRef == null) return;
+    try {
+      final chatRef = _chatsRef!.doc(chatId);
+      final chatDoc = await chatRef.get();
+      if (chatDoc.exists) {
+        final blockedBy =
+            List<String>.from(chatDoc.data()?['blockedByUsers'] ?? const []);
+        if (blockedBy.isNotEmpty) {
+          return;
+        }
+      }
+      await chatRef
+          .collection('messages')
+          .doc(message.id)
+          .set(message.toMap());
+
+      final previewText = message.text.trim().isNotEmpty
+          ? message.text.trim()
+          : (message.imageUrl != null && message.imageUrl!.isNotEmpty
+              ? '📷 Foto adjunta'
+              : '');
+
+      final updateData = conversation != null
+          ? Map<String, dynamic>.from(conversation.toMap())
+          : <String, dynamic>{};
+
+      updateData['lastMessage'] = previewText;
+      updateData['lastMessageSenderId'] = message.senderId;
+      updateData['lastMessageAt'] = Timestamp.fromDate(message.sentAt);
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      // Si alguien había eliminado el chat previamente, al recibir un nuevo mensaje vuelve a estar visible
+      updateData['deletedByUsers'] = const <String>[];
+
+      if (recipientId != null &&
+          recipientId.isNotEmpty &&
+          recipientId != message.senderId) {
+        updateData['unreadCount'] = {
+          recipientId: FieldValue.increment(1),
+          message.senderId: 0,
+        };
+      } else {
+        updateData['unreadCount'] = {
+          message.senderId: 0,
+        };
+      }
+
+      await chatRef.set(updateData, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  /// Marca como leídos todos los mensajes pendientes de una conversación para el usuario actual (HU-S4-05)
+  Future<void> markChatAsRead(String chatId, String userId) async {
+    if (!isFirebaseReady || _chatsRef == null) return;
+    try {
+      final chatRef = _chatsRef!.doc(chatId);
+      await chatRef.update({
+        'unreadCount': {userId: 0},
+        'unreadCountValue': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      final unreadMsgs = await chatRef
+          .collection('messages')
+          .where('isRead', isEqualTo: false)
+          .get();
+      if (unreadMsgs.docs.isNotEmpty && _db != null) {
+        final batch = _db!.batch();
+        for (final doc in unreadMsgs.docs) {
+          final data = doc.data();
+          if (data['senderId'] != userId) {
+            batch.update(doc.reference, {'isRead': true});
+          }
+        }
+        await batch.commit();
+      }
+    } catch (_) {}
+  }
+
+  /// Archiva o desarchiva una conversación para el usuario actual
+  Future<void> toggleArchiveChat(
+    String chatId,
+    String userId, {
+    required bool isArchived,
+  }) async {
+    if (!isFirebaseReady || _chatsRef == null || userId.isEmpty) return;
+    try {
+      await _chatsRef!.doc(chatId).set({
+        'archivedByUsers': isArchived
+            ? FieldValue.arrayUnion([userId])
+            : FieldValue.arrayRemove([userId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  /// Vacía el historial de mensajes de un chat únicamente para el usuario actual
+  Future<void> clearChatForUser(
+    String chatId,
+    String userId,
+    DateTime clearedAt,
+  ) async {
+    if (!isFirebaseReady || _chatsRef == null || userId.isEmpty) return;
+    try {
+      await _chatsRef!.doc(chatId).set({
+        'clearedAtByUser': {
+          userId: Timestamp.fromDate(clearedAt),
+        },
+        'unreadCount': {
+          userId: 0,
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  /// Elimina una conversación de chat directo para el usuario actual (o de Firestore)
+  Future<void> deleteChatConversation(
+    String chatId, {
+    String? userId,
+  }) async {
+    if (!isFirebaseReady || _chatsRef == null) return;
+    try {
+      if (userId != null && userId.isNotEmpty) {
+        await _chatsRef!.doc(chatId).set({
+          'deletedByUsers': FieldValue.arrayUnion([userId]),
+          'unreadCount': {userId: 0},
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        await _chatsRef!.doc(chatId).delete();
+      }
+    } catch (_) {}
+  }
+
+  /// Bloquea a la otra persona y elimina la conversación de la bandeja del usuario
+  Future<void> blockAndRemoveChatConversation(
+    String chatId, {
+    String? userId,
+    String? blockedUserId,
+  }) async {
+    if (!isFirebaseReady || _chatsRef == null) return;
+    try {
+      if (userId != null && userId.isNotEmpty) {
+        await _chatsRef!.doc(chatId).set({
+          'blockedByUsers': FieldValue.arrayUnion([userId]),
+          'deletedByUsers': FieldValue.arrayUnion([userId]),
+          'unreadCount': {userId: 0},
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        if (_usersRef != null &&
+            blockedUserId != null &&
+            blockedUserId.isNotEmpty) {
+          await _usersRef!.doc(userId).set({
+            'blockedUsers': FieldValue.arrayUnion([blockedUserId]),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      } else {
+        await _chatsRef!.doc(chatId).delete();
+      }
+    } catch (_) {}
+  }
+
+  bool _matchesUserChatDoc(
+    Map<String, dynamic> data,
+    String userId,
+    String? userName,
+  ) {
+    final blockedBy = List<String>.from(data['blockedByUsers'] ?? const []);
+    if (blockedBy.contains(userId)) return false;
+
+    final deletedBy = List<String>.from(data['deletedByUsers'] ?? const []);
+    if (deletedBy.contains(userId)) return false;
+
+    final participants = List<String>.from(data['participantIds'] ?? const []);
+    if (participants.contains(userId)) return true;
+
+    final normUserName = userName?.trim().toLowerCase() ?? '';
+    if (normUserName.isNotEmpty) {
+      final participantNames =
+          List<String>.from(data['participantNames'] ?? const [])
+              .map((e) => e.trim().toLowerCase())
+              .toList();
+      if (participantNames.contains(normUserName)) return true;
+
+      final docContactName =
+          (data['contactName'] as String?)?.trim().toLowerCase() ?? '';
+      if (docContactName == normUserName) return true;
+    }
+
+    return false;
+  }
+
+  /// Obtiene las conversaciones activas del usuario ordenadas cronológicamente (HU-S4-01)
+  Future<List<DirectChatConversation>> getChatConversations(
+    String userId, {
+    String? userName,
+  }) async {
+    if (!isFirebaseReady || _chatsRef == null || userId.isEmpty) return [];
+    try {
+      final snapshot = await _chatsRef!.get();
+      final result = <DirectChatConversation>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        if (!_matchesUserChatDoc(data, userId, userName)) continue;
+
+        final participants =
+            List<String>.from(data['participantIds'] ?? const []);
+        if (!participants.contains(userId)) {
+          // Vincular automáticamente el UID real del reportante en Firestore
+          doc.reference.set({
+            'participantIds': FieldValue.arrayUnion([userId]),
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+
+        final msgSnap = await doc.reference
+            .collection('messages')
+            .orderBy('sentAt')
+            .get();
+        final messages = msgSnap.docs
+            .map((m) => DirectChatMessage.fromMap(m.data(), m.id))
+            .toList();
+        result.add(
+          DirectChatConversation.fromMap(
+            data,
+            doc.id,
+            messages: messages,
+            currentUserId: userId,
+            currentUserName: userName,
+          ),
+        );
+      }
+      result.sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+      return result;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Stream reactivo de conversaciones activas del usuario (HU-S4-01)
+  Stream<List<DirectChatConversation>> streamChatConversations(
+    String userId, {
+    String? userName,
+  }) {
+    if (!isFirebaseReady || _chatsRef == null || userId.isEmpty) {
+      return Stream.value(const []);
+    }
+    return _chatsRef!.snapshots().asyncMap((snapshot) async {
+      final list = <DirectChatConversation>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        if (!_matchesUserChatDoc(data, userId, userName)) continue;
+
+        final participants =
+            List<String>.from(data['participantIds'] ?? const []);
+        if (!participants.contains(userId)) {
+          doc.reference.set({
+            'participantIds': FieldValue.arrayUnion([userId]),
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+
+        List<DirectChatMessage> messages = const [];
+        try {
+          final msgSnap = await doc.reference
+              .collection('messages')
+              .orderBy('sentAt')
+              .get();
+          messages = msgSnap.docs
+              .map((m) => DirectChatMessage.fromMap(m.data(), m.id))
+              .toList();
+        } catch (_) {}
+        list.add(
+          DirectChatConversation.fromMap(
+            data,
+            doc.id,
+            messages: messages,
+            currentUserId: userId,
+            currentUserName: userName,
+          ),
+        );
+      }
+      list.sort((a, b) => b.lastMessageAt.compareTo(a.lastMessageAt));
+      return list;
+    });
+  }
+
+  /// Stream reactivo de mensajes individuales de una conversación en tiempo real (HU-S4-03)
+  Stream<List<DirectChatMessage>> streamChatMessages(String chatId) {
+    if (!isFirebaseReady || _chatsRef == null || chatId.isEmpty) {
+      return Stream.value(const []);
+    }
+    return _chatsRef!
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('sentAt')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => DirectChatMessage.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  /// Envía una denuncia comunitaria a moderación (HU-S5-01 / Sprint 5)
+  Future<bool> submitModerationReport(ModerationReport report) async {
+    try {
+      if (isFirebaseReady && _moderationReportsRef != null) {
+        final docRef = report.id.isNotEmpty
+            ? _moderationReportsRef!.doc(report.id)
+            : _moderationReportsRef!.doc();
+
+        final finalReport = ModerationReport(
+          id: docRef.id,
+          reporterId: report.reporterId,
+          reporterName: report.reporterName,
+          reporterEmail: report.reporterEmail,
+          targetType: report.targetType,
+          targetId: report.targetId,
+          targetTitle: report.targetTitle,
+          targetAuthorId: report.targetAuthorId,
+          targetAuthorName: report.targetAuthorName,
+          reason: report.reason,
+          reasonTitle: report.reasonTitle,
+          description: report.description,
+          status: report.status,
+          reviewedBy: report.reviewedBy,
+          createdAt: report.createdAt,
+          resolvedAt: report.resolvedAt,
+        );
+
+        await docRef.set(finalReport.toMap());
+        debugPrint('[HU-S5-01] Denuncia guardada en Firestore: ${docRef.id}');
+        return true;
+      } else {
+        debugPrint('[HU-S5-01] Modo offline/mock: Denuncia registrada localmente.');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[HU-S5-01] Error al registrar denuncia en Firestore: $e');
+      return false;
+    }
   }
 }

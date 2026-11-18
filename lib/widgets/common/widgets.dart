@@ -11,7 +11,10 @@ export 'yago_logo.dart';
 export 'yago_pet_image.dart';
 export 'report_card.dart';
 export 'yago_text_field.dart';
+export 'yago_breed_selector_field.dart';
+export 'yago_expandable_text.dart';
 export 'map_location_picker_modal.dart';
+export 'report_content_modal.dart';
 
 
 

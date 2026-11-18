@@ -61,16 +61,6 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
   Timer? _searchDebounceTimer;
   Timer? _moveDebounceTimer;
 
-  // Zonas de referencia rápida populares en Caleta Olivia
-  final List<Map<String, dynamic>> _quickZones = [
-    {'name': 'El Gorosito (Centro)', 'lat': -46.4385, 'lng': -67.5278},
-    {'name': 'Costanera, Caleta Olivia', 'lat': -46.4348, 'lng': -67.5182},
-    {'name': 'Barrio Parque, Caleta Olivia', 'lat': -46.4425, 'lng': -67.5245},
-    {'name': 'Barrio Miramar, Caleta Olivia', 'lat': -46.4478, 'lng': -67.5150},
-    {'name': 'Barrio Gregores, Caleta Olivia', 'lat': -46.4452, 'lng': -67.5348},
-    {'name': 'Barrio Patagonia, Caleta Olivia', 'lat': -46.4415, 'lng': -67.5410},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -320,51 +310,6 @@ class _MapLocationPickerModalState extends State<MapLocationPickerModal> {
                 ),
               ),
             ),
-
-          // Zonas populares de referencia en 1 tap
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _quickZones.map((zone) {
-                final isSelected = _currentLocationName.contains(zone['name'] as String);
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6, bottom: 8),
-                  child: InkWell(
-                    onTap: () {
-                      _selectPlace(
-                        LocationResult(
-                          locationName: zone['name'] as String,
-                          latitude: zone['lat'] as double,
-                          longitude: zone['lng'] as double,
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primaryTint : const Color(0xFFF1F3F5),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.border,
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        zone['name'] as String,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 6),
 
           // ─── MAPA REAL CON OPENSTREETMAP (CALLES NÍTIDAS Y NOMBRES REALES) ───
           Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../utils/design_system.dart';
 
 /// Campo de formulario estandarizado del Design System de Yago.
@@ -11,6 +12,10 @@ class YagoTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final int maxLines;
+  final int? maxLength;
+  final bool hideCounter;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextCapitalization textCapitalization;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
@@ -27,6 +32,10 @@ class YagoTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.maxLines = 1,
+    this.maxLength,
+    this.hideCounter = true,
+    this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
     this.prefixIcon,
     this.suffixIcon,
     this.onChanged,
@@ -57,6 +66,9 @@ class YagoTextField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          maxLength: maxLength,
+          inputFormatters: inputFormatters,
+          textCapitalization: textCapitalization,
           enabled: enabled,
           onChanged: onChanged,
           onFieldSubmitted: onFieldSubmitted,
@@ -69,6 +81,7 @@ class YagoTextField extends StatelessWidget {
             hintStyle: AppTypography.subheadline.copyWith(color: AppColors.subtle),
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
+            counterText: hideCounter ? '' : null,
             filled: true,
             fillColor: hasError ? AppColors.errorBg : Colors.white,
             contentPadding: EdgeInsets.symmetric(

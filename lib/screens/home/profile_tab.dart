@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -334,7 +335,39 @@ class _ProfileTabState extends State<ProfileTab> {
   /// Helper reutilizable para el avatar del usuario:
   /// Utiliza la imagen del usuario si existe, y si no tiene imagen muestra una genérica.
   Widget _buildUserAvatar({required double radius, String? photoUrl}) {
-    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
+    final cleanUrl = photoUrl?.trim() ?? '';
+    final hasPhoto = cleanUrl.isNotEmpty;
+
+    Widget buildPhotoWidget() {
+      if (cleanUrl.startsWith('assets/')) {
+        return Image.asset(
+          cleanUrl,
+          key: ValueKey(cleanUrl),
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
+        );
+      }
+      if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        return Image.network(
+          cleanUrl,
+          key: ValueKey(cleanUrl),
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
+        );
+      }
+      return Image.file(
+        File(cleanUrl),
+        key: ValueKey(cleanUrl),
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
+      );
+    }
 
     return Container(
       width: radius * 2,
@@ -348,23 +381,7 @@ class _ProfileTabState extends State<ProfileTab> {
         ),
       ),
       child: ClipOval(
-        child: hasPhoto
-            ? (photoUrl.startsWith('assets/')
-                ? Image.asset(
-                    photoUrl,
-                    width: radius * 2,
-                    height: radius * 2,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
-                  )
-                : Image.network(
-                    photoUrl,
-                    width: radius * 2,
-                    height: radius * 2,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _buildGenericAvatarIcon(radius),
-                  ))
-            : _buildGenericAvatarIcon(radius),
+        child: hasPhoto ? buildPhotoWidget() : _buildGenericAvatarIcon(radius),
       ),
     );
   }
@@ -681,7 +698,7 @@ class _ProfileTabState extends State<ProfileTab> {
     double bottomInset,
   ) {
     final sortedReports = List<Pet>.from(myReports)
-      ..sort((a, b) => b.date.compareTo(a.date));
+      ..sort((a, b) => b.effectiveCreatedAt.compareTo(a.effectiveCreatedAt));
 
     final Widget content;
     if (sortedReports.isEmpty) {
@@ -754,7 +771,9 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
               ),
               subtitle: Text(
-                '${pet.breed} · ${pet.location} · ${formatTimeAgo(pet.date, fallback: pet.timeAgo)}',
+                pet.hasKnownBreed
+                    ? '${pet.breed} · ${pet.location} · ${formatTimeAgo(pet.date, fallback: pet.timeAgo)}'
+                    : '${pet.location} · ${formatTimeAgo(pet.date, fallback: pet.timeAgo)}',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
@@ -857,7 +876,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 context: context,
                 postId: item.post!.id,
                 authorName: item.post!.authorName,
-                authorPhoto: item.post!.authorAvatar,
+                authorPhoto: MockDataService().resolvePostAuthorAvatar(item.post!),
                 categoryBadge: item.post!.categoryTag,
                 timeAgo: formatTimeAgo(item.dateTime, fallback: item.post!.timeAgo),
                 content: item.post!.displayContent,
@@ -874,7 +893,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     : (item.pet!.status == YagoPetStatus.community
                         ? 'Equipo Yago'
                         : 'Comunidad Yago'),
-                authorPhoto: null,
+                authorPhoto: MockDataService().resolvePetAuthorAvatar(item.pet!),
                 statusBadge: item.pet!.status,
                 timeAgo: formatTimeAgo(item.dateTime, fallback: item.pet!.timeAgo),
                 content: item.pet!.description,
@@ -1220,7 +1239,9 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${pet.breed} · ${pet.location}',
+                          pet.hasKnownBreed
+                              ? '${pet.breed} · ${pet.location}'
+                              : pet.location,
                           style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 12.5,
@@ -1252,9 +1273,8 @@ class _ProfileTabState extends State<ProfileTab> {
                     child: YagoPetImage(
                       imageUrl: imageUrl,
                       width: double.infinity,
-                      height: 190,
                       fit: BoxFit.cover,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ],
@@ -1409,8 +1429,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    content,
+                  YagoExpandableText(
+                    text: content,
+                    maxLines: 4,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13.5,
@@ -1463,8 +1484,9 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    content,
+                  YagoExpandableText(
+                    text: content,
+                    maxLines: 4,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13.5,
@@ -1480,8 +1502,9 @@ class _ProfileTabState extends State<ProfileTab> {
       );
     }
 
-    return Text(
-      content,
+    return YagoExpandableText(
+      text: content,
+      maxLines: 4,
       style: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 13.5,
@@ -1547,5 +1570,5 @@ class _ProfileFeedItem {
   _ProfileFeedItem.fromPet(Pet p)
       : post = null,
         pet = p,
-        dateTime = p.date;
+        dateTime = p.effectiveCreatedAt;
 }
