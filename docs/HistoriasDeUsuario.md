@@ -48,6 +48,7 @@
 | HU-S4-03 | Como usuario, quiero intercambiar mensajes de texto en tiempo real dentro del chat para brindar pistas, fotos y coordinar el punto de reencuentro o acuerdo. | Alta |
 | HU-S4-04 | Como usuario, quiero ver en el encabezado del chat la tarjeta resumida de la publicación o reporte al que hace referencia la conversación para tener contexto inmediato. | Media |
 | HU-S4-05 | Como usuario, quiero recibir avisos o indicadores visuales de mensajes no leídos para no demorar la respuesta ante una posible pista de mi mascota. | Media |
+| HU-S4-06 | Como usuario, quiero recibir notificaciones push en mi dispositivo móvil cuando la app esté en segundo plano o cerrada para enterarme al instante de nuevos mensajes directos. | Media |
 
 ---
 

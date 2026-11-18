@@ -2030,8 +2030,9 @@ class AiVisionService {
         score += 22;
         matchingTraits.add('Morfología compatible');
       } else {
-        // Ambas tienen razas de familias muy distintas (ej. Caniche vs Rottweiler)
-        score -= 10;
+        // Ambas tienen razas de familias completamente distintas (ej. Caniche vs Cane Corso):
+        // penalización fuerte para evitar falsos positivos.
+        score -= 25;
       }
     } else if (normAnalysisBreed.isNotEmpty &&
         normPetBreed.isNotEmpty &&
@@ -2095,8 +2096,19 @@ class AiVisionService {
       // no penalizamos (otorgamos compatibilidad neutral para no descartar reportes reales sin texto de color).
       score += 6;
     } else if (analysis.colors.isNotEmpty) {
-      // El reporte especifica explícitamente un color distinto a todos los detectados por la IA
-      score -= 12;
+      // El reporte especifica explícitamente un color distinto a todos los detectados por la IA.
+      // Penalización fuerte: colores incompatibles (ej. blanco vs negro) no deben generar match alto.
+      final analysisColorsNorm = analysis.colors.map(_normalize).toList();
+      final petColorsNorm = _allKnownColorWords
+          .where((c) => petFullText.contains(c))
+          .toList();
+      // Detectar contraste extremo: blanco vs negro
+      final analysisHasWhite = analysisColorsNorm.any((c) => c.contains('blanco') || c.contains('crema') || c.contains('marfil'));
+      final analysisHasBlack = analysisColorsNorm.any((c) => c.contains('negro') || c.contains('oscur'));
+      final petHasWhite = petColorsNorm.any((c) => c.contains('blanco') || c.contains('crema') || c.contains('marfil'));
+      final petHasBlack = petColorsNorm.any((c) => c.contains('negro') || c.contains('oscur'));
+      final extremeContrast = (analysisHasWhite && petHasBlack) || (analysisHasBlack && petHasWhite);
+      score -= extremeContrast ? 22 : 12;
     }
 
     // 5. Coincidencia de señas particulares (collar, manchas, chip, porte, pelaje, etc. hasta +18%)
@@ -2150,6 +2162,8 @@ class AiVisionService {
   /// Agrupación de familias fenotípicas visualmente similares para que razas parecidas
   /// (ej. Caniche / Maltés / Shih Tzu / Bichón, o Labrador / Golden / Boyero, etc.)
   /// generen posibles matches sin descartar candidatos válidos por variaciones de clasificación.
+  /// IMPORTANTE: cada grupo debe ser fenotípicamente homogéneo. Razas de morfología muy
+  /// distinta (ej. Caniche vs Cane Corso) NO deben compartir grupo.
   static bool _areCompatibleSpecificBreeds(
     List<String> breedsA,
     List<String> breedsB,
@@ -2167,9 +2181,8 @@ class AiVisionService {
         'pekines',
         'pomerania',
         'westie',
-        'schnauzer',
       },
-      // 2. Tipo Bull / Molosos / Contextura musculosa de pelo corto
+      // 2. Molosos puros / Contextura musculosa de pelo corto y cara ancha
       {
         'cane corso',
         'corso',
@@ -2178,31 +2191,26 @@ class AiVisionService {
         'bullmastiff',
         'fila',
         'alano',
+        'dogo',
+      },
+      // 3. Bull-type / Terrier musculoso
+      {
         'american bully',
         'staffordshire',
         'amstaff',
         'bull terrier',
         'bullterrier',
         'pitbull',
-        'dogo',
+      },
+      // 4. Braquicéfalos pequeños/medianos
+      {
         'boxer',
         'bulldog',
         'pug',
-        'dalmata',
-        'rottweiler',
-        'gran danes',
+        'boston terrier',
       },
-      // 3. Perros grandes/medianos de pelo corto y orejas caídas (ej. Cane Corso / Labrador / Braco / Weimaraner)
+      // 5. Retriever / Cobrador / Perros de agua grandes
       {
-        'cane corso',
-        'corso',
-        'mastin',
-        'presa canario',
-        'bullmastiff',
-        'fila',
-        'dogo',
-        'pitbull',
-        'boxer',
         'golden',
         'retriever',
         'labrador',
@@ -2210,17 +2218,17 @@ class AiVisionService {
         'berna',
         'terranova',
         'san bernardo',
+      },
+      // 6. Cocker / Spaniel / Setter / Cazadores medianos
+      {
         'cocker',
         'spaniel',
         'setter',
         'braco',
         'pointer',
         'weimaraner',
-        'rottweiler',
-        'doberman',
-        'gran danes',
       },
-      // 4. Pastores / Ovejeros / Nórdicos / Lupoides
+      // 7. Pastores / Ovejeros / Nórdicos / Lupoides
       {
         'ovejero',
         'pastor',
@@ -2230,44 +2238,30 @@ class AiVisionService {
         'collie',
         'corgi',
         'chow',
-        'boyero',
       },
-      // 5. Sabuesos / Patas cortas / Terrier medianos
-      {
-        'beagle',
-        'basset',
-        'salchicha',
-        'dachshund',
-        'fox terrier',
-        'cocker',
-        'spaniel',
-        'pointer',
-        'braco',
-      },
-      // 6. Guardia / Porte grande / Negro y fuego
+      // 8. Guardia grande / Porte grande negro y fuego
       {
         'rottweiler',
         'doberman',
         'pinscher',
         'gran danes',
+        'dalmata',
         'schnauzer',
-        'boyero',
-        'berna',
-        'ovejero',
-        'pastor',
       },
-      // 7. Pequeños de pelo corto
+      // 9. Sabuesos / Patas cortas
       {
-        'chihuahua',
-        'pinscher',
-        'pug',
-        'bulldog',
+        'beagle',
+        'basset',
         'salchicha',
         'dachshund',
+      },
+      // 10. Pequeños de pelo corto
+      {
+        'chihuahua',
         'galgo',
         'fox terrier',
       },
-      // 8. Gatos domésticos (todas las variantes felinas son compatibles entre sí si coinciden colores)
+      // 11. Gatos domésticos (compatibles entre sí si coinciden colores)
       {
         'siames',
         'persa',
@@ -2280,9 +2274,9 @@ class AiVisionService {
         'romano',
         'angora',
       },
-      // 9. Aves
+      // 12. Aves
       {'loro', 'cotorra', 'cacatua', 'canario'},
-      // 10. Pequeños mamíferos / Roedores / Lagomorfos
+      // 13. Pequeños mamíferos / Roedores / Lagomorfos
       {'conejo', 'huron', 'hamster', 'cobayo'},
     ];
     for (final group in equivalentGroups) {

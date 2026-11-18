@@ -1,74 +1,53 @@
-# Tecnologías del Proyecto - Yago
+# Tecnologías del Proyecto — Yago
 
-Este documento resume las tecnologías, frameworks y herramientas seleccionadas para el desarrollo y soporte de la plataforma **Yago**.
+Resumen de las tecnologías, frameworks y servicios utilizados en el desarrollo de la plataforma **Yago**.
 
 ---
 
 ## 1. Aplicación Móvil
-
-* **Flutter & Dart**
-  * *Uso:* Framework multiplataforma para el desarrollo de la aplicación móvil (Android e iOS), garantizando una experiencia visual fluida y reactiva.
-* **Entorno de Desarrollo (IDE)**
-  * *Uso:* Android Studio / Visual Studio Code para la codificación, emulación y depuración del proyecto.
+* **Flutter & Dart:** Desarrollo de la aplicación móvil multiplataforma (Android e iOS).
+* **Entornos de Desarrollo:** Android Studio / Visual Studio Code.
 
 ---
 
-## 2. Backend, Servicios en la Nube y Base de Datos
-
-* **Firebase (Proyecto `yago-21b28`)**
-  * *Uso:* Plataforma Backend-as-a-Service (BaaS) para simplificar la infraestructura, autenticación y persistencia en tiempo real.
-  * *Configuración:* Sincronizado para Android con Application ID / Package Name `com.example.yago` a través de `google-services.json` y `firebase_options.dart`.
-* **Firebase Authentication (`firebase_auth: ^6.6.1`) — *Implementado***
-  * *Uso:* Gestión segura de usuarios. Cuenta con:
-    * Registro de nuevas cuentas con correo, contraseña y nombre de usuario (`displayName`).
-    * Inicio de sesión reactivo con `AuthGate` y persistencia automática de sesión.
-    * Recuperación de contraseñas mediante correo electrónico (`sendPasswordResetEmail`).
-    * Cierre de sesión seguro (`signOut`).
-    * Traducción y mapeo localizado de excepciones de Firebase a mensajes claros en español.
-* **Cloud Firestore**
-  * *Uso:* Base de datos NoSQL para perfiles de usuarios, publicaciones del feed social, reportes de mascotas (atributos, coordenadas geográficas, fechas y estados) y **conversaciones del chat directo en tiempo real** con suscripciones reactivas.
-* **Firebase Cloud Storage (`firebase_storage: ^13.6.0`) — *Implementado***
-  * *Uso:* Almacenamiento seguro y optimizado de las fotografías de los animales reportados y fotos compartidas en el feed social o chat.
-  * *Servicio:* `StorageService` (`lib/services/storage_service.dart`) con compresión automática y control de tipos MIME.
-* **Firebase Cloud Messaging (FCM)**
-  * *Uso (Tentativo):* Envío de notificaciones push ante mensajes nuevos de chat o alertas de extravío.
+## 2. Backend y Servicios en la Nube
+* **Firebase Authentication:** Registro, inicio de sesión, recuperación de contraseña y gestión de usuarios.
+* **Cloud Firestore:** Base de datos NoSQL para reportes de mascotas, feed comunitario, perfiles y mensajería directa en tiempo real.
+* **Firebase Cloud Storage:** Almacenamiento y gestión de fotografías de reportes, publicaciones y chats.
 
 ---
 
-## 3. Geolocalización y Mapas Contextuales
-
-* **Visor Contextual de Zona (Google Maps / Mapbox / Flutter Map)**
-  * *Uso:* Visualización de la zona o barrio específico de extravío o avistamiento dentro de cada publicación de reporte (descartando la pantalla de mapa exploratorio global e integrando la geolocalización contextual a la ficha de la mascota).
-* **Geolocator / Geocoding (Plugins Flutter)**
-  * *Uso:* Obtención de la ubicación actual del dispositivo para sugerir el barrio/zona al crear reportes y conversión de coordenadas a direcciones legibles.
+## 3. Notificaciones y Servicios Nativos
+* **Notificaciones del Sistema (Android):** Notificaciones push locales/nativas para avisos en el celular de nuevos mensajes directos acumulados.
 
 ---
 
-## 4. Inteligencia Artificial y Visión Computacional
-
-* **API Multimodal / Visión (Google Gemini `gemini-2.0-flash` + Analizador Fenotípico Local `AiVisionService`) — *Implementado***
-  * *Uso:* Reconocimiento visual y extracción de rasgos físicos (especie neutral `Perro` / `Gato` / `Otro`, raza aparente, colores dominantes y señas particulares) a partir de fotos tomadas con la cámara analizadora o cargadas desde la galería (`HU-S3-01`, `HU-S3-02`). Comparación automatizada contra la base de datos activa de mascotas perdidas y encontradas (`HU-S3-03`), visualización de porcentaje de similitud y fotos comparativas lado a lado (`HU-S3-04`), apertura de chat directo 1 a 1 con el responsable del reporte (`HU-S3-05`) y reutilización automática de la foto y atributos extraídos para publicar un nuevo reporte de hallazgo si no hay coincidencias (`HU-S3-06`).
-
----
-
-## 5. Control de Versiones y Gestión del Proyecto
-
-* **Git + GitHub**
-  * *Uso:* Control de versiones, ramas de trabajo, revisión de código y resguardo seguro del repositorio.
-* **Herramientas de Gestión (Trello / Jira / Notion)**
-  * *Uso:* Tablero Kanban para el seguimiento de tareas, épicas y entregas de la cátedra.
+## 4. Geolocalización y Mapas
+* **Flutter Map:** Visualización de la zona contextual aproximada de avistamiento o extravío y selector de coordenadas en mapa.
+* **Geolocator & Geocoding:** Detección de ubicación actual por GPS y conversión de coordenadas a direcciones legibles.
 
 ---
 
-## Matriz Resumen de Tecnologías
+## 5. Inteligencia Artificial y Visión Computacional
+* **Google Gemini AI & Google ML Kit / TensorFlow Lite:** Análisis visual de fotografías para detección de especie, raza aparente, colores y rasgos físicos, junto al cotejo automático contra reportes de la base de datos.
 
-| Componente | Tecnología | Estado / Implementación | Propósito |
-| :--- | :--- | :---: | :--- |
-| **Frontend Móvil** | Flutter & Dart | **Implementado** | Interfaz de usuario, Design System oficial, navegación y lógica cliente |
-| **Autenticación** | Firebase Authentication (`firebase_auth`) | **Implementado** | Inicio de sesión, registro, recuperación de contraseña y AuthGate reactivo |
-| **Configuración Android** | Gradle (`com.example.yago`) + Google Services | **Implementado** | Vinculación nativa de la app móvil con Firebase |
-| **Base de Datos & Chat**| Cloud Firestore (`cloud_firestore`) | **Implementado** | Reportes, feed comunitario, registros de escaneo IA (`ai_scans`) y chat directo (`chats`) |
-| **Almacenamiento Multimedia** | Cloud Storage (`firebase_storage`) + `image_picker` | **Implementado** | Subida, compresión y optimización de fotos de mascotas |
-| **Mapas Contextuales** | `flutter_map` + `geolocator` + Nominatim | **Implementado** | Visualización de zona de extravío/avistamiento y selector de ubicación en mapa |
-| **Cámara & Análisis IA**| Google Gemini Multimodal + `AiVisionService` | **Implementado** | Extracción fenotípica de fotos en la calle y cotejo contra BD de perdidos/encontrados |
-| **Control de Versiones** | Git + GitHub | Activo | Gestión del código fuente |
+---
+
+## 6. Control de Versiones y Gestión
+* **Git & GitHub:** Control de versiones y resguardo del repositorio.
+* **Trello:** Gestión ágil del proyecto mediante tablero Kanban.
+
+---
+
+## Matriz Resumen
+
+| Componente | Tecnología | Propósito |
+| :--- | :--- | :--- |
+| **Frontend Móvil** | Flutter & Dart | Interfaz de usuario y lógica cliente |
+| **Autenticación** | Firebase Authentication | Inicio de sesión y seguridad de usuarios |
+| **Base de Datos** | Cloud Firestore | Almacenamiento de reportes, feed y chats en tiempo real |
+| **Almacenamiento** | Cloud Storage | Guardado y optimización de fotos |
+| **Notificaciones** | Android Native Notifications | Avisos en el celular de mensajes entrantes |
+| **Mapas y GPS** | Flutter Map + Geolocator | Ubicación de reportes y visualización de zona |
+| **Inteligencia Artificial** | Gemini AI + ML Kit / TFLite | Identificación de mascotas y búsqueda de coincidencias |
+| **Gestión y Versiones** | Git, GitHub y Trello | Control de versiones y seguimiento del proyecto |
